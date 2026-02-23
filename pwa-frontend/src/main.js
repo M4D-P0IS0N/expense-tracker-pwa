@@ -604,13 +604,19 @@ function updateAvatarUI() {
   const profile = GamificationService.getProfile();
   const spriteFile = GamificationService.getSpriteFilename(profile.EvolutionStage, profile.AvatarGender);
   const stageLabel = GamificationService.getStageLabel(profile.EvolutionStage, profile.AvatarGender);
+  const avatarPlaceholder = document.getElementById('avatar-placeholder');
 
   avatarLevelBadge.textContent = `Lvl ${profile.Level}`;
-  avatarStageName.textContent = stageLabel;
+  avatarStageName.textContent = profile.AvatarGender ? stageLabel : 'Escolha seu Avatar';
 
   if (profile.AvatarGender) {
     avatarImg.src = `./assets/sprites/${spriteFile}`;
+    avatarImg.classList.remove('hidden');
+    if (avatarPlaceholder) avatarPlaceholder.classList.add('hidden');
     avatarImg.onerror = () => { avatarImg.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${profile.EvolutionStage}`; };
+  } else {
+    avatarImg.classList.add('hidden');
+    if (avatarPlaceholder) avatarPlaceholder.classList.remove('hidden');
   }
 }
 
@@ -633,12 +639,16 @@ function showGenderChoiceModal() {
           <p class="text-sm text-slate-400 mt-1">A linha evolutiva seguirá a sua escolha.</p>
         </div>
         <div class="grid grid-cols-2 gap-4">
-          <button id="choose-male-btn" class="flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-slate-700 hover:border-primary bg-slate-800/50 hover:bg-primary/10 transition-all group">
-            <img src="./assets/sprites/stage1-m.png" alt="Camponês" class="w-24 h-24 rounded-xl object-contain" />
+          <button id="choose-male-btn" class="flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-slate-700 hover:border-primary bg-slate-800 hover:bg-primary/10 transition-all group overflow-hidden">
+            <div class="w-28 h-28 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
+              <img src="./assets/sprites/stage1-m.png" alt="Camponês" class="w-full h-full object-cover" style="mix-blend-mode: screen; transform: scale(1.3);" />
+            </div>
             <span class="text-sm font-bold text-white group-hover:text-primary transition-colors">Camponês</span>
           </button>
-          <button id="choose-female-btn" class="flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-slate-700 hover:border-pink-400 bg-slate-800/50 hover:bg-pink-400/10 transition-all group">
-            <img src="./assets/sprites/stage1-f.png" alt="Camponesa" class="w-24 h-24 rounded-xl object-contain" />
+          <button id="choose-female-btn" class="flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-slate-700 hover:border-pink-400 bg-slate-800 hover:bg-pink-400/10 transition-all group overflow-hidden">
+            <div class="w-28 h-28 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
+              <img src="./assets/sprites/stage1-f.png" alt="Camponesa" class="w-full h-full object-cover" style="mix-blend-mode: screen; transform: scale(1.3);" />
+            </div>
             <span class="text-sm font-bold text-white group-hover:text-pink-400 transition-colors">Camponesa</span>
           </button>
         </div>

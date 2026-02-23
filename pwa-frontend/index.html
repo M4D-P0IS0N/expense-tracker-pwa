@@ -199,8 +199,10 @@
             </div>
             <div
               class="relative h-10 w-10 flex items-center justify-center rounded-full overflow-hidden border-2 border-white/10 bg-slate-800 text-white font-bold p-1">
-              <!-- Fallback if image missing -->
-              <img id="avatar-img" src="" class="object-contain w-full h-full rounded-full" alt="Avatar" />
+              <!-- Fallback icon when no avatar chosen -->
+              <span id="avatar-placeholder" class="material-symbols-outlined text-slate-400 text-2xl">person</span>
+              <img id="avatar-img" src="" class="object-cover w-full h-full rounded-full hidden"
+                style="mix-blend-mode: screen; transform: scale(1.35);" alt="Avatar" />
             </div>
             <div id="avatar-level-badge"
               class="absolute -bottom-1 -right-1 bg-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-slate-800 z-10">
@@ -769,7 +771,8 @@
 
           <div class="relative h-24 w-24 shrink-0 mx-auto">
             <div class="absolute inset-0 bg-primary/20 rounded-full blur-md"></div>
-            <img id="rpg-large-avatar" src="" class="relative object-contain w-full h-full rounded-xl drop-shadow-lg" />
+            <img id="rpg-large-avatar" src="" class="relative object-cover w-full h-full rounded-xl drop-shadow-lg"
+              style="mix-blend-mode: screen; transform: scale(1.3);" />
           </div>
 
           <div class="flex-1 text-left">
