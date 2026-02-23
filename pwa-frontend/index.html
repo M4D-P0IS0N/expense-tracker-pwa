@@ -871,6 +871,307 @@
       </div>
     </div>
 
+    <!-- Help / Dúvidas Modal -->
+    <div id="help-modal" class="fixed inset-0 z-[60] hidden">
+      <div class="fixed inset-0 bg-slate-900/90" id="help-overlay"></div>
+      <div class="relative z-10 w-full h-full overflow-y-auto">
+        <div class="max-w-lg mx-auto px-4 py-6 pb-20">
+
+          <!-- Header -->
+          <div
+            class="flex justify-between items-center mb-6 sticky top-0 bg-slate-900/95 py-3 px-1 -mx-1 z-10 rounded-b-xl">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary">help</span> Guia do App
+            </h2>
+            <button id="close-help-btn"
+              class="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 p-2 rounded-lg transition-colors">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+
+          <!-- Intro -->
+          <div class="glass-card rounded-2xl p-5 mb-4 border border-primary/20">
+            <p class="text-sm text-slate-300 leading-relaxed">
+              Bem-vindo ao <strong class="text-white">Expense Tracker</strong>! Aqui você encontra um guia completo de
+              como usar cada funcionalidade do aplicativo. Toque em qualquer seção abaixo para expandir.
+            </p>
+          </div>
+
+          <!-- Section 1: Add Transaction -->
+          <details class="help-section glass-card rounded-2xl mb-3 border border-slate-700/50 group">
+            <summary class="flex items-center gap-3 p-4 cursor-pointer list-none">
+              <span class="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-primary">add_circle</span>
+              </span>
+              <span class="font-bold text-white flex-1">Cadastrar Receita ou Despesa</span>
+              <span
+                class="material-symbols-outlined text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm text-slate-300 space-y-3">
+              <div class="bg-slate-800/50 rounded-xl p-3 space-y-2">
+                <p class="font-bold text-white text-xs uppercase tracking-wider">📍 Caminho:</p>
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                  <span class="bg-primary/20 text-primary px-2 py-1 rounded-lg font-bold">Botão + (canto inferior
+                    direito)</span>
+                  <span class="text-slate-500">→</span>
+                  <span class="bg-slate-700 px-2 py-1 rounded-lg">Preencher formulário</span>
+                  <span class="text-slate-500">→</span>
+                  <span class="bg-accent-green/20 text-accent-green px-2 py-1 rounded-lg">Salvar</span>
+                </div>
+              </div>
+              <ol class="space-y-2 list-decimal list-inside marker:text-primary">
+                <li>Toque no botão <strong class="text-purple-400">+</strong> roxo no canto inferior direito da tela.
+                </li>
+                <li>Escolha o tipo: <strong class="text-green-400">Receita</strong> (dinheiro entrando) ou <strong
+                    class="text-red-400">Despesa</strong> (dinheiro saindo).</li>
+                <li>Digite o <strong class="text-white">Valor (R$)</strong>.</li>
+                <li>Escreva uma <strong class="text-white">Descrição</strong> (ex: "Salário", "Aluguel").</li>
+                <li>Escolha a <strong class="text-white">Categoria</strong> (Alimentação, Transporte, etc.).</li>
+                <li>Selecione a <strong class="text-white">Data</strong>.</li>
+                <li><em class="text-slate-400">Opcional:</em> Marque um <strong class="text-white">Cartão de
+                    Crédito</strong> se a despesa foi no cartão.</li>
+                <li><em class="text-slate-400">Opcional:</em> Se for compra parcelada, informe o <strong
+                    class="text-white">Nº de Parcelas</strong>.</li>
+                <li>Toque em <strong class="text-primary">"Salvar Transação"</strong>.</li>
+              </ol>
+              <p class="text-xs text-slate-400 italic">💡 A cada transação salva, você ganha <strong
+                  class="text-purple-300">+10 XP</strong> no seu perfil RPG!</p>
+            </div>
+          </details>
+
+          <!-- Section 2: View & Filter Transactions -->
+          <details class="help-section glass-card rounded-2xl mb-3 border border-slate-700/50 group">
+            <summary class="flex items-center gap-3 p-4 cursor-pointer list-none">
+              <span class="h-10 w-10 rounded-xl bg-accent-green/20 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-accent-green">receipt_long</span>
+              </span>
+              <span class="font-bold text-white flex-1">Ver e Filtrar Transações</span>
+              <span
+                class="material-symbols-outlined text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm text-slate-300 space-y-3">
+              <div class="bg-slate-800/50 rounded-xl p-3 space-y-2">
+                <p class="font-bold text-white text-xs uppercase tracking-wider">📍 Caminho:</p>
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                  <span class="bg-slate-700 px-2 py-1 rounded-lg">Aba "Transações" (barra inferior)</span>
+                </div>
+              </div>
+              <ul class="space-y-2 list-disc list-inside marker:text-accent-green">
+                <li>A lista mostra suas transações do <strong class="text-white">mês/ano selecionados</strong>.</li>
+                <li>Use os seletores <strong class="text-white">Mês</strong> e <strong class="text-white">Ano</strong>
+                  no topo para navegar entre períodos.</li>
+                <li>Use o filtro <strong class="text-white">Cartões</strong> para ver apenas despesas de um cartão
+                  específico.</li>
+                <li>Use a <strong class="text-white">Barra de Busca</strong> (🔍) para procurar por descrição ou
+                  categoria.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Section 3: Edit & Delete Transactions -->
+          <details class="help-section glass-card rounded-2xl mb-3 border border-slate-700/50 group">
+            <summary class="flex items-center gap-3 p-4 cursor-pointer list-none">
+              <span class="h-10 w-10 rounded-xl bg-accent-red/20 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-accent-red">edit_note</span>
+              </span>
+              <span class="font-bold text-white flex-1">Editar ou Excluir Transação</span>
+              <span
+                class="material-symbols-outlined text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm text-slate-300 space-y-3">
+              <div class="bg-slate-800/50 rounded-xl p-3 space-y-2">
+                <p class="font-bold text-white text-xs uppercase tracking-wider">📍 Caminho:</p>
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                  <span class="bg-slate-700 px-2 py-1 rounded-lg">Segurar uma Transação (toque longo)</span>
+                  <span class="text-slate-500">→</span>
+                  <span class="bg-slate-700 px-2 py-1 rounded-lg">Menu de Contexto</span>
+                </div>
+              </div>
+              <ul class="space-y-2 list-disc list-inside marker:text-accent-red">
+                <li><strong class="text-white">Segure pressionado</strong> (toque longo) sobre qualquer transação da
+                  lista.</li>
+                <li>Um menu aparecerá com as opções: <strong class="text-blue-400">✏️ Editar</strong> e <strong
+                    class="text-red-400">🗑️ Deletar</strong>.</li>
+                <li>Ao editar, o formulário abrirá preenchido. Modifique e salve.</li>
+                <li>Ao deletar, a transação será removida permanentemente.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Section 4: Dashboard -->
+          <details class="help-section glass-card rounded-2xl mb-3 border border-slate-700/50 group">
+            <summary class="flex items-center gap-3 p-4 cursor-pointer list-none">
+              <span class="h-10 w-10 rounded-xl bg-blue-500/20 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-blue-400">dashboard</span>
+              </span>
+              <span class="font-bold text-white flex-1">Painel / Dashboard</span>
+              <span
+                class="material-symbols-outlined text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm text-slate-300 space-y-3">
+              <div class="bg-slate-800/50 rounded-xl p-3 space-y-2">
+                <p class="font-bold text-white text-xs uppercase tracking-wider">📍 Caminho:</p>
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                  <span class="bg-slate-700 px-2 py-1 rounded-lg">Aba "Painel" (barra inferior)</span>
+                </div>
+              </div>
+              <ul class="space-y-2 list-disc list-inside marker:text-blue-400">
+                <li><strong class="text-white">Patrimônio Líquido:</strong> Soma de todas as receitas menos todas as
+                  despesas de todos os tempos.</li>
+                <li><strong class="text-white">Receitas / Despesas do Mês:</strong> Totais do período selecionado.</li>
+                <li><strong class="text-white">Gastos por Categoria:</strong> Visualize quanto gastou em cada categoria,
+                  com barra de progresso e porcentagem.</li>
+                <li><strong class="text-white">Gastos por Cartão:</strong> Se você usa cartão de crédito, veja o total
+                  por cartão.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Section 5: Budgets -->
+          <details class="help-section glass-card rounded-2xl mb-3 border border-slate-700/50 group">
+            <summary class="flex items-center gap-3 p-4 cursor-pointer list-none">
+              <span class="h-10 w-10 rounded-xl bg-yellow-500/20 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-yellow-400">account_balance_wallet</span>
+              </span>
+              <span class="font-bold text-white flex-1">Orçamentos por Categoria</span>
+              <span
+                class="material-symbols-outlined text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm text-slate-300 space-y-3">
+              <div class="bg-slate-800/50 rounded-xl p-3 space-y-2">
+                <p class="font-bold text-white text-xs uppercase tracking-wider">📍 Caminho:</p>
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                  <span class="bg-slate-700 px-2 py-1 rounded-lg">Aba "Painel"</span>
+                  <span class="text-slate-500">→</span>
+                  <span class="bg-slate-700 px-2 py-1 rounded-lg">Botão 📊 (topo)</span>
+                </div>
+              </div>
+              <ul class="space-y-2 list-disc list-inside marker:text-yellow-400">
+                <li>Defina um <strong class="text-white">limite de gasto</strong> para cada categoria (ex.: Alimentação:
+                  R$800).</li>
+                <li>No painel, a barra de progresso mostra quanto do orçamento você já usou.</li>
+                <li>Se ultrapassar o limite, a barra ficará <strong class="text-red-400">vermelha</strong> como alerta.
+                </li>
+                <li>Para remover um orçamento, defina o valor como <strong class="text-white">0</strong>.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Section 6: Savings -->
+          <details class="help-section glass-card rounded-2xl mb-3 border border-slate-700/50 group">
+            <summary class="flex items-center gap-3 p-4 cursor-pointer list-none">
+              <span class="h-10 w-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-emerald-400">savings</span>
+              </span>
+              <span class="font-bold text-white flex-1">Caixinhas (Metas de Economia)</span>
+              <span
+                class="material-symbols-outlined text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm text-slate-300 space-y-3">
+              <div class="bg-slate-800/50 rounded-xl p-3 space-y-2">
+                <p class="font-bold text-white text-xs uppercase tracking-wider">📍 Caminho:</p>
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                  <span class="bg-slate-700 px-2 py-1 rounded-lg">Aba "Caixinhas" (barra inferior)</span>
+                  <span class="text-slate-500">→</span>
+                  <span class="bg-primary/20 text-primary px-2 py-1 rounded-lg">Botão "+ Nova Caixinha"</span>
+                </div>
+              </div>
+              <ol class="space-y-2 list-decimal list-inside marker:text-emerald-400">
+                <li>Toque em <strong class="text-primary">"+ Nova Caixinha"</strong>.</li>
+                <li>Dê um <strong class="text-white">nome</strong> (ex: "Viagem Japão") e defina a <strong
+                    class="text-white">meta</strong> (ex: R$5.000).</li>
+                <li>Escolha um <strong class="text-white">emoji</strong> para identificar a caixinha.</li>
+                <li>Use os botões <strong class="text-green-400">+</strong> e <strong class="text-red-400">−</strong>
+                  para adicionar ou retirar fundos.</li>
+                <li>A barra de progresso mostra quanto falta para atingir sua meta.</li>
+              </ol>
+            </div>
+          </details>
+
+          <!-- Section 7: Notebook -->
+          <details class="help-section glass-card rounded-2xl mb-3 border border-slate-700/50 group">
+            <summary class="flex items-center gap-3 p-4 cursor-pointer list-none">
+              <span class="h-10 w-10 rounded-xl bg-pink-500/20 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-pink-400">edit_note</span>
+              </span>
+              <span class="font-bold text-white flex-1">Bloco de Notas</span>
+              <span
+                class="material-symbols-outlined text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm text-slate-300 space-y-3">
+              <div class="bg-slate-800/50 rounded-xl p-3 space-y-2">
+                <p class="font-bold text-white text-xs uppercase tracking-wider">📍 Caminho:</p>
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                  <span class="bg-slate-700 px-2 py-1 rounded-lg">Ícone 📝 (topo direito, ao lado do avatar)</span>
+                </div>
+              </div>
+              <ul class="space-y-2 list-disc list-inside marker:text-pink-400">
+                <li>Toque no ícone de <strong class="text-white">caderninho</strong> no topo.</li>
+                <li>Escreva suas anotações financeiras livremente.</li>
+                <li>Toque em <strong class="text-primary">"Salvar"</strong> para gravar.</li>
+                <li>Na aba <strong class="text-white">"Diff"</strong>, veja as linhas que foram adicionadas ou removidas
+                  na última edição.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Section 8: RPG / Avatar -->
+          <details class="help-section glass-card rounded-2xl mb-3 border border-slate-700/50 group">
+            <summary class="flex items-center gap-3 p-4 cursor-pointer list-none">
+              <span class="h-10 w-10 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-purple-400">swords</span>
+              </span>
+              <span class="font-bold text-white flex-1">Sistema RPG / Avatar</span>
+              <span
+                class="material-symbols-outlined text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm text-slate-300 space-y-3">
+              <div class="bg-slate-800/50 rounded-xl p-3 space-y-2">
+                <p class="font-bold text-white text-xs uppercase tracking-wider">📍 Caminho:</p>
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                  <span class="bg-slate-700 px-2 py-1 rounded-lg">Tocar no avatar (topo esquerdo)</span>
+                </div>
+              </div>
+              <ul class="space-y-2 list-disc list-inside marker:text-purple-400">
+                <li>Seu avatar <strong class="text-white">evolui</strong> conforme você usa o app:</li>
+                <li class="ml-4">🟢 <strong>Apprentice</strong> (Lvl 1-9) → 🔵 <strong>Adept</strong> (Lvl 10-24) → 🟣
+                  <strong>Master</strong> (Lvl 25-49) → 🟡 <strong>Archmage</strong> (Lvl 50+)</li>
+                <li>Cada transação cadastrada dá <strong class="text-purple-300">+10 XP</strong>.</li>
+                <li><strong class="text-white">Conquistas</strong> são desbloqueadas automaticamente (primeira
+                  transação, nível 10, etc.).</li>
+                <li>A barra de XP mostra quanto falta para o próximo nível.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Section 9: Tips -->
+          <details class="help-section glass-card rounded-2xl mb-3 border border-purple-500/20 group">
+            <summary class="flex items-center gap-3 p-4 cursor-pointer list-none">
+              <span class="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-amber-400">lightbulb</span>
+              </span>
+              <span class="font-bold text-white flex-1">Dicas Úteis</span>
+              <span
+                class="material-symbols-outlined text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm text-slate-300 space-y-3">
+              <ul class="space-y-2 list-disc list-inside marker:text-amber-400">
+                <li>📱 <strong class="text-white">Instale o app no iPhone:</strong> Safari → Compartilhar → "Adicionar à
+                  Tela de Início".</li>
+                <li>🔄 O app funciona <strong class="text-white">offline</strong> para navegação básica.</li>
+                <li>🔒 Seus dados são <strong class="text-white">privados e criptografados</strong> — ninguém mais tem
+                  acesso.</li>
+                <li>💰 Use o <strong class="text-white">Patrimônio Líquido</strong> no Painel como termômetro geral da
+                  sua saúde financeira.</li>
+                <li>🎮 Continue registrando transações para subir de nível e evoluir seu avatar!</li>
+              </ul>
+            </div>
+          </details>
+
+        </div>
+      </div>
+    </div>
+
     <!-- Main Application Script -->
     <script type="module" src="./src/main.js"></script>
     <script>

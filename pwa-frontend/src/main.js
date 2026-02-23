@@ -657,16 +657,25 @@ function openRpgModal() {
         `;
   });
 
-  // Inject Logout Button if it doesn't exist
+  // Inject Help + Logout Buttons if they don't exist
   if (!document.getElementById('rpg-logout-btn')) {
-    const logoutWrapper = document.createElement('div');
-    logoutWrapper.className = "mt-4 pt-4 border-t border-slate-700";
-    logoutWrapper.innerHTML = `
+    const buttonsWrapper = document.createElement('div');
+    buttonsWrapper.className = "mt-4 pt-4 border-t border-slate-700 space-y-3";
+    buttonsWrapper.innerHTML = `
+          <button id="rpg-help-btn" class="w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined">help</span> Dúvidas
+          </button>
           <button id="rpg-logout-btn" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
               <span class="material-symbols-outlined">logout</span> Sair da Conta
           </button>
       `;
-    achievementsGrid.parentElement.appendChild(logoutWrapper);
+    achievementsGrid.parentElement.appendChild(buttonsWrapper);
+
+    // Help button opens guide modal
+    document.getElementById('rpg-help-btn').addEventListener('click', () => {
+      rpgModal.classList.add('hidden');
+      document.getElementById('help-modal').classList.remove('hidden');
+    });
 
     document.getElementById('rpg-logout-btn').addEventListener('click', async () => {
       try {
@@ -686,6 +695,11 @@ const closeRpgModal = () => rpgModal.classList.add('hidden');
 closeRpgBtn.addEventListener('click', closeRpgModal);
 rpgOverlay.addEventListener('click', closeRpgModal);
 avatarControl.addEventListener('click', openRpgModal);
+
+// Help Modal close handlers
+const helpModal = document.getElementById('help-modal');
+document.getElementById('close-help-btn').addEventListener('click', () => helpModal.classList.add('hidden'));
+document.getElementById('help-overlay').addEventListener('click', () => helpModal.classList.add('hidden'));
 
 // Execute UI refresh on load
 updateAvatarUI();
