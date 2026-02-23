@@ -602,25 +602,79 @@ exportCsvBtn.addEventListener('click', () => {
 
 function updateAvatarUI() {
   const profile = GamificationService.getProfile();
-  const stage = profile.EvolutionStage.toLowerCase();
+  const spriteFile = GamificationService.getSpriteFilename(profile.EvolutionStage, profile.AvatarGender);
+  const stageLabel = GamificationService.getStageLabel(profile.EvolutionStage, profile.AvatarGender);
 
   avatarLevelBadge.textContent = `Lvl ${profile.Level}`;
-  avatarStageName.textContent = profile.EvolutionStage;
+  avatarStageName.textContent = stageLabel;
 
-  // Attempt to load asset images 
-  avatarImg.src = `./assets/sprites/${stage}.png`;
-
-  // Bind to error to fallback
-  avatarImg.onerror = () => { avatarImg.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${stage}`; };
+  if (profile.AvatarGender) {
+    avatarImg.src = `./assets/sprites/${spriteFile}`;
+    avatarImg.onerror = () => { avatarImg.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${profile.EvolutionStage}`; };
+  }
 }
 
 avatarControl.addEventListener('click', openRpgModal);
 
+function showGenderChoiceModal() {
+  const existingModal = document.getElementById('gender-choice-modal');
+  if (existingModal) existingModal.remove();
+
+  const choiceModal = document.createElement('div');
+  choiceModal.id = 'gender-choice-modal';
+  choiceModal.className = 'fixed inset-0 z-[70] flex items-center justify-center p-6';
+  choiceModal.innerHTML = `
+    <div class="fixed inset-0 bg-slate-900/95"></div>
+    <div class="relative z-10 w-full max-w-sm">
+      <div class="glass-card rounded-3xl p-6 border border-primary/20 text-center space-y-5">
+        <div>
+          <span class="material-symbols-outlined text-primary text-4xl">person</span>
+          <h3 class="text-xl font-bold text-white mt-2">Escolha seu Avatar</h3>
+          <p class="text-sm text-slate-400 mt-1">A linha evolutiva seguirá a sua escolha.</p>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <button id="choose-male-btn" class="flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-slate-700 hover:border-primary bg-slate-800/50 hover:bg-primary/10 transition-all group">
+            <img src="./assets/sprites/stage1-m.png" alt="Camponês" class="w-24 h-24 rounded-xl object-contain" />
+            <span class="text-sm font-bold text-white group-hover:text-primary transition-colors">Camponês</span>
+          </button>
+          <button id="choose-female-btn" class="flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-slate-700 hover:border-pink-400 bg-slate-800/50 hover:bg-pink-400/10 transition-all group">
+            <img src="./assets/sprites/stage1-f.png" alt="Camponesa" class="w-24 h-24 rounded-xl object-contain" />
+            <span class="text-sm font-bold text-white group-hover:text-pink-400 transition-colors">Camponesa</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(choiceModal);
+
+  document.getElementById('choose-male-btn').addEventListener('click', () => {
+    GamificationService.setAvatarGender('male');
+    choiceModal.remove();
+    updateAvatarUI();
+    openRpgModal();
+  });
+
+  document.getElementById('choose-female-btn').addEventListener('click', () => {
+    GamificationService.setAvatarGender('female');
+    choiceModal.remove();
+    updateAvatarUI();
+    openRpgModal();
+  });
+}
+
 function openRpgModal() {
   const profile = GamificationService.getProfile();
-  const stage = profile.EvolutionStage.toLowerCase();
 
-  rpgStageTitle.textContent = profile.EvolutionStage;
+  // If gender not chosen yet, show choice modal instead
+  if (!profile.AvatarGender) {
+    showGenderChoiceModal();
+    return;
+  }
+
+  const spriteFile = GamificationService.getSpriteFilename(profile.EvolutionStage, profile.AvatarGender);
+  const stageLabel = GamificationService.getStageLabel(profile.EvolutionStage, profile.AvatarGender);
+
+  rpgStageTitle.textContent = stageLabel;
   rpgLevelText.textContent = profile.Level;
   rpgXpText.textContent = `${profile.CurrentXP} / ${profile.XPToNextLevel}`;
 
@@ -628,8 +682,8 @@ function openRpgModal() {
   rpgXpBar.style.width = '0%';
   setTimeout(() => { rpgXpBar.style.width = `${pct}%`; }, 100);
 
-  rpgLargeAvatar.src = `./assets/sprites/${stage}.png`;
-  rpgLargeAvatar.onerror = () => { rpgLargeAvatar.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${stage}`; };
+  rpgLargeAvatar.src = `./assets/sprites/${spriteFile}`;
+  rpgLargeAvatar.onerror = () => { rpgLargeAvatar.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${profile.EvolutionStage}`; };
 
   // Render Achievements
   achievementsGrid.innerHTML = '';

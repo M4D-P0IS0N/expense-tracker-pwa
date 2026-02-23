@@ -1,12 +1,48 @@
 export class GamificationService {
     static storageKey = '@appdecustos/user_profile';
 
+    static EVOLUTION_STAGES = [
+        {
+            id: 'stage1',
+            maleLabel: 'Camponês Maltrapilho',
+            femaleLabel: 'Camponesa Maltrapilha',
+            maleSprite: 'stage1-m.png',
+            femaleSprite: 'stage1-f.png',
+            minLevel: 1,
+        },
+        {
+            id: 'stage2',
+            maleLabel: 'Camponês Comum',
+            femaleLabel: 'Camponesa Comum',
+            maleSprite: 'stage2-m.png',
+            femaleSprite: 'stage2-f.png',
+            minLevel: 10,
+        },
+        {
+            id: 'stage3',
+            maleLabel: 'Nobre Elegante',
+            femaleLabel: 'Nobre Elegante',
+            maleSprite: 'stage3-m.png',
+            femaleSprite: 'stage3-f.png',
+            minLevel: 25,
+        },
+        {
+            id: 'stage4',
+            maleLabel: 'Rei',
+            femaleLabel: 'Rainha',
+            maleSprite: 'stage4-m.png',
+            femaleSprite: 'stage4-f.png',
+            minLevel: 50,
+        },
+    ];
+
     static DEFAULT_PROFILE = {
         Level: 1,
         CurrentXP: 0,
         XPToNextLevel: 1000,
         UnlockedAchievements: [],
-        EvolutionStage: 'Apprentice', // Apprentice, Adept, Master, Archmage
+        EvolutionStage: 'stage1',
+        AvatarGender: null, // 'male' or 'female' — null means not chosen yet
     };
 
     static XP_PER_TRANSACTION = 10;
@@ -25,7 +61,22 @@ export class GamificationService {
 
     static getProfile() {
         const data = localStorage.getItem(this.storageKey);
-        return data ? JSON.parse(data) : { ...this.DEFAULT_PROFILE };
+        if (!data) return { ...this.DEFAULT_PROFILE };
+
+        const profile = JSON.parse(data);
+
+        // Migration: convert old EvolutionStage values to new format
+        if (['Apprentice', 'Adept', 'Master', 'Archmage'].includes(profile.EvolutionStage)) {
+            const migrationMap = { 'Apprentice': 'stage1', 'Adept': 'stage2', 'Master': 'stage3', 'Archmage': 'stage4' };
+            profile.EvolutionStage = migrationMap[profile.EvolutionStage] || 'stage1';
+        }
+
+        // Ensure AvatarGender field exists for old profiles
+        if (!profile.AvatarGender) {
+            profile.AvatarGender = null;
+        }
+
+        return profile;
     }
 
     static saveProfile(profile) {
@@ -33,11 +84,32 @@ export class GamificationService {
         localStorage.setItem(this.storageKey, JSON.stringify(profile));
     }
 
+    static getStageDefinition(stageId) {
+        return this.EVOLUTION_STAGES.find(s => s.id === stageId) || this.EVOLUTION_STAGES[0];
+    }
+
+    static getStageLabel(stageId, avatarGender) {
+        const stageDef = this.getStageDefinition(stageId);
+        return avatarGender === 'female' ? stageDef.femaleLabel : stageDef.maleLabel;
+    }
+
+    static getSpriteFilename(stageId, avatarGender) {
+        const stageDef = this.getStageDefinition(stageId);
+        return avatarGender === 'female' ? stageDef.femaleSprite : stageDef.maleSprite;
+    }
+
     static getEvolutionStage(level) {
-        if (level >= 50) return 'Archmage';
-        if (level >= 25) return 'Master';
-        if (level >= 10) return 'Adept';
-        return 'Apprentice';
+        if (level >= 50) return 'stage4';
+        if (level >= 25) return 'stage3';
+        if (level >= 10) return 'stage2';
+        return 'stage1';
+    }
+
+    static setAvatarGender(gender) {
+        const profile = this.getProfile();
+        profile.AvatarGender = gender;
+        this.saveProfile(profile);
+        return profile;
     }
 
     static checkLevelUp(profile) {
