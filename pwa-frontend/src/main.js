@@ -1145,24 +1145,26 @@ async function renderDashboard() {
   // 4. Net Worth (Patrimônio Global)
   dashNetworth.textContent = "Calculando...";
 
+  const netWorth = await TransactionService.getNetWorth(selectedYear, selectedMonth);
+
   // Make the Net Worth card interactive to set the base line
   dashNetworth.parentElement.classList.add('cursor-pointer', 'hover:bg-slate-700/50', 'transition-colors');
-  dashNetworth.parentElement.setAttribute('title', 'Clique para editar o Patrimônio Base');
+  dashNetworth.parentElement.setAttribute('title', 'Ajustar Saldo Real');
   dashNetworth.parentElement.onclick = () => {
-    const currentBase = localStorage.getItem('baseNetWorth') || '0';
-    const newBase = prompt("Digite o valor atual do seu Patrimônio Base (Ex: 1550,00 ou 1550.00):", currentBase);
-    if (newBase !== null) {
-      const parsedBase = parseBrazilianCurrency(newBase);
-      if (!isNaN(parsedBase)) {
-        localStorage.setItem('baseNetWorth', parsedBase.toString());
+    const currentBase = Number(localStorage.getItem('baseNetWorth') || 0);
+    const sumOfTransactions = netWorth - currentBase;
+
+    const newTargetStr = prompt("Ajuste Mágico de Saldo\n\nDigite quanto de dinheiro você tem na conta bancária hoje (Ex: 2248,23):\nO aplicativo fará o cálculo retroativo para calibrar seu saldo.", netWorth.toFixed(2).replace('.', ','));
+
+    if (newTargetStr !== null) {
+      const targetNetWorth = parseBrazilianCurrency(newTargetStr);
+      if (!isNaN(targetNetWorth)) {
+        const newBase = targetNetWorth - sumOfTransactions;
+        localStorage.setItem('baseNetWorth', newBase.toString());
         renderDashboard(); // Re-render to show updated totals
       }
     }
-  };
-
-  const netWorth = await TransactionService.getNetWorth(selectedYear, selectedMonth);
-
-  // User requested: Caixinhas should NOT be subtracted from the Net Worth.
+  };  // User requested: Caixinhas should NOT be subtracted from the Net Worth.
   // Net Worth is now the absolute total up to the selected month, including savings.
   const freeNetWorth = netWorth;
 
