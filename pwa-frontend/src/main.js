@@ -796,23 +796,41 @@ function openRpgModal() {
   achievementsGrid.innerHTML = '';
   GamificationService.ALL_ACHIEVEMENTS.forEach(def => {
     const isUnlocked = profile.UnlockedAchievements.some(a => a.Id === def.Id);
+    const progress = GamificationService.getAchievementProgress(def, profile);
+    const progressPct = progress.max > 0 ? Math.min(Math.round((progress.current / progress.max) * 100), 100) : 0;
+
+    // Secret achievement handling
+    const isSecret = def.IsSecret && !isUnlocked;
+    const displayName = isSecret ? def.Name : (isUnlocked && def.RevealedName ? def.RevealedName : def.Name);
+    const displayDesc = isSecret ? def.Description : (isUnlocked && def.RevealedDescription ? def.RevealedDescription : def.Description);
+    const displayIcon = isSecret ? def.Icon : (isUnlocked && def.RevealedIcon ? def.RevealedIcon : def.Icon);
 
     // Locked/Unlocked styling
-    const statusClass = isUnlocked ? "border-purple-500/40 bg-purple-500/10" : "border-slate-700 bg-slate-800/50 opacity-60 grayscale";
-    const iconColor = isUnlocked ? "text-yellow-400" : "text-slate-500";
-    const dateHtml = isUnlocked ? `<span class="text-[9px] text-primary">Desbloqueado</span>` : '';
+    const statusClass = isUnlocked ? "border-purple-500/40 bg-purple-500/10" : "border-slate-700 bg-slate-800/50 opacity-70";
+    const dateHtml = isUnlocked ? `<span class="text-[9px] text-primary font-bold">✓ Concluída</span>` : '';
+
+    // Progress bar (show for non-unlocked achievements with valid tracking)
+    const showProgress = !isUnlocked && def.MaxProgress > 1 && def.TrackKey;
+    const progressBarHtml = showProgress ? `
+      <div class="mt-1.5 flex items-center gap-2">
+        <div class="flex-1 h-1.5 bg-slate-700/60 rounded-full overflow-hidden">
+          <div class="h-full bg-slate-500/50 rounded-full transition-all duration-700" style="width: ${progressPct}%"></div>
+        </div>
+        <span class="text-[9px] text-slate-500 font-medium shrink-0">${progress.current}/${progress.max}</span>
+      </div>` : '';
 
     achievementsGrid.innerHTML += `
-            <div class="flex items-start gap-4 p-3 rounded-xl border ${statusClass}">
-               <div class="h-10 w-10 shrink-0 rounded-full bg-slate-900 flex items-center justify-center border border-slate-700">
-                  <span class="material-symbols-outlined ${iconColor}">emoji_events</span>
+            <div class="flex items-start gap-3 p-3 rounded-xl border ${statusClass} transition-all">
+               <div class="h-10 w-10 shrink-0 rounded-full bg-slate-900/80 flex items-center justify-center border border-slate-700/50 text-xl">
+                  ${displayIcon}
                </div>
-               <div class="flex-1">
+               <div class="flex-1 min-w-0">
                   <div class="flex justify-between items-center mb-0.5">
-                     <h5 class="text-sm font-bold text-white">${def.Name}</h5>
+                     <h5 class="text-sm font-bold text-white truncate">${displayName}</h5>
                      ${dateHtml}
                   </div>
-                  <p class="text-xs text-slate-400">${def.Description}</p>
+                  <p class="text-xs text-slate-400">${displayDesc}</p>
+                  ${progressBarHtml}
                </div>
             </div>
         `;
@@ -851,6 +869,9 @@ function openRpgModal() {
 
   rpgModal.classList.remove('hidden');
 }
+
+// Track daily login for streak and anniversary achievements
+GamificationService.trackDailyLogin();
 
 const closeRpgModal = () => rpgModal.classList.add('hidden');
 closeRpgBtn.addEventListener('click', closeRpgModal);
