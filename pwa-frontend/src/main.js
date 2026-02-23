@@ -1118,14 +1118,17 @@ async function renderDashboard() {
   dashNetworth.parentElement.setAttribute('title', 'Clique para editar o Patrimônio Base');
   dashNetworth.parentElement.onclick = () => {
     const currentBase = localStorage.getItem('baseNetWorth') || '0';
-    const newBase = prompt("Digite o valor atual do seu Patrimônio Base (Ex: 1550.00):", currentBase);
-    if (newBase !== null && !isNaN(parseFloat(newBase))) {
-      localStorage.setItem('baseNetWorth', parseFloat(newBase).toString());
-      renderDashboard(); // Re-render to show updated totals
+    const newBase = prompt("Digite o valor atual do seu Patrimônio Base (Ex: 1550,00 ou 1550.00):", currentBase);
+    if (newBase !== null) {
+      const parsedBase = parseFloat(newBase.replace(',', '.'));
+      if (!isNaN(parsedBase)) {
+        localStorage.setItem('baseNetWorth', parsedBase.toString());
+        renderDashboard(); // Re-render to show updated totals
+      }
     }
   };
 
-  const netWorth = await TransactionService.getNetWorth(currentYear, currentMonth);
+  const netWorth = await TransactionService.getNetWorth(selectedYear, selectedMonth);
 
   // User requested: Caixinhas should NOT be subtracted from the Net Worth.
   // Net Worth is now the absolute total up to the selected month, including savings.
