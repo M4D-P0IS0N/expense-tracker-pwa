@@ -1,0 +1,6 @@
+# Regras do Projeto (Expense Tracker PWA)
+
+Sempre que uma nova funcionalidade for adicionada ao aplicativo ou o comportamento de uma funcionalidade existente for alterado:
+1. **Guia de Dúvidas**: Você deve OBRIGATORIAMENTE atualizar o modal "Dúvidas" (`index.html` -> `#help-modal`) com as novas explicações, passo-a-passo e dicas relacionadas à mudança.
+2. **README.md**: Se a funcionalidade for de impacto médio/alto (ex: novo sistema de RPG, nova visualização de métricas, etc), você deve atualizar o arquivo `README.md` listando as novas features na tabela ou visão geral.
+3. **Imagens/Sprites**: Ao substituir imagens, lembre-se de limpar `mix-blend-mode` espúrios ou propriedades de formatação específicas de sprites antigos (como `image-rendering: pixelated`).

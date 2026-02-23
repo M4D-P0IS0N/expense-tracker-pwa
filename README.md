@@ -20,7 +20,7 @@ Track expenses, set budgets, grow your avatar — all from your phone's home scr
 | 📊 **Dashboard Analytics** | Real-time monthly overview with category breakdowns and credit card summaries |
 | 🎯 **Budget Tracking** | Set per-category spending limits and monitor progress with visual indicators |
 | 🏦 **Savings Goals** | Create savings "boxes" with targets, deposits, and withdrawals |
-| 🎮 **RPG Gamification** | Earn XP for financial actions, level up, evolve your pixel-art avatar (Apprentice → Adept → Master → Archmage), and unlock achievements |
+| 🎮 **RPG Gamification** | Choose your avatar's gender and evolve (Peasant → Commoner → Noble → Ruler) by earning XP for financial actions |
 | 📝 **Notebook** | Built-in note-taking with a line-diff viewer for tracking changes |
 | 🔐 **Authentication** | Secure email/password auth with session persistence via Supabase |
 | 📱 **PWA Ready** | Installable on iOS and Android — works offline with Service Worker caching |
@@ -34,7 +34,7 @@ Track expenses, set budgets, grow your avatar — all from your phone's home scr
 - **Build Tool:** [Vite](https://vitejs.dev/)
 - **Backend/Auth:** [Supabase](https://supabase.com/) (PostgreSQL + Auth + RLS)
 - **Hosting:** GitHub Pages via GitHub Actions CI/CD
-- **Design:** Glassmorphism, neural background animations, pixel-art avatar system
+- **Design:** Glassmorphism, neural background animations, detailed RPG avatar system
 
 ---
 
@@ -77,7 +77,7 @@ npm run dev
 ```
 pwa-frontend/
 ├── public/
-│   ├── assets/sprites/    # Pixel-art avatar evolution stages
+│   ├── assets/sprites/    # High-quality avatar evolution stages (m/f)
 │   ├── apple-touch-icon.png
 │   ├── icon-192.png
 │   ├── icon-512.png
