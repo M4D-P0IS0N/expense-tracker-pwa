@@ -1111,8 +1111,16 @@ async function renderDashboard() {
   const selectedYear = parseInt(filterYearEl.value);
   let forecast = totalExpense;
 
+  const dashDailyExpense = document.getElementById('dash-daily-expense');
+  dashDailyExpense.classList.add('hidden');
+
   if (selectedMonth === (today.getMonth() + 1) && selectedYear === today.getFullYear()) {
     forecast = (totalExpense / currentDay) * daysInMonth;
+    const dailyAvg = totalExpense / currentDay;
+    if (dailyAvg > 0) {
+      dashDailyExpense.textContent = `Gasto diário de ${formatCurrency(dailyAvg)}`;
+      dashDailyExpense.classList.remove('hidden');
+    }
   }
 
   dashForecast.textContent = '- ' + formatCurrency(forecast);

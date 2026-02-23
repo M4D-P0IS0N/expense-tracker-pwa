@@ -396,9 +396,12 @@
 
           <!-- Forecast vs Economy -->
           <div class="grid grid-cols-2 gap-4">
-            <div class="glass-card rounded-xl p-3 border border-slate-700 relative overflow-hidden text-center">
+            <div
+              class="glass-card rounded-xl p-3 border border-slate-700 relative overflow-hidden text-center flex flex-col justify-center">
               <h4 class="text-xs font-bold text-slate-400 mb-1">Previsão (Mês)</h4>
               <p id="dash-forecast" class="text-lg font-bold text-white tracking-tight">R$ 0,00</p>
+              <p id="dash-daily-expense" class="text-[9px] font-medium text-slate-500 mt-0.5 hidden">Gasto diário de R$
+                0,00</p>
             </div>
             <div class="glass-card rounded-xl p-3 border border-slate-700 relative overflow-hidden text-center">
               <h4 class="text-xs font-bold text-slate-400 mb-1">Patrimônio Líquido</h4>
@@ -1022,7 +1025,9 @@
                   guardado nas Caixinhas. Lançamentos e parcelas futuras não afetam o mês atual.
                 </li>
                 <li><strong class="text-white">Calibrar Patrimônio:</strong> Clique sobre o valor do Patrimônio Líquido
-                  para definir manualmente o seu "Patrimônio Base" inicial.</li>
+                  para realizar o "Ajuste Mágico" baseado no seu Saldo Real na conta bancária.</li>
+                <li><strong class="text-white">Previsão (Mês):</strong> Projetará o valor total das suas despesas no
+                  último dia do mês, calculando sua média de <strong>gasto diário</strong> atual.</li>
                 <li><strong class="text-white">Receitas / Despesas do Mês:</strong> Totais do período selecionado.</li>
                 <li><strong class="text-white">Gastos por Categoria:</strong> Visualize quanto gastou em cada categoria,
                   com barra de progresso e porcentagem.</li>
