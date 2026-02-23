@@ -1,22 +1,30 @@
-# Ignore everything in root by default
-*
+# Dependencies
+node_modules/
 
-# But track these folders
-!pwa-frontend/
-!pwa-frontend/**
-!.github/
-!.github/**
+# Build output
+dist/
+dist-ssr/
 
-# Apply pwa-frontend specific ignores
-pwa-frontend/node_modules/
-pwa-frontend/dist/
-pwa-frontend/.env
-pwa-frontend/.env.local
-pwa-frontend/.env.*.local
-pwa-frontend/supabase_migration_user_id.sql
+# Environment variables (Supabase keys)
+.env
+.env.local
+.env.*.local
 
-# Ignore this file pattern inside tracked folders
+# Logs
 *.log
+npm-debug.log*
 
-# Track the root .gitignore itself
-!.gitignore
+# SQL migration scripts with sensitive references
+supabase_migration_user_id.sql
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
