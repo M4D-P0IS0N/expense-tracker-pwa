@@ -261,6 +261,10 @@ async function initTemporalNav() {
     }
   });
 
+  // Sync legacy stats to gamification profile
+  await GamificationService.syncWithDatabase(TransactionService);
+  GamificationService.trackDailyLogin();
+
   // Initial load
   await loadData();
 }
@@ -880,8 +884,7 @@ function openRpgModal() {
   rpgModal.classList.remove('hidden');
 }
 
-// Track daily login for streak and anniversary achievements
-GamificationService.trackDailyLogin();
+// Track daily login for streak and anniversary achievements (Moved to initTemporalNav)
 
 const closeRpgModal = () => rpgModal.classList.add('hidden');
 closeRpgBtn.addEventListener('click', closeRpgModal);

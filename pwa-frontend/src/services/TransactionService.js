@@ -35,6 +35,45 @@ export class TransactionService {
     }
 
     /**
+     * Get the total count of transactions for the current user
+     */
+    static async getTotalTransactionCount() {
+        const userId = await getCurrentUserId();
+        if (!userId) return 0;
+
+        const { count, error } = await supabase
+            .from('transactions')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId);
+
+        if (error) {
+            console.error("Error getting transaction count:", error);
+            return 0;
+        }
+        return count || 0;
+    }
+
+    /**
+     * Get the date of the very first transaction logged by the current user
+     */
+    static async getFirstTransactionDate() {
+        const userId = await getCurrentUserId();
+        if (!userId) return null;
+
+        const { data, error } = await supabase
+            .from('transactions')
+            .select('date')
+            .eq('user_id', userId)
+            .order('date', { ascending: true })
+            .limit(1);
+
+        if (error || !data || data.length === 0) {
+            return null;
+        }
+        return data[0].date;
+    }
+
+    /**
      * Search transactions across all time
      */
     static async searchTransactions(query) {

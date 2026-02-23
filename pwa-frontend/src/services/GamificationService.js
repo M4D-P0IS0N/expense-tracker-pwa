@@ -246,4 +246,54 @@ export class GamificationService {
         const current = Math.min(profile[achievementDef.TrackKey] || 0, achievementDef.MaxProgress);
         return { current, max: achievementDef.MaxProgress };
     }
+
+    /**
+     * Sincroniza o perfil com dados históricos do banco. 
+     * Executado uma vez no boot para usuários existentes que ganharam as conquistas recentemente.
+     */
+    static async syncWithDatabase(TransactionService) {
+        let profile = this.getProfile();
+        // Evitar syncs duplicados se o usuário já tem transações contabilizadas acima do mínimo
+        // e um firstLoginDate já estabelecido.
+        if (profile.totalTransactions > 0 && profile.firstLoginDate) {
+            return profile;
+        }
+
+        const totalCount = await TransactionService.getTotalTransactionCount();
+        const firstDateStr = await TransactionService.getFirstTransactionDate();
+
+        let updated = false;
+
+        if (totalCount > profile.totalTransactions) {
+            profile.totalTransactions = totalCount;
+            // Unlock retroactive transaction achievements
+            if (profile.totalTransactions >= 1) this.tryUnlockAchievement(profile, "first_transaction");
+            if (profile.totalTransactions >= 50) this.tryUnlockAchievement(profile, "tx_50");
+            if (profile.totalTransactions >= 200) this.tryUnlockAchievement(profile, "tx_200");
+            if (profile.totalTransactions >= 500) this.tryUnlockAchievement(profile, "tx_500");
+            if (profile.totalTransactions >= 1000) this.tryUnlockAchievement(profile, "tx_1000");
+            if (profile.totalTransactions >= 2000) this.tryUnlockAchievement(profile, "tx_2000");
+            updated = true;
+        }
+
+        if (firstDateStr && !profile.firstLoginDate) {
+            // Retroactive daysActive calculation based on first transaction
+            const firstDate = new Date(firstDateStr.split('T')[0]);
+            const todayDate = new Date(new Date().toISOString().split('T')[0]);
+            const daysActive = Math.floor((todayDate - firstDate) / (1000 * 60 * 60 * 24));
+
+            profile.firstLoginDate = firstDateStr.split('T')[0];
+            profile.daysActive = Math.max(profile.daysActive, daysActive);
+
+            if (profile.daysActive >= 30) this.tryUnlockAchievement(profile, "anniversary_1m");
+            if (profile.daysActive >= 180) this.tryUnlockAchievement(profile, "anniversary_6m");
+            if (profile.daysActive >= 365) this.tryUnlockAchievement(profile, "anniversary_1y");
+            updated = true;
+        }
+
+        if (updated) {
+            this.saveProfile(profile);
+        }
+        return profile;
+    }
 }
