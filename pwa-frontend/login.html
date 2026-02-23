@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Login - App de Custos PWA</title>
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+
+    <!-- Tailwind via CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2547f4",
+                        "primary-dark": "#1a33b0",
+                        "accent-green": "#0bda65",
+                        "accent-red": "#fa6538",
+                        "background-light": "#f5f6f8",
+                        "background-dark": "#0f172a",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                        'glow-primary': '0 0 20px -5px rgba(37, 71, 244, 0.5)',
+                    }
+                },
+            },
+        }
+    </script>
+
+    <!-- PWA Settings -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/vite.svg">
+
+    <style>
+        /* Custom Neural Network Background Animation */
+        .neural-bg {
+            background-color: #0f172a;
+            background-image:
+                radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+                radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .neural-bg::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            animation: move-background 100s linear infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        @keyframes move-background {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Glassmorphism Utilities */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body
+    class="font-display text-slate-200 antialiased selection:bg-primary selection:text-white min-h-screen neural-bg flex items-center justify-center p-6">
+
+    <!-- Main Container -->
+    <main class="w-full max-w-md relative z-10 animate-fade-in group">
+        <!-- Glow effect behind the card -->
+        <div
+            class="absolute -inset-1 bg-gradient-to-r from-primary via-purple-500 to-blue-600 rounded-3xl blur-xl opacity-30 group-hover:opacity-50 transition duration-1000">
+        </div>
+
+        <!-- Login Card -->
+        <div class="glass-card rounded-3xl p-8 relative overflow-hidden flex flex-col items-center">
+            <!-- Decorative element Top Right -->
+            <div
+                class="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-primary/20 rounded-full blur-2xl pointer-events-none">
+            </div>
+
+            <!-- Icon/Logo -->
+            <div class="relative w-20 h-20 mb-6 group-hover:scale-105 transition duration-500">
+                <div class="absolute inset-0 bg-primary/30 rounded-full blur-md animate-pulse"></div>
+                <div
+                    class="relative flex items-center justify-center w-full h-full rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 shadow-glass">
+                    <span
+                        class="material-symbols-outlined text-4xl text-transparent bg-clip-text bg-gradient-to-tr from-purple-400 to-primary">account_balance_wallet</span>
+                </div>
+            </div>
+
+            <h1 id="form-title"
+                class="text-2xl font-extrabold text-white tracking-tight mb-2 text-center transition-all duration-300">
+                Que bom ver você!</h1>
+            <p id="form-subtitle"
+                class="text-sm font-medium text-slate-400 mb-6 text-center transition-all duration-300">Faça login para
+                continuar sua jornada financeira.</p>
+
+            <!-- Feedback Banner (Hidden by default) -->
+            <div id="feedback-message"
+                class="hidden w-full mb-6 p-3 text-sm rounded-xl font-medium text-center border transition-all">
+                <!-- Messages like 'Email enviado' ou 'Senha incorreta' go here -->
+            </div>
+
+            <form id="login-form" class="w-full space-y-5">
+
+                <!-- Email Input -->
+                <div class="space-y-1.5 focus-within:text-primary transition-colors text-slate-400">
+                    <label id="email-label" class="block text-xs font-bold uppercase tracking-wider ml-1">E-mail</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2"
+                            style="font-size: 20px;">mail</span>
+                        <input type="email" id="email" required autocomplete="email"
+                            class="w-full bg-slate-900/50 border border-slate-700 text-white text-sm rounded-xl pl-12 pr-4 py-3.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition placeholder:text-slate-600 shadow-inner"
+                            placeholder="seu@email.com">
+                    </div>
+                </div>
+
+                <!-- Password Input -->
+                <div id="password-container"
+                    class="space-y-1.5 focus-within:text-purple-400 transition-colors text-slate-400">
+                    <div class="flex justify-between items-baseline mb-1 ml-1 cursor-pointer">
+                        <label class="block text-xs font-bold uppercase tracking-wider">Senha</label>
+                        <a href="#" id="forgot-pwd-link"
+                            class="text-xs font-bold text-primary hover:text-white transition">Esqueceu?</a>
+                    </div>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2"
+                            style="font-size: 20px;">lock</span>
+                        <input type="password" id="password" required autocomplete="current-password"
+                            class="w-full bg-slate-900/50 border border-slate-700 text-white text-sm rounded-xl pl-12 pr-12 py-3.5 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition placeholder:text-slate-600 shadow-inner"
+                            placeholder="••••••••">
+
+                        <!-- Toggle Visibility -->
+                        <button type="button" id="toggle-password"
+                            class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition">
+                            <span class="material-symbols-outlined" style="font-size: 20px;"
+                                id="visibility-icon">visibility</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" id="submit-btn"
+                    class="w-full bg-gradient-to-r from-primary to-purple-600 text-white font-bold text-sm py-4 rounded-xl shadow-glow-primary hover:scale-[1.02] active:scale-95 transition transform mt-8 relative overflow-hidden group">
+                    <span class="relative z-10 flex items-center justify-center gap-2" id="submit-text">
+                        Entrar
+                        <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
+                    </span>
+                    <!-- Shine effect -->
+                    <div
+                        class="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent">
+                    </div>
+                </button>
+            </form>
+
+            <div id="footer-text" class="mt-8 text-center text-xs text-slate-400 font-medium transition-opacity">
+                <!-- Injected by JS based on mode -->
+            </div>
+        </div>
+    </main>
+
+    <style>
+        @keyframes shimmer {
+            100% {
+                transform: translateX(100%);
+            }
+        }
+    </style>
+
+    <script type="module">
+        import { AuthService } from './src/services/AuthService.js';
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            // 1. Redirect se já estiver logado
+            const session = await AuthService.getSession();
+            if (session) {
+                window.location.replace("index.html");
+                return;
+            }
+
+            // --- Elements ---
+            const form = document.getElementById("login-form");
+            const titleEl = document.getElementById("form-title");
+            const subtitleEl = document.getElementById("form-subtitle");
+            const emailInput = document.getElementById("email");
+            const passwordInput = document.getElementById("password");
+            const togglePassword = document.getElementById("toggle-password");
+            const visibilityIcon = document.getElementById("visibility-icon");
+            const submitBtn = document.getElementById("submit-btn");
+            const submitText = document.getElementById("submit-text");
+            const footerText = document.getElementById("footer-text");
+            const feedbackDiv = document.getElementById("feedback-message");
+            const pwdContainer = document.getElementById("password-container");
+
+            // --- Modes: 'login', 'register', 'forgot' ---
+            let currentMode = 'login';
+
+            function showFeedback(msg, isError = true) {
+                feedbackDiv.textContent = msg;
+                feedbackDiv.classList.remove("hidden", "bg-red-500/10", "text-red-400", "border-red-500/20", "bg-green-500/10", "text-green-400", "border-green-500/20", "bg-blue-500/10", "text-blue-400", "border-blue-500/20");
+
+                if (isError) {
+                    feedbackDiv.classList.add("bg-red-500/10", "text-red-400", "border-red-500/20");
+                } else {
+                    if (msg.toLowerCase().includes('email') || msg.toLowerCase().includes('verifique')) {
+                        feedbackDiv.classList.add("bg-blue-500/10", "text-blue-400", "border-blue-500/20");
+                    } else {
+                        feedbackDiv.classList.add("bg-green-500/10", "text-green-400", "border-green-500/20");
+                    }
+                }
+            }
+
+            function hideFeedback() {
+                feedbackDiv.classList.add("hidden");
+                feedbackDiv.textContent = "";
+            }
+
+            // --- Template Engine para os estados do formulário ---
+            function setMode(mode) {
+                currentMode = mode;
+                hideFeedback();
+                passwordInput.value = "";
+
+                if (mode === 'login') {
+                    titleEl.textContent = "Que bom ver você!";
+                    subtitleEl.textContent = "Faça login para continuar sua jornada.";
+                    pwdContainer.classList.remove('hidden');
+                    passwordInput.required = true;
+                    submitText.innerHTML = `Entrar <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>`;
+
+                    footerText.innerHTML = `Não tem uma conta? <a href="#" id="go-register" class="text-white font-bold hover:text-primary transition ms-1 border-b border-primary/30 pb-0.5 hover:border-primary">Criar Nova</a>`;
+
+                    document.getElementById("forgot-pwd-link").classList.remove('hidden');
+                }
+                else if (mode === 'register') {
+                    titleEl.textContent = "Crie sua Conta";
+                    subtitleEl.textContent = "Sua jornada financeira começa aqui.";
+                    pwdContainer.classList.remove('hidden');
+                    passwordInput.required = true;
+                    submitText.innerHTML = `Criar Conta <span class="material-symbols-outlined" style="font-size: 18px;">person_add</span>`;
+
+                    footerText.innerHTML = `Já possui uma conta? <a href="#" id="go-login" class="text-white font-bold hover:text-primary transition ms-1 border-b border-primary/30 pb-0.5 hover:border-primary">Fazer Login</a>`;
+
+                    document.getElementById("forgot-pwd-link").classList.add('hidden');
+                }
+                else if (mode === 'forgot') {
+                    titleEl.textContent = "Recuperar Senha";
+                    subtitleEl.textContent = "Enviaremos um link mágico para o seu e-mail.";
+                    pwdContainer.classList.add('hidden');
+                    passwordInput.required = false;
+                    submitText.innerHTML = `Enviar Link <span class="material-symbols-outlined" style="font-size: 18px;">send</span>`;
+
+                    footerText.innerHTML = `Lembrou da senha? <a href="#" id="go-login" class="text-white font-bold hover:text-primary transition ms-1 border-b border-primary/30 pb-0.5 hover:border-primary">Fazer Login</a>`;
+                }
+
+                // Re-attach listeners pros links dinâmicos no footer
+                const btnRegister = document.getElementById("go-register");
+                if (btnRegister) btnRegister.addEventListener("click", (e) => { e.preventDefault(); setMode('register'); });
+
+                const btnLogin = document.getElementById("go-login");
+                if (btnLogin) btnLogin.addEventListener("click", (e) => { e.preventDefault(); setMode('login'); });
+            }
+
+            setMode('login');
+
+            // Toggle visibilidade da senha
+            togglePassword.addEventListener("click", () => {
+                if (passwordInput.type === "password") {
+                    passwordInput.type = "text";
+                    visibilityIcon.textContent = "visibility_off";
+                } else {
+                    passwordInput.type = "password";
+                    visibilityIcon.textContent = "visibility";
+                }
+            });
+
+            // Triggers de "Esqueci"
+            document.getElementById("forgot-pwd-link").addEventListener("click", (e) => {
+                e.preventDefault();
+                setMode('forgot');
+            });
+
+            // Submit do Formulário
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                hideFeedback();
+
+                const email = emailInput.value.trim();
+                const password = passwordInput.value;
+
+                // Visual feedback
+                const originalHtml = submitText.innerHTML;
+                submitText.innerHTML = `<span class="material-symbols-outlined animate-spin" style="font-size: 20px;">progress_activity</span> Carregando...`;
+                submitBtn.classList.add("opacity-80", "pointer-events-none");
+
+                try {
+                    if (currentMode === 'login') {
+                        await AuthService.signIn(email, password);
+                        showFeedback("Conectado! Redirecionando...", false);
+                        setTimeout(() => window.location.replace("index.html"), 600);
+                    }
+                    else if (currentMode === 'register') {
+                        const { user, session } = await AuthService.signUp(email, password);
+
+                        // Se o Supabase exigir confirmação de e-mail e não retornar session...
+                        if (user && !session) {
+                            showFeedback("Conta criada! Verifique seu e-mail para validar.", false);
+                            setTimeout(() => setMode('login'), 3500);
+                        } else {
+                            showFeedback("Conta criada! Redirecionando...", false);
+                            setTimeout(() => window.location.replace("index.html"), 1000);
+                        }
+                    }
+                    else if (currentMode === 'forgot') {
+                        await AuthService.resetPassword(email);
+                        showFeedback("Link enviado! Verifique seu e-mail (e spam).", false);
+                        setTimeout(() => setMode('login'), 5000);
+                    }
+                } catch (error) {
+                    // Tradução ou friendly errors pro usuário
+                    let msg = "Erro inesperado. Tente novamente.";
+                    const errStr = error.message.toLowerCase();
+
+                    if (errStr.includes("invalid login")) msg = "E-mail ou senha incorretos.";
+                    if (errStr.includes("password should be")) msg = "A senha deve ter pelo menos 6 caracteres.";
+                    if (errStr.includes("already registered")) msg = "Este e-mail já está em uso.";
+                    if (errStr.includes("valid email")) msg = "O formado do e-mail é inválido.";
+
+                    showFeedback(msg, true);
+                } finally {
+                    submitText.innerHTML = originalHtml;
+                    submitBtn.classList.remove("opacity-80", "pointer-events-none");
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

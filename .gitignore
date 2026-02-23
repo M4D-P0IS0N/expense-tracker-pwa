@@ -1,0 +1,22 @@
+# Ignore everything in root by default
+*
+
+# But track these folders
+!pwa-frontend/
+!pwa-frontend/**
+!.github/
+!.github/**
+
+# Apply pwa-frontend specific ignores
+pwa-frontend/node_modules/
+pwa-frontend/dist/
+pwa-frontend/.env
+pwa-frontend/.env.local
+pwa-frontend/.env.*.local
+pwa-frontend/supabase_migration_user_id.sql
+
+# Ignore this file pattern inside tracked folders
+*.log
+
+# Track the root .gitignore itself
+!.gitignore

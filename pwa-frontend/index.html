@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>App de Custos PWA</title>
+
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet" />
+
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#2547f4",
+            "primary-dark": "#1a33b0",
+            "accent-green": "#0bda65",
+            "accent-red": "#fa6538",
+            "background-light": "#f5f6f8",
+            "background-dark": "#0f172a",
+          },
+          fontFamily: {
+            "display": ["Manrope", "sans-serif"]
+          },
+          boxShadow: {
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+            'glow-primary': '0 0 20px -5px rgba(37, 71, 244, 0.5)',
+            'glow-green': '0 0 20px -5px rgba(11, 218, 101, 0.4)',
+            'glow-red': '0 0 20px -5px rgba(250, 101, 56, 0.4)',
+          }
+        },
+      },
+    }
+  </script>
+
+  <!-- PWA Settings -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/vite.svg">
+  <link rel="stylesheet" href="./src/style.css">
+
+  <style>
+    /* Custom Neural Network Background Animation */
+    .neural-bg {
+      background-color: #0f172a;
+      background-image:
+        radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+        radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+        radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .neural-bg::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      animation: move-background 100s linear infinite;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    @keyframes move-background {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Glassmorphism Utilities */
+    .glass-card {
+      background: rgba(30, 41, 59, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .glass-card-hover:hover {
+      background: rgba(30, 41, 59, 0.5);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .glass-icon {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Hide Scrollbar */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .pixelated {
+      image-rendering: pixelated;
+    }
+
+    body {
+      min-height: max(884px, 100dvh);
+    }
+
+    /* Native PDF Printing */
+    @media print {
+
+      body,
+      html,
+      main,
+      .neural-bg,
+      .min-h-screen {
+        background: white !important;
+        color: black !important;
+        height: auto !important;
+        min-height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+        position: static !important;
+      }
+
+      header,
+      .fixed,
+      button,
+      #add-btn,
+      #filter-card,
+      nav {
+        display: none !important;
+      }
+
+      #transactions-list {
+        display: block !important;
+      }
+
+      .glass-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .glass-card-hover {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        background: transparent !important;
+      }
+
+      * {
+        color: black !important;
+        text-shadow: none !important;
+      }
+
+      .text-slate-400,
+      .text-slate-300 {
+        color: #555 !important;
+      }
+
+      .text-white {
+        color: #000 !important;
+      }
+
+      .bg-primary {
+        background-color: #eee !important;
+        color: #000 !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="font-display text-slate-200 antialiased selection:bg-primary selection:text-white">
+
+  <div class="relative min-h-screen w-full flex flex-col neural-bg overflow-x-hidden">
+    <!-- Header -->
+    <header
+      class="sticky top-0 z-20 px-6 pt-12 pb-4 flex flex-col gap-4 glass-card border-b-0 border-x-0 rounded-b-2xl mb-4">
+      <div class="flex items-center justify-between w-full">
+        <!-- User Avatar & Gamification -->
+        <div class="flex items-center gap-3">
+          <div class="relative group cursor-pointer" id="avatar-control" title="Abrir Perfil RPG">
+            <div
+              class="absolute -inset-0.5 bg-gradient-to-r from-primary to-purple-600 rounded-full blur opacity-60 transition-all group-hover:opacity-100">
+            </div>
+            <div
+              class="relative h-10 w-10 flex items-center justify-center rounded-full overflow-hidden border-2 border-white/10 bg-slate-800 text-white font-bold p-1">
+              <!-- Fallback if image missing -->
+              <img id="avatar-img" src="/assets/sprites/apprentice.png" class="object-contain w-full h-full pixelated"
+                alt="Avatar" />
+            </div>
+            <div id="avatar-level-badge"
+              class="absolute -bottom-1 -right-1 bg-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-slate-800 z-10">
+              Lvl 1</div>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-xs text-slate-400 font-medium tracking-wide" id="avatar-stage-name">Apprentice</span>
+            <h1 class="text-lg font-bold text-white leading-none">Marcus</h1>
+          </div>
+        </div>
+
+        <!-- Controls: Notebook -->
+        <div class="flex items-center gap-2">
+          <button id="notes-btn"
+            class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 p-2 rounded-lg transition-colors shadow-sm flex items-center"
+            title="Bloco de Notas">
+            <span class="material-symbols-outlined shrink-0" style="font-size: 20px;">edit_note</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Temporal Navigation Bar -->
+      <div class="flex items-center justify-between w-full">
+        <h2 class="text-sm font-bold text-slate-300">Visão Geral</h2>
+        <div class="flex gap-2">
+          <select id="filter-month"
+            class="bg-slate-800/80 border border-slate-600 text-white text-sm font-medium rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer">
+            <option value="1">Jan</option>
+            <option value="2">Fev</option>
+            <option value="3">Mar</option>
+            <option value="4">Abr</option>
+            <option value="5">Mai</option>
+            <option value="6">Jun</option>
+            <option value="7">Jul</option>
+            <option value="8">Ago</option>
+            <option value="9">Set</option>
+            <option value="10">Out</option>
+            <option value="11">Nov</option>
+            <option value="12">Dez</option>
+          </select>
+          <select id="filter-year"
+            class="bg-slate-800/80 border border-slate-600 text-white text-sm font-medium rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer text-center">
+            <!-- JS vai popular -->
+            <option value="2026">2026</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Scroll Area -->
+    <main class="flex-1 px-5 pb-24 overflow-y-auto no-scrollbar z-10 space-y-6">
+
+      <!-- Total Balance Hero Card -->
+      <section class="relative group">
+        <div
+          class="absolute -inset-1 bg-gradient-to-r from-primary via-purple-500 to-blue-600 rounded-2xl blur-md opacity-25">
+        </div>
+        <div class="relative glass-card rounded-2xl p-6 flex flex-col gap-1 overflow-hidden">
+          <!-- Neural Border Canvas Target -->
+          <canvas id="neural-border-canvas"
+            class="absolute inset-0 w-full h-full pointer-events-none z-0 rounded-2xl"></canvas>
+
+          <div class="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-primary/20 rounded-full blur-2xl"></div>
+          <div class="flex justify-between items-start z-10">
+            <div>
+              <h2 class="text-slate-400 text-sm font-medium mb-1">Saldo Total</h2>
+              <div class="flex items-baseline gap-1">
+                <span class="text-4xl font-extrabold text-white tracking-tight" id="total-balance">R$ 0,00</span>
+              </div>
+            </div>
+            <div
+              class="flex items-center gap-1 bg-accent-green/10 px-2 py-1 rounded-full border border-accent-green/20">
+              <span class="material-symbols-outlined text-accent-green" style="font-size: 16px;">verified</span>
+              <span class="text-xs font-bold text-accent-green">Sync</span>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Income & Expenses Row -->
+      <section class="flex gap-4">
+        <!-- Income Card -->
+        <div class="flex-1 glass-card rounded-2xl p-4 relative overflow-hidden group hover:shadow-glow-green">
+          <div
+            class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-accent-green to-transparent opacity-50">
+          </div>
+          <div class="flex items-center gap-2 mb-3">
+            <div
+              class="p-1.5 rounded-full bg-accent-green/10 border border-accent-green/20 text-accent-green flex items-center justify-center">
+              <span class="material-symbols-outlined" style="font-size: 18px;">arrow_downward</span>
+            </div>
+            <span class="text-slate-300 text-sm font-medium">Receitas</span>
+          </div>
+          <p class="text-xl font-bold text-white tracking-tight" id="total-income">R$ 0,00</p>
+        </div>
+
+        <!-- Expense Card -->
+        <div class="flex-1 glass-card rounded-2xl p-4 relative overflow-hidden group hover:shadow-glow-red">
+          <div
+            class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-accent-red to-transparent opacity-50">
+          </div>
+          <div class="flex items-center gap-2 mb-3">
+            <div
+              class="p-1.5 rounded-full bg-accent-red/10 border border-accent-red/20 text-accent-red flex items-center justify-center">
+              <span class="material-symbols-outlined" style="font-size: 18px;">arrow_upward</span>
+            </div>
+            <span class="text-slate-300 text-sm font-medium">Despesas</span>
+          </div>
+          <p class="text-xl font-bold text-white tracking-tight" id="total-expense">R$ 0,00</p>
+        </div>
+      </section>
+
+      <!-- Recent Transactions -->
+      <section id="transactions-view" class="w-full animate-fade-in block">
+        <div class="flex items-center justify-between mb-4 mt-6 px-1">
+          <h3 class="text-lg font-bold text-white">Transações Recentes</h3>
+          <div class="flex gap-2">
+            <button id="export-csv-btn"
+              class="text-[11px] font-bold text-slate-400 hover:text-white bg-slate-800 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-sm"
+              title="Exportar dados para Excel/CSV"><span class="material-symbols-outlined text-[14px]">table</span>
+              CSV</button>
+            <button id="export-pdf-btn"
+              class="text-[11px] font-bold text-slate-400 hover:text-white bg-slate-800 border border-slate-700 hover:border-slate-500 px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-sm"
+              title="Gerar Relatório em PDF"><span class="material-symbols-outlined text-[14px]">picture_as_pdf</span>
+              PDF</button>
+          </div>
+        </div>
+
+        <!-- Search and Filters Section -->
+        <div class="mb-4 space-y-3">
+          <!-- Search Bar -->
+          <div class="relative">
+            <span
+              class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+            <input type="text" id="search-input" placeholder="Buscar em todo histórico..."
+              class="w-full bg-slate-800/80 border border-slate-700 text-white text-sm rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-primary outline-none transition">
+          </div>
+
+          <!-- Filters Row (Chips & Dropdown) -->
+          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            <select id="filter-card"
+              class="shrink-0 bg-slate-800/80 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary outline-none max-w-[120px] truncate">
+              <option value="All">💳 Todos (Cartões)</option>
+            </select>
+            <button id="filter-today"
+              class="filter-chip shrink-0 px-3 py-1.5 rounded-full border border-slate-700 bg-slate-800/50 text-slate-400 text-xs font-medium hover:text-white hover:border-slate-500 transition"
+              data-filter="Today">Hoje</button>
+            <button id="filter-week"
+              class="filter-chip shrink-0 px-3 py-1.5 rounded-full border border-slate-700 bg-slate-800/50 text-slate-400 text-xs font-medium hover:text-white hover:border-slate-500 transition"
+              data-filter="Week">Esta Semana</button>
+            <button id="filter-recurring"
+              class="filter-chip shrink-0 px-3 py-1.5 rounded-full border border-slate-700 bg-slate-800/50 text-slate-400 text-xs font-medium hover:text-white hover:border-slate-500 transition"
+              data-filter="Fixed">Fixas</button>
+            <button id="filter-installments"
+              class="filter-chip shrink-0 px-3 py-1.5 rounded-full border border-slate-700 bg-slate-800/50 text-slate-400 text-xs font-medium hover:text-white hover:border-slate-500 transition"
+              data-filter="Install">Parceladas</button>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex p-1 bg-slate-800/80 rounded-xl border border-slate-700 mb-4 gap-1">
+          <button id="tab-all"
+            class="flex-1 py-1.5 min-w-[60px] text-xs sm:text-sm font-bold rounded-lg text-white bg-slate-700 shadow-sm transition">Todas</button>
+          <button id="tab-income"
+            class="flex-1 py-1.5 min-w-[60px] text-xs sm:text-sm font-bold rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition">Receitas</button>
+          <button id="tab-expense"
+            class="flex-1 py-1.5 min-w-[60px] text-xs sm:text-sm font-bold rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition">Despesas</button>
+          <button id="tab-dashboard"
+            class="flex-[0.5] min-w-[40px] flex items-center justify-center py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition"
+            title="Dashboard de Estatísticas">
+            <span class="material-symbols-outlined" style="font-size: 20px;">analytics</span>
+          </button>
+        </div>
+
+        <!-- Dashboard View (Hidden by Default) -->
+        <div id="dashboard-view" class="hidden flex-col gap-4 pb-8">
+
+          <!-- Smart Insights -->
+          <div
+            class="glass-card rounded-2xl p-4 border border-purple-500/20 relative overflow-hidden group hover:shadow-glow-primary transition">
+            <div class="absolute top-0 right-0 -mr-4 -mt-4 text-purple-500/10">
+              <span class="material-symbols-outlined" style="font-size: 80px;">psychiatry</span>
+            </div>
+            <h4 class="text-sm font-bold text-slate-300 mb-2 flex items-center gap-2">
+              <span class="material-symbols-outlined text-purple-400" style="font-size: 18px;">lightbulb</span>
+              Smart Insights
+            </h4>
+            <p id="dash-insights" class="text-slate-200 text-sm leading-relaxed font-medium relative z-10">
+              Analisando seu comportamento financeiro...
+            </p>
+          </div>
+
+          <!-- Forecast vs Economy -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="glass-card rounded-xl p-3 border border-slate-700 relative overflow-hidden text-center">
+              <h4 class="text-xs font-bold text-slate-400 mb-1">Previsão (Mês)</h4>
+              <p id="dash-forecast" class="text-lg font-bold text-white tracking-tight">R$ 0,00</p>
+            </div>
+            <div class="glass-card rounded-xl p-3 border border-slate-700 relative overflow-hidden text-center">
+              <h4 class="text-xs font-bold text-slate-400 mb-1">Patrimônio Líquido</h4>
+              <p id="dash-networth" class="text-lg font-bold text-white tracking-tight">R$ 0,00</p>
+              <p id="dash-networth-trend" class="text-[10px] font-bold text-accent-green mt-0.5">Calculando...</p>
+            </div>
+          </div>
+
+          <!-- Savings Goals / Caixinhas -->
+          <div class="glass-card rounded-2xl p-4 border border-slate-700 relative overflow-hidden mb-4">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+                <span class="material-symbols-outlined text-purple-400" style="font-size: 18px;">savings</span>
+                Caixinhas de Projetos
+              </h4>
+              <span
+                class="text-[10px] font-bold text-white bg-slate-800 px-2 py-0.5 rounded border border-slate-700 tracking-wider"
+                id="savings-total">R$ 0,00</span>
+            </div>
+
+            <div class="flex overflow-x-auto gap-3 pb-2 snap-x hide-scrollbar" id="savings-list"
+              style="scrollbar-width: none; -ms-overflow-style: none;">
+              <!-- JS Injected Cards -->
+              <div class="text-center text-slate-500 text-xs py-4 w-full">Carregando caixinhas...</div>
+            </div>
+
+            <div class="mt-2 text-right">
+              <button id="add-savings-btn" class="text-xs text-primary font-bold hover:text-white transition">+ Novo
+                Projeto</button>
+            </div>
+          </div>
+          <!-- Category Breakdown -->
+          <div class="glass-card rounded-2xl p-4 border border-slate-700 relative overflow-hidden">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary" style="font-size: 18px;">pie_chart</span>
+                Despesas por Categoria
+              </h4>
+              <button id="config-budgets-btn" class="text-slate-400 hover:text-white transition"
+                title="Configurar Orçamentos">
+                <span class="material-symbols-outlined" style="font-size: 18px;">tune</span>
+              </button>
+            </div>
+            <div id="dash-categories" class="flex flex-col gap-3">
+              <div class="text-center text-slate-500 text-xs py-4">Carregando categorias...</div>
+            </div>
+          </div>
+
+          <!-- Credit Card Breakdown -->
+          <div class="glass-card rounded-2xl p-4 border border-slate-700 relative overflow-hidden">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+                <span class="material-symbols-outlined text-orange-400" style="font-size: 18px;">credit_card</span>
+                Despesas por Cartão
+              </h4>
+            </div>
+            <div id="dash-credit-cards" class="flex flex-col gap-3">
+              <div class="text-center text-slate-500 text-xs py-4">Agrupando faturas...</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Transactions List -->
+        <div id="transactions-list" class="flex flex-col gap-3">
+          <!-- JS will inject here using the Stitch templates -->
+          <div class="text-center text-slate-400 text-sm py-8" id="empty-state">
+            Nenhuma transação encontrada.
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Floating Action Button -->
+    <button id="add-btn"
+      class="fixed bottom-10 right-6 h-14 w-14 bg-gradient-to-tr from-purple-600 to-primary rounded-full shadow-glow-primary flex items-center justify-center z-30 hover:scale-105 active:scale-95 border border-white/20">
+      <span class="material-symbols-outlined text-white" style="font-size: 32px;">add</span>
+    </button>
+
+    <!-- Add Transaction Modal (Hidden setup with Dark Mode) -->
+    <div id="add-modal"
+      class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden flex items-end justify-center sm:items-center backdrop-blur-sm transition-opacity">
+      <div
+        class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform transition-transform translate-y-full sm:translate-y-0 duration-300 overflow-y-auto max-h-[90vh]"
+        id="modal-content">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="font-bold text-xl text-white">Nova Transação</h3>
+          <button id="close-modal-btn" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+        </div>
+
+        <form id="transaction-form" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1">Tipo</label>
+            <div class="flex gap-4">
+              <label id="label-income"
+                class="flex-1 flex items-center justify-center p-3 border-2 border-green-500 rounded-xl cursor-pointer bg-green-500/10 text-green-400 font-bold transition">
+                <input type="radio" name="type" value="Income" class="hidden" checked> Receita
+              </label>
+              <label id="label-expense"
+                class="flex-1 flex items-center justify-center p-3 border-2 border-transparent bg-slate-800 rounded-xl cursor-pointer text-slate-400 font-bold hover:bg-slate-700 transition">
+                <input type="radio" name="type" value="Expense" class="hidden"> Despesa
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1">Valor (R$)</label>
+            <input type="number" step="0.01" id="tx-amount" required
+              class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-primary outline-none transition text-lg font-bold"
+              placeholder="0.00">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1">Descrição</label>
+            <input type="text" id="tx-description" required
+              class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-primary outline-none transition"
+              placeholder="Ex: Mercado, Salário">
+          </div>
+
+          <div class="grid grid-cols-[4rem_1fr] gap-2 items-end relative">
+            <div class="relative">
+              <label class="block text-sm font-medium text-slate-300 mb-1 text-center">Ícone</label>
+              <button type="button" id="tx-emoji-btn"
+                class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-primary outline-none text-center appearance-none cursor-pointer flex items-center justify-center text-xl">
+                <span id="tx-emoji-display">🏷️</span>
+              </button>
+
+              <!-- Emoji Picker Dropdown -->
+              <div id="emoji-picker"
+                class="hidden absolute left-0 bottom-full mb-2 bg-slate-800 border border-slate-700 rounded-xl shadow-glass p-2 w-48 z-50 overflow-hidden">
+                <div class="grid grid-cols-5 gap-1 max-h-40 overflow-y-auto no-scrollbar p-1 text-xl" id="emoji-list">
+                  <!-- JS Injected Emojis -->
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-1">Categoria</label>
+              <select id="tx-category"
+                class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-primary outline-none">
+                <option value="General">Geral</option>
+                <option value="Aleatoriedades">Aleatoriedades</option>
+                <option value="Bem estar/Casa">Bem estar/Casa</option>
+                <option value="Carro">Carro</option>
+                <option value="Comida">Comida</option>
+                <option value="Contas de casa">Contas de casa</option>
+                <option value="Eletrônicos">Eletrônicos</option>
+                <option value="Emergência">Emergência</option>
+                <option value="Estudos">Estudos</option>
+                <option value="Farmácia">Farmácia</option>
+                <option value="Mercado">Mercado</option>
+                <option value="Médico">Médico</option>
+                <option value="Peçanha">Peçanha</option>
+                <option value="Presente">Presente</option>
+                <option value="Salário">Salário</option>
+                <option value="Streaming">Streaming</option>
+                <option value="New">🏷️ Nova Categoria...</option>
+              </select>
+            </div>
+
+            <!-- Custom Category Input (Hidden by default) -->
+            <div id="tx-custom-category-container" class="col-span-2 hidden mt-2">
+              <input type="text" id="tx-custom-category"
+                class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-primary outline-none"
+                placeholder="Digite o nome da nova categoria">
+            </div>
+
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1">Data</label>
+            <input type="date" id="tx-date" required
+              class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-primary outline-none appearance-none"
+              style="color-scheme: dark;">
+          </div>
+
+          <!-- Advanced Fields Toggle -->
+          <div>
+            <button type="button" id="toggle-advanced-btn"
+              class="text-sm text-primary font-medium w-full text-left flex justify-between items-center py-2">
+              <span>Opções Avançadas (Cartão, Parcelas)</span>
+              <span id="advanced-icon">▼</span>
+            </button>
+
+            <div id="advanced-fields" class="hidden space-y-4 pt-2 border-t border-slate-700 mt-2">
+              <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">Nome do Cartão (Opcional)</label>
+                <input type="text" id="tx-card"
+                  class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-primary outline-none"
+                  placeholder="Ex: Nubank">
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-300 mb-1">Parcela Atual</label>
+                  <input type="number" id="tx-install-number" min="1"
+                    class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-primary outline-none"
+                    placeholder="Ex: 1">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-300 mb-1">Total Parcelas</label>
+                  <input type="number" id="tx-install-total" min="1"
+                    class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-primary outline-none"
+                    placeholder="Ex: 10">
+                </div>
+              </div>
+              <label class="flex items-center gap-2 mt-2 cursor-pointer">
+                <input type="checkbox" id="tx-recurring"
+                  class="w-5 h-5 bg-slate-800 border-slate-600 text-primary rounded focus:ring-primary">
+                <span class="text-sm text-slate-300">Despesa/Receita Recorrente (Mensal)</span>
+              </label>
+            </div>
+          </div>
+
+          <button type="submit"
+            class="w-full bg-gradient-to-r from-primary to-purple-600 text-white font-bold py-4 rounded-xl shadow-glow-primary hover:opacity-90 transition transform mt-4">
+            Salvar Transação
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Budget Config Modal (Hidden by Default) -->
+    <div id="budget-modal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center hidden">
+      <!-- Overlay -->
+      <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm" id="budget-overlay"></div>
+
+      <!-- Modal Content -->
+      <div
+        class="bg-slate-800 w-full sm:w-[450px] sm:max-w-[450px] max-h-[90vh] overflow-y-auto sm:rounded-2xl rounded-t-2xl border-t border-slate-700 p-5 z-10 animate-slide-up shadow-glow-primary">
+        <div class="flex justify-between items-center mb-5">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-accent-red">flag</span>
+            Limites e Orçamentos
+          </h2>
+          <button id="close-budget-btn" class="text-slate-400 hover:text-white transition-colors">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <p class="text-xs text-slate-400 mb-4">Defina um limite de gastos para cada categoria. Ao ultrapassar 80%, você
+          receberá um alerta visual.</p>
+
+        <div id="budget-list" class="flex flex-col gap-3 mb-6">
+          <!-- Injected by JS -->
+        </div>
+
+        <button id="save-budgets-btn"
+          class="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-primary/20">
+          Salvar Orçamentos
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Context Menu (Bottom Sheet) -->
+    <div id="context-menu-modal" class="fixed inset-0 z-50 flex flex-col justify-end hidden">
+      <!-- Overlay -->
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" id="context-overlay"></div>
+
+      <!-- Sheet Content -->
+      <div id="context-sheet"
+        class="bg-slate-800 w-full rounded-t-3xl border-t border-slate-700 p-6 z-10 transform transition-transform duration-300 translate-y-full shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+
+        <div class="w-12 h-1.5 bg-slate-600 rounded-full mx-auto mb-5"></div>
+
+        <div class="mb-5 flex items-center gap-4 border-b border-slate-700 pb-4">
+          <div id="ctx-icon"
+            class="h-12 w-12 rounded-xl border flex items-center justify-center shrink-0 bg-slate-700/50 border-slate-600">
+            <span class="material-symbols-outlined text-slate-400">receipt_long</span>
+          </div>
+          <div>
+            <h3 id="ctx-title" class="text-white font-bold text-lg leading-tight truncate max-w-[250px]">Transação</h3>
+            <p id="ctx-amount" class="text-slate-400 text-sm font-medium">R$ 0,00</p>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <!-- Edit Button -->
+          <button id="ctx-edit-btn"
+            class="flex items-center gap-3 w-full p-4 rounded-xl hover:bg-slate-700 text-left transition">
+            <span class="material-symbols-outlined text-primary">edit</span>
+            <span class="text-white font-medium">Editar Transação</span>
+          </button>
+
+          <!-- Trash Button -->
+          <button id="ctx-delete-btn"
+            class="flex items-center gap-3 w-full p-4 rounded-xl hover:bg-red-500/10 text-left transition text-red-400 group">
+            <span class="material-symbols-outlined group-hover:text-red-300">delete</span>
+            <span class="font-medium group-hover:text-red-300">Mover para Lixeira</span>
+          </button>
+        </div>
+
+        <div class="mt-4 pt-2">
+          <button id="ctx-cancel-btn"
+            class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3.5 px-4 rounded-xl transition">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div> <!-- Fechamento da context-menu-modal -->
+
+    <!-- Notebook Modal -->
+    <div id="notes-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+      <!-- Overlay -->
+      <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" id="notes-overlay"></div>
+
+      <!-- Modal Content -->
+      <div
+        class="bg-slate-800 w-full md:w-[600px] h-[100vh] md:h-[80vh] flex flex-col md:rounded-2xl border border-slate-700 z-10 animate-fade-in shadow-glow-primary overflow-hidden">
+
+        <!-- Header -->
+        <div class="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-800 shrink-0">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-accent-green"
+              style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+            Bloco de Notas
+          </h2>
+          <div class="flex items-center gap-2">
+            <button id="save-notes-btn"
+              class="bg-primary/20 hover:bg-primary/40 text-primary border border-primary text-sm font-bold px-3 py-1.5 rounded-lg transition-colors">
+              Salvar
+            </button>
+            <button id="close-notes-btn" class="text-slate-400 hover:text-white p-2 transition-colors shrink-0">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Textarea -->
+        <div class="flex-1 p-4 bg-slate-900 relative flex flex-col h-full overflow-hidden rounded-b-2xl">
+          <textarea id="notes-textarea"
+            class="flex-1 w-full bg-transparent text-slate-300 resize-none outline-none font-mono text-sm leading-relaxed"
+            placeholder="Adicione anotações, blocos de texto, planejamento ou lembretes invisíveis..."></textarea>
+
+          <!-- Diff Meta -->
+          <div id="notes-meta-container" class="mt-4 pt-4 border-t border-slate-700 hidden shrink-0 animate-fade-in">
+            <p class="text-xs text-slate-400 mb-2">Última edição: <span id="notes-date"
+                class="font-bold text-white"></span></p>
+            <div
+              class="max-h-32 overflow-y-auto space-y-1 text-xs font-mono bg-slate-800 p-2 rounded-xl border border-slate-700/50"
+              id="notes-diff-box">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RPG Profile Modal -->
+    <div id="rpg-modal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center hidden">
+      <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm" id="rpg-overlay"></div>
+      <div
+        class="bg-slate-800 w-full sm:w-[500px] h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-y-auto sm:rounded-2xl rounded-t-2xl border-t border-slate-700 p-6 z-10 animate-slide-up shadow-glow-primary flex flex-col gap-6">
+
+        <!-- Header -->
+        <div class="flex justify-between items-start shrink-0">
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-purple-400">swords</span> Jornada Financeira
+          </h2>
+          <button id="close-rpg-btn" class="text-slate-400 hover:text-white transition-colors">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <!-- Avatar Banner -->
+        <div
+          class="glass-card shrink-0 rounded-2xl p-5 border border-purple-500/20 flex items-center gap-5 relative overflow-hidden text-center bg-gradient-to-b from-slate-800 to-slate-900">
+          <div
+            class="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl mix-blend-screen pointer-events-none">
+          </div>
+
+          <div class="relative h-24 w-24 shrink-0 mx-auto">
+            <div class="absolute inset-0 bg-primary/20 rounded-full blur-md"></div>
+            <img id="rpg-large-avatar" src="/assets/sprites/apprentice.png"
+              class="relative object-contain w-full h-full pixelated drop-shadow-lg" />
+          </div>
+
+          <div class="flex-1 text-left">
+            <h3 class="text-white font-bold text-xl mb-0.5" id="rpg-stage-title">Apprentice</h3>
+            <p class="text-primary text-sm font-semibold tracking-wide mb-3">Level <span id="rpg-level-text">1</span>
+            </p>
+
+            <!-- XP Bar -->
+            <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-1 uppercase tracking-wider">
+              <span>XP</span>
+              <span id="rpg-xp-text">0 / 1000</span>
+            </div>
+            <div class="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+              <div id="rpg-xp-bar"
+                class="h-full bg-gradient-to-r from-purple-500 to-primary rounded-full transition-all duration-1000 w-[0%]">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Achievements -->
+        <div>
+          <h4 class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+            <span class="material-symbols-outlined text-yellow-500" style="font-size:18px;">military_tech</span>
+            Conquistas
+          </h4>
+          <div id="achievements-grid" class="flex flex-col gap-2">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Savings / Caixinha Modal -->
+    <div id="savings-modal"
+      class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden flex justify-center items-center backdrop-blur-sm transition-opacity">
+      <div
+        class="bg-slate-900 border border-slate-700 w-full max-w-sm mx-4 sm:mx-0 rounded-2xl p-5 shadow-2xl relative transform transition-transform scale-95 duration-300"
+        id="savings-modal-content">
+        <button id="close-savings-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 class="text-white font-bold text-lg mb-4 flex items-center gap-2" id="savings-modal-title">
+          <span class="material-symbols-outlined text-primary">savings</span> Nova Caixinha
+        </h3>
+
+        <form id="savings-form" class="space-y-4">
+          <input type="hidden" id="savings-id" value="">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nome da Meta</label>
+            <input type="text" id="savings-name" placeholder="Ex: Viagem de Férias"
+              class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition"
+              required>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Valor Alvo</label>
+              <input type="number" id="savings-target" placeholder="0.00" step="0.01" min="0"
+                class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition"
+                required>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ícone
+                (Emoji)</label>
+              <input type="text" id="savings-icon" placeholder="🎯" value="🎯"
+                class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition text-center"
+                required>
+            </div>
+          </div>
+
+          <div id="savings-manage-funds" class="hidden pt-2 border-t border-slate-700/50 mt-2">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Adicionar /
+              Remover
+              Fundos (R$)</label>
+            <div class="flex gap-2">
+              <input type="number" id="savings-fund-amount" placeholder="0.00" step="0.01" min="0"
+                class="flex-1 bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition text-sm">
+              <button type="button" id="savings-add-fund-btn"
+                class="bg-accent-green/20 text-accent-green hover:bg-accent-green/30 border border-accent-green/30 px-3 rounded-xl font-bold transition flex items-center justify-center">
+                <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+              </button>
+              <button type="button" id="savings-withdraw-fund-btn"
+                class="bg-accent-red/20 text-accent-red hover:bg-accent-red/30 border border-accent-red/30 px-3 rounded-xl font-bold transition flex items-center justify-center">
+                <span class="material-symbols-outlined" style="font-size: 18px;">remove</span>
+              </button>
+            </div>
+          </div>
+          <button type="submit"
+            class="w-full bg-primary hover:bg-primary/80 text-white font-bold py-3 rounded-xl mt-4 transition shadow-glow-primary">
+            Salvar Meta
+          </button>
+          <button type="button" id="savings-delete-btn"
+            class="w-full bg-red-500/10 text-red-500 hover:bg-red-500/20 font-bold py-2 rounded-xl mt-2 transition hidden">
+            Excluir Caixinha
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Main Application Script -->
+    <script type="module" src="./src/main.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(reg => {
+            console.log('SW registered!', reg);
+          }).catch(err => console.log('SW fallback', err));
+        });
+      }
+    </script>
+</body>
+
+</html>
