@@ -963,10 +963,38 @@ emojiBtn.addEventListener('click', () => {
   emojiPicker.classList.toggle('hidden');
 });
 
+// --- Savings Emoji Picker Logic ---
+const savingsIconInput = document.getElementById('savings-icon');
+const savingsEmojiPicker = document.getElementById('savings-emoji-picker');
+const savingsEmojiList = document.getElementById('savings-emoji-list');
+
+if (savingsEmojiList) {
+  defaultEmojis.forEach(emoji => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'hover:bg-slate-700 rounded p-1 transition';
+    btn.textContent = emoji;
+    btn.addEventListener('click', () => {
+      savingsIconInput.value = emoji;
+      savingsEmojiPicker.classList.add('hidden');
+    });
+    savingsEmojiList.appendChild(btn);
+  });
+}
+
+if (savingsIconInput) {
+  savingsIconInput.addEventListener('click', () => {
+    savingsEmojiPicker.classList.toggle('hidden');
+  });
+}
+
 // Close picker on outside click
 document.addEventListener('click', (e) => {
-  if (!emojiBtn.contains(e.target) && !emojiPicker.contains(e.target)) {
+  if (emojiBtn && emojiPicker && !emojiBtn.contains(e.target) && !emojiPicker.contains(e.target)) {
     emojiPicker.classList.add('hidden');
+  }
+  if (savingsIconInput && savingsEmojiPicker && !savingsIconInput.contains(e.target) && !savingsEmojiPicker.contains(e.target)) {
+    savingsEmojiPicker.classList.add('hidden');
   }
 });
 
@@ -1005,11 +1033,10 @@ async function loadData() {
     const deletedIds = TrashService.getDeletedIds();
     transactions = transactions.filter(t => !deletedIds.includes(t.id));
 
+    updateUI();
     // Check if we are in Dashboard mode
     if (currentTab === 'Dashboard') {
       renderDashboard();
-    } else {
-      updateUI();
     }
   } catch (e) {
     console.error("Failed to load transactions", e);
@@ -1158,20 +1185,34 @@ async function renderDashboard() {
   // Make the Net Worth card interactive to set the base line
   dashNetworth.parentElement.classList.add('cursor-pointer', 'hover:bg-slate-700/50', 'transition-colors');
   dashNetworth.parentElement.setAttribute('title', 'Ajustar Saldo Real');
-  dashNetworth.parentElement.onclick = () => {
-    const currentBase = Number(localStorage.getItem('baseNetWorth') || 0);
+  dashNetworth.parentElement.onclick = async () => {
+    dashNetworth.parentElement.style.pointerEvents = 'none'; // Prevent double clicking
+    const currentBase = await TransactionService.getBaseNetWorth();
     const sumOfTransactions = netWorth - currentBase;
 
-    const newTargetStr = prompt("Ajuste Mágico de Saldo\n\nDigite quanto de dinheiro você tem na conta bancária hoje (Ex: 2248,23):\nO aplicativo fará o cálculo retroativo para calibrar seu saldo.", netWorth.toFixed(2).replace('.', ','));
+    const newTargetStr = prompt("Ajuste Mágico de Saldo\n\nDigite quanto de dinheiro você tem na conta bancária hoje (Ex: 2248,23):\nO aplicativo fará o cálculo retroativo para calibrar seu saldo dinamicamente na nuvem.", netWorth.toFixed(2).replace('.', ','));
 
     if (newTargetStr !== null) {
       const targetNetWorth = parseBrazilianCurrency(newTargetStr);
       if (!isNaN(targetNetWorth)) {
         const newBase = targetNetWorth - sumOfTransactions;
-        localStorage.setItem('baseNetWorth', newBase.toString());
+
+        // Visual loading state
+        dashNetworthTrend.textContent = '☁️ Sincronizando...';
+        dashNetworthTrend.classList.replace('text-accent-green', 'text-yellow-400');
+        dashNetworthTrend.classList.replace('text-accent-red', 'text-yellow-400');
+
+        try {
+          await TransactionService.updateBaseNetWorth(newBase);
+        } catch (e) {
+          console.error("Failed to sync new base net worth", e);
+          alert("Erro ao sincronizar saldo com a nuvem. Valor atualizado apenas localmente.");
+        }
+
         renderDashboard(); // Re-render to show updated totals
       }
     }
+    dashNetworth.parentElement.style.pointerEvents = 'auto';
   };  // User requested: Caixinhas should NOT be subtracted from the Net Worth.
   // Net Worth is now the absolute total up to the selected month, including savings.
   const freeNetWorth = netWorth;
@@ -1330,13 +1371,15 @@ function updateUI() {
       txDateObj.setMonth(txDateObj.getMonth() + remainingParcels);
 
       const finishStr = txDateObj.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+      const basicText = `Parc. ${t.installment_number}/${t.total_installments}`;
+      const finishText = `Fim: ${finishStr.toUpperCase()}`;
 
-      tagsHtml += `<span title="Finaliza em: ${finishStr.toUpperCase()}" class="text-[10px] cursor-help font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/20 hover:bg-purple-500/40 transition">Parc. ${t.installment_number}/${t.total_installments}</span>`;
+      tagsHtml += `<span title="Finaliza em: ${finishStr.toUpperCase()}" onclick="this.textContent = this.textContent === '${basicText}' ? '${finishText}' : '${basicText}'; event.stopPropagation();" class="text-[10px] cursor-help font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/20 hover:bg-purple-500/40 transition active:scale-95 inline-block">${basicText}</span>`;
     }
 
     const el = document.createElement('div');
-    // Structure based on Stitch design pattern
-    el.className = 'glass-card glass-card-hover rounded-xl p-3 flex items-center gap-4 transition-all duration-200';
+    // Structure based on Stitch design pattern e evitando seleção de texto no iOS durante touch and hold
+    el.className = 'glass-card glass-card-hover rounded-xl p-3 flex items-center gap-4 transition-all duration-200 select-none';
     el.innerHTML = `
         <div class="h-12 w-12 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}">
           ${iconHtml}
@@ -1562,6 +1605,7 @@ function initNeuralBorder() {
 
     // Draw sparkles
     for (let i = sparkles.length - 1; i >= 0; i--) {
+      // ... (sparkle code remains identical to target, see full block) ...
       const s = sparkles[i];
       s.life -= s.decay;
       if (s.life <= 0) {
@@ -1584,10 +1628,19 @@ function initNeuralBorder() {
       ctx.globalAlpha = 1.0;
       ctx.shadowBlur = 0;
     }
-
-    requestAnimationFrame(draw);
   }
-  draw();
+
+  // Throttle animation to ~30fps for better mobile performance
+  let lastFrameTime = 0;
+  function loop(timestamp) {
+    requestAnimationFrame(loop);
+    // Limit to 30 FPS -> ~33ms per frame
+    if (timestamp - lastFrameTime < 33) return;
+    lastFrameTime = timestamp;
+    draw();
+  }
+
+  requestAnimationFrame(loop);
 }
 
 // --- UI Logic: Savings Goals ---
@@ -1719,6 +1772,86 @@ savingsDeleteBtn.addEventListener('click', () => {
   }
 });
 
-addSavingsBtn.addEventListener('click', () => {
-  openSavingsModal();
+// --- Pull-to-Refresh (iOS PWA) ---
+let pStart = { y: 0 };
+let pCurrent = { y: 0 };
+const ptrContainer = document.getElementById('ptr-indicator');
+const ptrIcon = document.getElementById('ptr-icon');
+const ptrText = document.getElementById('ptr-text');
+const MAX_PULL = 150;
+const TRIGGER_PULL = 80;
+let isPulling = false;
+
+document.addEventListener('touchstart', (e) => {
+  // Use scrollY or scrollTop to be extremely safe about position 0
+  const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+
+  if (scrollTop <= 5) {
+    pStart.y = e.touches[0].clientY;
+    isPulling = true;
+    ptrContainer.style.transition = 'none';
+  }
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+  if (!isPulling) return;
+  pCurrent.y = e.touches[0].clientY;
+  const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+
+  let pullDistance = pCurrent.y - pStart.y;
+
+  // Only pull down when at the top
+  if (pullDistance > 0 && scrollTop <= 5) {
+    // CRITICAL for iOS Safari: Prevent native bouncing
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+
+    let visualPull = pullDistance * 0.45;
+
+    // Hard cap
+    if (visualPull > MAX_PULL) visualPull = MAX_PULL + (visualPull - MAX_PULL) * 0.1;
+
+    ptrContainer.style.transform = `translateY(${visualPull}px)`;
+    ptrContainer.classList.remove('opacity-0', '-translate-y-full'); // Unhide fast
+
+    if (visualPull >= TRIGGER_PULL) {
+      ptrIcon.textContent = 'autorenew';
+      ptrIcon.classList.add('animate-spin');
+      ptrText.textContent = 'Solte para atualizar';
+    } else {
+      ptrIcon.textContent = 'arrow_downward';
+      ptrIcon.classList.remove('animate-spin');
+      ptrText.textContent = 'Puxe para atualizar';
+    }
+  }
+}, { passive: false });
+
+document.addEventListener('touchend', (e) => {
+  if (!isPulling) return;
+  isPulling = false;
+
+  const pullDistance = pCurrent.y - pStart.y;
+  let visualPull = pullDistance * 0.45;
+  const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+
+  ptrContainer.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease';
+
+  if (visualPull >= TRIGGER_PULL && scrollTop <= 5) {
+    ptrContainer.style.transform = `translateY(${TRIGGER_PULL - 20}px)`;
+    ptrText.textContent = 'Atualizando...';
+
+    setTimeout(() => {
+      window.location.reload(true);
+    }, 400);
+  } else {
+    // Snap back and hide completely
+    ptrContainer.style.transform = `translateY(-150px)`;
+    ptrContainer.classList.add('opacity-0');
+    setTimeout(() => {
+      ptrIcon.classList.remove('animate-spin');
+      ptrIcon.textContent = 'arrow_downward';
+      ptrContainer.classList.add('-translate-y-full');
+    }, 400);
+  }
 });

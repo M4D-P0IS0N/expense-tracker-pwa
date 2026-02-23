@@ -187,6 +187,18 @@
 <body class="font-display text-slate-200 antialiased selection:bg-primary selection:text-white">
 
   <div class="relative min-h-screen w-full flex flex-col neural-bg overflow-x-hidden">
+
+    <!-- Pull to Refresh Indicator -->
+    <div id="ptr-indicator"
+      class="fixed top-0 left-0 w-full flex justify-center opacity-0 pointer-events-none z-50 transform -translate-y-full">
+      <div
+        class="bg-slate-800/90 border border-slate-600 rounded-full px-4 py-2 mt-4 shadow-lg flex items-center gap-2 backdrop-blur-md">
+        <span id="ptr-icon"
+          class="material-symbols-outlined text-slate-300 text-lg transition-transform duration-300">arrow_downward</span>
+        <span id="ptr-text" class="text-sm font-medium text-slate-300">Puxe para atualizar</span>
+      </div>
+    </div>
+
     <!-- Header -->
     <header
       class="sticky top-0 z-20 px-6 pt-12 pb-4 flex flex-col gap-4 glass-card border-b-0 border-x-0 rounded-b-2xl mb-4">
@@ -837,12 +849,21 @@
                 class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition"
                 required>
             </div>
-            <div>
+            <div class="relative">
               <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ícone
                 (Emoji)</label>
-              <input type="text" id="savings-icon" placeholder="🎯" value="🎯"
-                class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition text-center"
+              <input type="text" id="savings-icon" placeholder="🎯" value="🎯" readonly
+                class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition text-center cursor-pointer select-none"
                 required>
+
+              <!-- Emoji Picker Dropdown -->
+              <div id="savings-emoji-picker"
+                class="hidden absolute right-0 bottom-full mb-2 bg-slate-800 border border-slate-700 rounded-xl shadow-glass p-2 w-48 z-50 overflow-hidden">
+                <div class="grid grid-cols-5 gap-1 max-h-40 overflow-y-auto no-scrollbar p-1 text-xl"
+                  id="savings-emoji-list">
+                  <!-- JS Injected Emojis -->
+                </div>
+              </div>
             </div>
           </div>
 

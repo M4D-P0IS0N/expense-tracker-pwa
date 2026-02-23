@@ -62,6 +62,7 @@ export class TransactionService {
         const userId = await getCurrentUserId();
         if (!userId) return 0;
 
+        // Fetch transactions for calculation
         let query = supabase
             .from('transactions')
             .select('amount, type')
@@ -72,17 +73,76 @@ export class TransactionService {
             query = query.lte('date', endDate);
         }
 
-        const { data, error } = await query;
-
-        if (error) {
-            console.error("Error fetching net worth:", error);
+        const { data: txData, error: txError } = await query;
+        if (txError) {
+            console.error("Error fetching net worth:", txError);
             return 0;
         }
 
-        const baseNetWorth = Number(localStorage.getItem('baseNetWorth') || 0);
-        return data.reduce((acc, tx) => {
+        // Fetch baseNetWorth from Cloud Profile
+        let baseNetWorth = 0;
+        const { data: profileData, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('base_net_worth')
+            .eq('id', userId)
+            .single();
+
+        if (!profileError && profileData) {
+            baseNetWorth = Number(profileData.base_net_worth || 0);
+            // Cache locally for offline resilience
+            localStorage.setItem('baseNetWorth', baseNetWorth.toString());
+        } else {
+            // Fallback to local storage if offline or profile read fails
+            baseNetWorth = Number(localStorage.getItem('baseNetWorth') || 0);
+        }
+
+        return txData.reduce((acc, tx) => {
             return tx.type === 'Income' ? acc + Number(tx.amount) : acc - Number(tx.amount);
         }, baseNetWorth);
+    }
+
+    /**
+     * Retrieves ONLY the base adjustment value from the cloud or local fallback
+     */
+    static async getBaseNetWorth() {
+        const userId = await getCurrentUserId();
+        if (!userId) return Number(localStorage.getItem('baseNetWorth') || 0);
+
+        const { data: profileData, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('base_net_worth')
+            .eq('id', userId)
+            .single();
+
+        if (!profileError && profileData) {
+            const base = Number(profileData.base_net_worth || 0);
+            localStorage.setItem('baseNetWorth', base.toString());
+            return base;
+        }
+
+        return Number(localStorage.getItem('baseNetWorth') || 0);
+    }
+
+    /**
+     * Updates the base net worth on the cloud profile
+     */
+    static async updateBaseNetWorth(newBaseAmount) {
+        const userId = await getCurrentUserId();
+        if (!userId) return;
+
+        const numericBase = Number(newBaseAmount);
+
+        // Save locally immediately for fast UI response
+        localStorage.setItem('baseNetWorth', numericBase.toString());
+
+        // Sync to cloud
+        await supabase
+            .from('user_profiles')
+            .update({
+                base_net_worth: numericBase,
+                last_sync: new Date().toISOString()
+            })
+            .eq('id', userId);
     }
 
     /**
