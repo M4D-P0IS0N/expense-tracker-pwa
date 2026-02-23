@@ -56,16 +56,23 @@ export class TransactionService {
     }
 
     /**
-     * Fast global sum for Net Worth (Receitas - Despesas of all time)
+     * Fast global sum for Net Worth (Receitas - Despesas) up to the specified month/year
      */
-    static async getNetWorth() {
+    static async getNetWorth(year, month) {
         const userId = await getCurrentUserId();
         if (!userId) return 0;
 
-        const { data, error } = await supabase
+        let query = supabase
             .from('transactions')
             .select('amount, type')
             .eq('user_id', userId);
+
+        if (year && month) {
+            const endDate = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
+            query = query.lte('date', endDate);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             console.error("Error fetching net worth:", error);

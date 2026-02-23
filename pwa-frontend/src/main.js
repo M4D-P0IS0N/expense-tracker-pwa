@@ -1125,13 +1125,13 @@ async function renderDashboard() {
     }
   };
 
-  const netWorth = await TransactionService.getNetWorth();
+  const netWorth = await TransactionService.getNetWorth(currentYear, currentMonth);
 
-  // Subtract Savings Targets from NetWorth to isolate "Free" Patrimony
-  const totalSaved = SavingsService.getTotalSaved();
-  const freeNetWorth = netWorth - totalSaved;
+  // User requested: Caixinhas should NOT be subtracted from the Net Worth.
+  // Net Worth is now the absolute total up to the selected month, including savings.
+  const freeNetWorth = netWorth;
 
-  dashNetworth.textContent = (freeNetWorth >= 0 ? '+' : '-') + ' ' + formatCurrency(freeNetWorth);
+  dashNetworth.textContent = (freeNetWorth >= 0 ? '+' : '-') + ' ' + formatCurrency(Math.abs(freeNetWorth));
 
   if (freeNetWorth >= 0) {
     dashNetworth.classList.replace('text-accent-red', 'text-white');
