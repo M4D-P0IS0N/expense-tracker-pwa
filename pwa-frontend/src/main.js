@@ -220,13 +220,46 @@ async function initTemporalNav() {
     filterYearEl.appendChild(option);
   });
 
+  // Add "+" option to allow custom year entry
+  const addYearOption = document.createElement('option');
+  addYearOption.value = '__add_year__';
+  addYearOption.textContent = '+ Ano';
+  filterYearEl.appendChild(addYearOption);
+
   // Set default logic to Current Month and Year
   filterMonthEl.value = (currentDate.getMonth() + 1).toString();
   filterYearEl.value = currentDate.getFullYear().toString();
 
   // Attach auto-fetch events
   filterMonthEl.addEventListener('change', loadData);
-  filterYearEl.addEventListener('change', loadData);
+  filterYearEl.addEventListener('change', () => {
+    if (filterYearEl.value === '__add_year__') {
+      const newYearStr = prompt('Digite o ano que deseja adicionar (ex: 2030):');
+      if (newYearStr) {
+        const newYear = parseInt(newYearStr);
+        if (!isNaN(newYear) && newYear >= 2020 && newYear <= 2050) {
+          // Check if already exists
+          const existingValues = Array.from(filterYearEl.options).map(o => o.value);
+          if (!existingValues.includes(String(newYear))) {
+            const newOption = document.createElement('option');
+            newOption.value = newYear;
+            newOption.textContent = newYear;
+            // Insert before the "+ Ano" option
+            filterYearEl.insertBefore(newOption, addYearOption);
+          }
+          filterYearEl.value = String(newYear);
+          loadData();
+        } else {
+          showNotification('Ano inválido. Use entre 2020 e 2050.', 'error');
+          filterYearEl.value = currentDate.getFullYear().toString();
+        }
+      } else {
+        filterYearEl.value = currentDate.getFullYear().toString();
+      }
+    } else {
+      loadData();
+    }
+  });
 
   // Initial load
   await loadData();
