@@ -800,6 +800,103 @@ document.getElementById('help-overlay').addEventListener('click', () => helpModa
 // Execute UI refresh on load
 updateAvatarUI();
 
+// --- Onboarding Flow (First-Time Users) ---
+const onboardingModal = document.getElementById('onboarding-modal');
+const onbStep1 = document.getElementById('onb-step-1');
+const onbStep2 = document.getElementById('onb-step-2');
+const onbDot1 = document.getElementById('onb-dot-1');
+const onbDot2 = document.getElementById('onb-dot-2');
+const onbNameInput = document.getElementById('onb-name');
+const onbAvatarChosen = document.getElementById('onb-avatar-chosen');
+const patrimonioReminder = document.getElementById('patrimonio-reminder');
+
+let onboardingAvatarGender = null;
+
+function isOnboardingCompleted() {
+  return localStorage.getItem('onboardingCompleted') === 'true';
+}
+
+function markOnboardingCompleted() {
+  localStorage.setItem('onboardingCompleted', 'true');
+}
+
+function isPatrimonioCalibrated() {
+  return localStorage.getItem('patrimonioCalibrated') === 'true';
+}
+
+function markPatrimonioCalibrated() {
+  localStorage.setItem('patrimonioCalibrated', 'true');
+}
+
+// Show onboarding if first time
+if (!isOnboardingCompleted()) {
+  onboardingModal.classList.remove('hidden');
+}
+
+// Avatar selection in onboarding
+document.getElementById('onb-avatar-male').addEventListener('click', () => {
+  onboardingAvatarGender = 'male';
+  onbAvatarChosen.classList.remove('hidden');
+  document.getElementById('onb-avatar-male').querySelector('div').classList.add('border-primary', 'ring-2', 'ring-primary/50');
+  document.getElementById('onb-avatar-female').querySelector('div').classList.remove('border-primary', 'ring-2', 'ring-primary/50');
+});
+
+document.getElementById('onb-avatar-female').addEventListener('click', () => {
+  onboardingAvatarGender = 'female';
+  onbAvatarChosen.classList.remove('hidden');
+  document.getElementById('onb-avatar-female').querySelector('div').classList.add('border-primary', 'ring-2', 'ring-primary/50');
+  document.getElementById('onb-avatar-male').querySelector('div').classList.remove('border-primary', 'ring-2', 'ring-primary/50');
+});
+
+// Step 1 → Step 2
+document.getElementById('onb-next-1').addEventListener('click', () => {
+  const name = onbNameInput.value.trim();
+  if (!name) {
+    showNotification('Por favor, digite seu nome.', 'error');
+    return;
+  }
+  if (!onboardingAvatarGender) {
+    showNotification('Escolha um avatar para continuar.', 'error');
+    return;
+  }
+
+  // Save name and avatar
+  userDisplayName.textContent = name;
+  localStorage.setItem('userDisplayName', name);
+  GamificationService.setAvatarGender(onboardingAvatarGender);
+  updateAvatarUI();
+
+  // Transition to step 2
+  onbStep1.classList.add('hidden');
+  onbStep2.classList.remove('hidden');
+  onbDot1.classList.replace('bg-primary', 'bg-slate-600');
+  onbDot2.classList.replace('bg-slate-600', 'bg-primary');
+});
+
+// Finish onboarding
+document.getElementById('onb-finish').addEventListener('click', () => {
+  markOnboardingCompleted();
+  onboardingModal.classList.add('hidden');
+  showNotification('Bem-vindo! Adicione suas primeiras transações 🎉', 'success');
+});
+
+// Patrimônio reminder: show after first transaction if not yet calibrated
+function checkPatrimonioReminder() {
+  if (!isOnboardingCompleted()) return;
+  if (isPatrimonioCalibrated()) return;
+
+  // Check if user has at least 1 transaction
+  if (transactions && transactions.length > 0) {
+    patrimonioReminder.classList.remove('hidden');
+  }
+}
+
+// Dismiss reminder
+document.getElementById('dismiss-patrimonio-reminder').addEventListener('click', () => {
+  markPatrimonioCalibrated();
+  patrimonioReminder.classList.add('hidden');
+});
+
 
 // --- UI Logic: Context Menu ---
 function openContextMenu(t) {
@@ -1038,6 +1135,8 @@ async function loadData() {
     if (currentTab === 'Dashboard') {
       renderDashboard();
     }
+    // Check if patrimônio reminder should be shown (first-time calibration)
+    checkPatrimonioReminder();
   } catch (e) {
     console.error("Failed to load transactions", e);
     listEl.innerHTML = '<div class="text-center text-red-400 py-8">Erro ao carregar dados.</div>';
@@ -1129,6 +1228,75 @@ async function renderDashboard() {
     });
   }
 
+  // 1.6 Future Expenses Projection (Installments)
+  const dashFutureExpenses = document.getElementById('dash-future-expenses');
+  const monthNames = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+  const futureMonthsMap = {};
+
+  // Gather all installment-based expenses
+  const installmentExpenses = expenses.filter(t => t.total_installments > 1 && t.installment_number < t.total_installments);
+
+  installmentExpenses.forEach(t => {
+    const remainingParcels = t.total_installments - t.installment_number;
+    const txDate = new Date(t.date);
+
+    for (let i = 1; i <= remainingParcels; i++) {
+      const futureMonth = txDate.getMonth() + i; // 0-indexed months offset
+      const futureYear = txDate.getFullYear() + Math.floor(futureMonth / 12);
+      const normalizedMonth = futureMonth % 12;
+      const key = `${futureYear}-${String(normalizedMonth).padStart(2, '0')}`;
+
+      if (!futureMonthsMap[key]) {
+        futureMonthsMap[key] = { year: futureYear, month: normalizedMonth, total: 0 };
+      }
+      futureMonthsMap[key].total += Number(t.amount);
+    }
+  });
+
+  // Also add recurring expenses to every future month (if any exist)
+  const recurringExpenses = expenses.filter(t => t.is_recurring);
+  const recurringTotal = recurringExpenses.reduce((sum, t) => sum + Number(t.amount), 0);
+
+  // Sort by date and render
+  const sortedFutureMonths = Object.values(futureMonthsMap).sort((a, b) => {
+    return a.year === b.year ? a.month - b.month : a.year - b.year;
+  });
+
+  // Add recurring to each projected month
+  sortedFutureMonths.forEach(m => { m.total += recurringTotal; });
+
+  dashFutureExpenses.innerHTML = '';
+
+  if (sortedFutureMonths.length === 0) {
+    dashFutureExpenses.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">Nenhuma parcela ativa encontrada.</div>';
+  } else {
+    const maxFutureExpense = Math.max(...sortedFutureMonths.map(m => m.total));
+
+    sortedFutureMonths.forEach(m => {
+      const pct = maxFutureExpense > 0 ? Math.round((m.total / maxFutureExpense) * 100) : 0;
+      const label = `${monthNames[m.month]}/${m.year}`;
+      const formattedValue = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(m.total);
+
+      // Color coding: green for low, yellow for medium, red for high relative to current expenses
+      let barColor = 'bg-blue-500';
+      if (m.total >= totalExpense * 0.8) barColor = 'bg-accent-red';
+      else if (m.total >= totalExpense * 0.5) barColor = 'bg-yellow-500';
+      else if (m.total >= totalExpense * 0.3) barColor = 'bg-blue-400';
+      else barColor = 'bg-accent-green';
+
+      dashFutureExpenses.innerHTML += `
+        <div class="flex items-center gap-3">
+          <span class="text-[10px] font-bold text-slate-400 w-16 shrink-0 text-right">${label}</span>
+          <div class="flex-1 h-5 bg-slate-800 rounded-full overflow-hidden relative">
+            <div class="h-full ${barColor} rounded-full transition-all duration-1000 flex items-center justify-end pr-2" style="width: ${Math.max(pct, 8)}%">
+              <span class="text-[9px] font-bold text-white drop-shadow-sm whitespace-nowrap">${formattedValue}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+  }
+
   // 2. Forecast
   const today = new Date();
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
@@ -1204,6 +1372,9 @@ async function renderDashboard() {
 
         try {
           await TransactionService.updateBaseNetWorth(newBase);
+          // Mark patrimônio as calibrated (one-time onboarding)
+          markPatrimonioCalibrated();
+          patrimonioReminder.classList.add('hidden');
         } catch (e) {
           console.error("Failed to sync new base net worth", e);
           alert("Erro ao sincronizar saldo com a nuvem. Valor atualizado apenas localmente.");

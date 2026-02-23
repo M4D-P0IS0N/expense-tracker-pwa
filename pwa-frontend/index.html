@@ -475,6 +475,20 @@
             </div>
           </div>
 
+          <!-- Future Expenses Projection Chart -->
+          <div class="glass-card rounded-2xl p-4 border border-slate-700 relative overflow-hidden col-span-2">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+                <span class="material-symbols-outlined text-blue-400" style="font-size: 18px;">trending_down</span>
+                Projeção de Despesas Futuras
+              </h4>
+              <span class="text-[10px] text-slate-500 font-medium">Parcelas ativas</span>
+            </div>
+            <div id="dash-future-expenses" class="flex flex-col gap-2">
+              <div class="text-center text-slate-500 text-xs py-4">Calculando projeção...</div>
+            </div>
+          </div>
+
         </div>
 
         <!-- Transactions List -->
@@ -1203,6 +1217,120 @@
           </details>
 
         </div>
+      </div>
+    </div>
+
+    <!-- Onboarding Modal (First-Time Users) -->
+    <div id="onboarding-modal"
+      class="fixed inset-0 bg-black/90 z-[60] hidden flex items-center justify-center backdrop-blur-lg">
+      <div class="w-full max-w-sm mx-4 animate-fade-in">
+
+        <!-- Step Indicator -->
+        <div class="flex justify-center gap-2 mb-6">
+          <div id="onb-dot-1" class="w-2.5 h-2.5 rounded-full bg-primary transition-all duration-300"></div>
+          <div id="onb-dot-2" class="w-2.5 h-2.5 rounded-full bg-slate-600 transition-all duration-300"></div>
+        </div>
+
+        <!-- Step 1: Welcome -->
+        <div id="onb-step-1" class="glass-card rounded-2xl p-6 border border-slate-700 text-center">
+          <div class="text-5xl mb-4">👋</div>
+          <h2 class="text-2xl font-bold text-white mb-2">Bem-vindo!</h2>
+          <p class="text-slate-400 text-sm mb-6">Configure seu perfil para começar a controlar suas finanças.</p>
+
+          <div class="space-y-4">
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-1 text-left">Seu nome</label>
+              <input type="text" id="onb-name" placeholder="Ex: Marcus"
+                class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition" />
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-2 text-left">Escolha seu avatar</label>
+              <div class="flex justify-center gap-6">
+                <button id="onb-avatar-male" class="group relative">
+                  <div
+                    class="w-20 h-20 rounded-2xl border-2 border-slate-600 bg-slate-800 flex items-center justify-center overflow-hidden hover:border-primary transition-all group-hover:scale-105">
+                    <img src="./assets/sprites/apprentice_m.png" class="w-14 h-14 pixelated" alt="Masculino"
+                      onerror="this.src='https://api.dicebear.com/7.x/pixel-art/svg?seed=male'" />
+                  </div>
+                  <span class="text-[10px] text-slate-400 mt-1 block">Guerreiro</span>
+                </button>
+                <button id="onb-avatar-female" class="group relative">
+                  <div
+                    class="w-20 h-20 rounded-2xl border-2 border-slate-600 bg-slate-800 flex items-center justify-center overflow-hidden hover:border-primary transition-all group-hover:scale-105">
+                    <img src="./assets/sprites/apprentice_f.png" class="w-14 h-14 pixelated" alt="Feminino"
+                      onerror="this.src='https://api.dicebear.com/7.x/pixel-art/svg?seed=female'" />
+                  </div>
+                  <span class="text-[10px] text-slate-400 mt-1 block">Maga</span>
+                </button>
+              </div>
+              <p id="onb-avatar-chosen" class="text-xs text-primary font-bold mt-2 hidden">✓ Avatar selecionado!</p>
+            </div>
+          </div>
+
+          <button id="onb-next-1"
+            class="w-full mt-6 bg-gradient-to-r from-primary to-purple-600 text-white font-bold py-3 rounded-xl hover:opacity-90 transition active:scale-95">
+            Próximo →
+          </button>
+        </div>
+
+        <!-- Step 2: How It Works -->
+        <div id="onb-step-2" class="glass-card rounded-2xl p-6 border border-slate-700 text-center hidden">
+          <div class="text-5xl mb-4">📊</div>
+          <h2 class="text-xl font-bold text-white mb-2">Como funciona</h2>
+          <p class="text-slate-400 text-sm mb-4">Siga estes passos para começar:</p>
+
+          <div class="text-left space-y-3 mb-6">
+            <div class="flex items-start gap-3 bg-slate-800/50 rounded-xl p-3">
+              <span
+                class="bg-primary text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5">1</span>
+              <div>
+                <p class="text-sm text-white font-medium">Adicione suas transações</p>
+                <p class="text-xs text-slate-400">Cadastre receitas e despesas do mês usando o botão <span
+                    class="text-primary font-bold">+</span></p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 bg-slate-800/50 rounded-xl p-3">
+              <span
+                class="bg-purple-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5">2</span>
+              <div>
+                <p class="text-sm text-white font-medium">Calibre seu patrimônio</p>
+                <p class="text-xs text-slate-400">Após adicionar suas transações, vá ao <span
+                    class="font-bold text-slate-300">Dashboard</span> e toque no card de <span
+                    class="font-bold text-slate-300">Patrimônio</span> para informar o saldo real da sua conta.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 bg-slate-800/50 rounded-xl p-3">
+              <span
+                class="bg-accent-green text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5">3</span>
+              <div>
+                <p class="text-sm text-white font-medium">Pronto!</p>
+                <p class="text-xs text-slate-400">O app cuidará do resto. Nos próximos meses, o saldo será calculado
+                  automaticamente.</p>
+              </div>
+            </div>
+          </div>
+
+          <button id="onb-finish"
+            class="w-full bg-gradient-to-r from-accent-green to-emerald-600 text-white font-bold py-3 rounded-xl hover:opacity-90 transition active:scale-95">
+            🚀 Começar a usar!
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Patrimônio Calibration Reminder (floating, shows once after first tx) -->
+    <div id="patrimonio-reminder" class="fixed bottom-24 left-4 right-4 z-40 hidden animate-fade-in">
+      <div class="glass-card rounded-2xl p-4 border border-purple-500/30 shadow-glow-primary flex items-start gap-3">
+        <span class="material-symbols-outlined text-purple-400 text-2xl shrink-0 mt-0.5">account_balance</span>
+        <div class="flex-1">
+          <p class="text-sm font-bold text-white mb-1">Calibre seu patrimônio!</p>
+          <p class="text-xs text-slate-400">Vá ao Dashboard (aba 📊) e toque no card de "Patrimônio" para informar o
+            saldo real da sua conta bancária.</p>
+        </div>
+        <button id="dismiss-patrimonio-reminder" class="text-slate-500 hover:text-white transition shrink-0">
+          <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+        </button>
       </div>
     </div>
 
