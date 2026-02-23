@@ -120,8 +120,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- AUTH GUARD ---
   const session = await AuthService.getSession();
   if (!session) {
-    window.location.replace("login.html");
+    window.location.replace(import.meta.env.BASE_URL + "login.html");
     return;
+  }
+
+  // --- Populate user display name ---
+  const userDisplayNameEl = document.getElementById('user-display-name');
+  if (userDisplayNameEl && session.user) {
+    const emailPrefix = session.user.email?.split('@')[0] || 'Meu Perfil';
+    userDisplayNameEl.textContent = emailPrefix;
   }
 
   // Set default date
@@ -665,7 +672,7 @@ function openRpgModal() {
       try {
         document.getElementById('rpg-logout-btn').innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> Saindo...';
         await AuthService.signOut();
-        window.location.replace("login.html");
+        window.location.replace(import.meta.env.BASE_URL + "login.html");
       } catch (err) {
         alert("Erro ao sair da conta: " + err.message);
       }

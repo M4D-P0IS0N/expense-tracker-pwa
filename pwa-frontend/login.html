@@ -203,7 +203,7 @@
             // 1. Redirect se já estiver logado
             const session = await AuthService.getSession();
             if (session) {
-                window.location.replace("index.html");
+                window.location.replace("./index.html");
                 return;
             }
 
@@ -326,7 +326,7 @@
                     if (currentMode === 'login') {
                         await AuthService.signIn(email, password);
                         showFeedback("Conectado! Redirecionando...", false);
-                        setTimeout(() => window.location.replace("index.html"), 600);
+                        setTimeout(() => window.location.replace("./index.html"), 600);
                     }
                     else if (currentMode === 'register') {
                         const { user, session } = await AuthService.signUp(email, password);
@@ -337,7 +337,7 @@
                             setTimeout(() => setMode('login'), 3500);
                         } else {
                             showFeedback("Conta criada! Redirecionando...", false);
-                            setTimeout(() => window.location.replace("index.html"), 1000);
+                            setTimeout(() => window.location.replace("./index.html"), 1000);
                         }
                     }
                     else if (currentMode === 'forgot') {
