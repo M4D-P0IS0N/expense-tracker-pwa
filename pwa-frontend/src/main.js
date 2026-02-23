@@ -7,6 +7,38 @@ import { GamificationService } from './services/GamificationService.js';
 import { SavingsService } from './services/SavingsService.js';
 import { AuthService } from './services/AuthService.js';
 
+// --- Utils ---
+function parseBrazilianCurrency(valueStr) {
+  if (!valueStr) return 0;
+  let str = String(valueStr).trim();
+  if (str === '') return 0;
+
+  if (!isNaN(str) && !str.includes(',')) return parseFloat(str);
+
+  str = str.replace(/[^\d.,-]/g, '');
+
+  const commaCount = (str.match(/,/g) || []).length;
+  const dotCount = (str.match(/\./g) || []).length;
+
+  if (commaCount > 0 && dotCount > 0) {
+    const lastComma = str.lastIndexOf(',');
+    const lastDot = str.lastIndexOf('.');
+    if (lastComma > lastDot) str = str.replace(/\./g, '').replace(',', '.');
+    else str = str.replace(/,/g, '');
+  } else if (commaCount > 0) {
+    if (commaCount === 1) str = str.replace(',', '.');
+    else str = str.replace(/,/g, '');
+  } else if (dotCount === 1) {
+    const parts = str.split('.');
+    if (parts[1].length === 3) str = str.replace('.', '');
+  } else if (dotCount > 1) {
+    str = str.replace(/\./g, '');
+  }
+
+  const num = parseFloat(str);
+  return isNaN(num) ? 0 : num;
+}
+
 // --- State ---
 let transactions = [];
 
@@ -387,7 +419,7 @@ function openBudgetsModal() {
         <span class="text-sm text-white font-medium">${cat}</span>
         <div class="relative w-32">
           <span class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500 text-xs">R$</span>
-          <input type="number" step="0.01" value="${budgetAmount}" data-category="${cat}" placeholder="Ilimitado" class="budget-input w-full bg-slate-800 border border-slate-600 rounded-md text-white text-sm py-1.5 pl-7 pr-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+          <input type="text" inputmode="decimal" value="${budgetAmount}" data-category="${cat}" placeholder="Ilimitado" class="budget-input w-full bg-slate-800 border border-slate-600 rounded-md text-white text-sm py-1.5 pl-7 pr-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
         </div>
       `;
     budgetListEl.appendChild(div);
@@ -399,7 +431,7 @@ function openBudgetsModal() {
 saveBudgetsBtn.addEventListener('click', () => {
   const inputs = document.querySelectorAll('.budget-input');
   inputs.forEach(input => {
-    const val = parseFloat(input.value);
+    const val = parseBrazilianCurrency(input.value);
     const cat = input.getAttribute('data-category');
     BudgetService.setBudget(cat, isNaN(val) ? 0 : val);
   });
@@ -1120,7 +1152,7 @@ async function renderDashboard() {
     const currentBase = localStorage.getItem('baseNetWorth') || '0';
     const newBase = prompt("Digite o valor atual do seu Patrimônio Base (Ex: 1550,00 ou 1550.00):", currentBase);
     if (newBase !== null) {
-      const parsedBase = parseFloat(newBase.replace(',', '.'));
+      const parsedBase = parseBrazilianCurrency(newBase);
       if (!isNaN(parsedBase)) {
         localStorage.setItem('baseNetWorth', parsedBase.toString());
         renderDashboard(); // Re-render to show updated totals
@@ -1351,19 +1383,21 @@ form.addEventListener('submit', async (e) => {
     const finalCategory = document.getElementById('tx-emoji-display').textContent + " " + (catVal === 'New' ? document.getElementById('tx-custom-category').value : catVal);
 
     const txDesc = document.getElementById('tx-description').value;
-    const txAmount = document.getElementById('tx-amount').value;
+    const txAmountStr = document.getElementById('tx-amount').value;
+    const parsedAmount = parseBrazilianCurrency(txAmountStr);
+
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      showNotification('Por favor, informe um valor válido acima de zero.', 'error');
+      return;
+    }
+
     const txDateStr = document.getElementById('tx-date').value;
     const cardName = document.getElementById('tx-card').value || null;
     const installmentsStr = document.getElementById('tx-install-total').value;
 
-    if (isNaN(parseFloat(txAmount)) || parseFloat(txAmount) <= 0) {
-      alert('Por favor, insira um valor válido maior que zero.');
-      return;
-    }
-
     const txPayload = {
       description: txDesc,
-      amount: parseFloat(txAmount),
+      amount: parsedAmount,
       type: type,
       category: finalCategory,
       date: txDateStr,
@@ -1631,9 +1665,9 @@ addSavingsBtn.addEventListener('click', () => openSavingsModal());
 savingsForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const id = savingsId.value;
-  const name = savingsName.value;
-  const target = parseFloat(savingsTarget.value);
-  const icon = savingsIcon.value || '🎯';
+  const name = savingsName.value.trim();
+  const target = parseBrazilianCurrency(savingsTarget.value);
+  const icon = savingsIcon.value.trim() || '🎯';
 
   if (id) {
     SavingsService.updateGoal(id, { name, targetAmount: target, icon });
@@ -1647,26 +1681,24 @@ savingsForm.addEventListener('submit', (e) => {
 
 savingsAddFundBtn.addEventListener('click', () => {
   if (!currentSavingsId) return;
-  const amt = parseFloat(savingsFundAmount.value);
-  if (amt > 0) {
-    SavingsService.addFunds(currentSavingsId, amt);
-    savingsFundAmount.value = '';
-    GamificationService.onTransactionLogged(); // Hook XP
-    updateAvatarUI();
-    renderDashboard();
-    closeSavingsModalFunc();
-  }
+  const amt = parseBrazilianCurrency(savingsFundAmount.value);
+  if (isNaN(amt) || amt <= 0) return showNotification("Valor inválido", "error");
+  SavingsService.addFunds(currentSavingsId, amt);
+  savingsFundAmount.value = '';
+  GamificationService.onTransactionLogged(); // Hook XP
+  updateAvatarUI();
+  renderDashboard();
+  closeSavingsModalFunc();
 });
 
 savingsWithdrawFundBtn.addEventListener('click', () => {
   if (!currentSavingsId) return;
-  const amt = parseFloat(savingsFundAmount.value);
-  if (amt > 0) {
-    SavingsService.withdrawFunds(currentSavingsId, amt);
-    savingsFundAmount.value = '';
-    renderDashboard();
-    closeSavingsModalFunc();
-  }
+  const amt = parseBrazilianCurrency(savingsFundAmount.value);
+  if (isNaN(amt) || amt <= 0) return showNotification("Valor inválido", "error");
+  SavingsService.withdrawFunds(currentSavingsId, amt);
+  savingsFundAmount.value = '';
+  renderDashboard();
+  closeSavingsModalFunc();
 });
 
 savingsDeleteBtn.addEventListener('click', () => {

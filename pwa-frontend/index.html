@@ -507,7 +507,7 @@
 
           <div>
             <label class="block text-sm font-medium text-slate-300 mb-1">Valor (R$)</label>
-            <input type="number" step="0.01" id="tx-amount" required
+            <input type="text" inputmode="decimal" id="tx-amount" required
               class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-primary outline-none transition text-lg font-bold"
               placeholder="0.00">
           </div>
@@ -830,7 +830,7 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Valor Alvo</label>
-              <input type="number" id="savings-target" placeholder="0.00" step="0.01" min="0"
+              <input type="text" inputmode="decimal" id="savings-target" placeholder="0,00"
                 class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition"
                 required>
             </div>
@@ -848,7 +848,7 @@
               Remover
               Fundos (R$)</label>
             <div class="flex gap-2">
-              <input type="number" id="savings-fund-amount" placeholder="0.00" step="0.01" min="0"
+              <input type="text" inputmode="decimal" id="savings-fund-amount" placeholder="0,00"
                 class="flex-1 bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition text-sm">
               <button type="button" id="savings-add-fund-btn"
                 class="bg-accent-green/20 text-accent-green hover:bg-accent-green/30 border border-accent-green/30 px-3 rounded-xl font-bold transition flex items-center justify-center">
@@ -1019,7 +1019,8 @@
               <ul class="space-y-2 list-disc list-inside marker:text-blue-400">
                 <li><strong class="text-white">Patrimônio Líquido:</strong> O total de todo o seu dinheiro até o
                   <strong>último dia do mês selecionado</strong> no painel. Ele <strong>inclui</strong> o dinheiro
-                  guardado nas Caixinhas. Lançamentos e parcelas futuras não afetam o mês atual.</li>
+                  guardado nas Caixinhas. Lançamentos e parcelas futuras não afetam o mês atual.
+                </li>
                 <li><strong class="text-white">Calibrar Patrimônio:</strong> Clique sobre o valor do Patrimônio Líquido
                   para definir manualmente o seu "Patrimônio Base" inicial.</li>
                 <li><strong class="text-white">Receitas / Despesas do Mês:</strong> Totais do período selecionado.</li>
