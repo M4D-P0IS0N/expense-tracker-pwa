@@ -39,6 +39,38 @@ function parseBrazilianCurrency(valueStr) {
   return isNaN(num) ? 0 : num;
 }
 
+// --- Notification Toast ---
+function showNotification(message, type = 'info') {
+  const existing = document.getElementById('app-toast');
+  if (existing) existing.remove();
+
+  const colorMap = {
+    success: 'border-accent-green bg-accent-green/10 text-accent-green',
+    error: 'border-accent-red bg-accent-red/10 text-accent-red',
+    info: 'border-primary bg-primary/10 text-primary',
+  };
+  const colors = colorMap[type] || colorMap.info;
+
+  const toast = document.createElement('div');
+  toast.id = 'app-toast';
+  toast.className = `fixed top-16 left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-xl border text-sm font-medium shadow-lg backdrop-blur-md transition-all duration-300 ${colors}`;
+  toast.textContent = message;
+  toast.style.opacity = '0';
+  toast.style.transform = 'translate(-50%, -10px)';
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translate(-50%, 0)';
+  });
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translate(-50%, -10px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 // --- State ---
 let transactions = [];
 
@@ -828,9 +860,13 @@ function markPatrimonioCalibrated() {
   localStorage.setItem('patrimonioCalibrated', 'true');
 }
 
-// Show onboarding if first time
-if (!isOnboardingCompleted()) {
+// Show onboarding if first time AND user has no avatar set
+const existingProfile = GamificationService.getProfile();
+if (!isOnboardingCompleted() && !existingProfile.AvatarGender) {
   onboardingModal.classList.remove('hidden');
+} else if (!isOnboardingCompleted() && existingProfile.AvatarGender) {
+  // Existing user who already has avatar: skip onboarding silently
+  markOnboardingCompleted();
 }
 
 // Avatar selection in onboarding
@@ -861,7 +897,8 @@ document.getElementById('onb-next-1').addEventListener('click', () => {
   }
 
   // Save name and avatar
-  userDisplayName.textContent = name;
+  const userDisplayNameEl = document.getElementById('user-display-name');
+  if (userDisplayNameEl) userDisplayNameEl.textContent = name;
   localStorage.setItem('userDisplayName', name);
   GamificationService.setAvatarGender(onboardingAvatarGender);
   updateAvatarUI();
