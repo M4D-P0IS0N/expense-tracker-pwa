@@ -354,6 +354,15 @@
 
           <!-- Filters Row (Chips & Dropdown) -->
           <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            <select id="sort-transactions"
+              class="shrink-0 bg-slate-800/80 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary outline-none max-w-[150px] truncate">
+              <option value="date-desc">⏱️ Data (Mais recentes)</option>
+              <option value="date-asc">⏱️ Data (Mais antigas)</option>
+              <option value="value-desc">💰 Valor (Maior)</option>
+              <option value="value-asc">💰 Valor (Menor)</option>
+              <option value="alpha-asc">🔤 A-Z</option>
+              <option value="alpha-desc">🔤 Z-A</option>
+            </select>
             <select id="filter-card"
               class="shrink-0 bg-slate-800/80 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary outline-none max-w-[120px] truncate">
               <option value="All">💳 Todos (Cartões)</option>

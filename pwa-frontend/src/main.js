@@ -118,6 +118,7 @@ const savingsDeleteBtn = document.getElementById('savings-delete-btn');
 // Search & Filter Elements
 const searchInput = document.getElementById('search-input');
 const filterCardEl = document.getElementById('filter-card');
+const sortTransactionsEl = document.getElementById('sort-transactions');
 const filterChips = document.querySelectorAll('.filter-chip');
 
 // Budget Tools
@@ -273,6 +274,7 @@ async function initTemporalNav() {
 let currentSearchQuery = '';
 let currentQuickFilter = null; // 'Today', 'Week', 'Fixed', 'Install'
 let currentCardFilter = 'All';
+let currentSort = 'date-desc';
 
 function initFilters() {
   // Global Search Debounce
@@ -298,6 +300,13 @@ function initFilters() {
     currentCardFilter = e.target.value;
     updateUI();
   });
+
+  if (sortTransactionsEl) {
+    sortTransactionsEl.addEventListener('change', (e) => {
+      currentSort = e.target.value;
+      updateUI();
+    });
+  }
 
   // Quick Filters (Chips)
   filterChips.forEach(chip => {
@@ -1578,6 +1587,24 @@ function updateUI() {
     }
 
     return true;
+  });
+
+  // Sort filtered transactions
+  filteredTransactions.sort((a, b) => {
+    if (currentSort === 'date-desc') {
+      return new Date(b.date) - new Date(a.date);
+    } else if (currentSort === 'date-asc') {
+      return new Date(a.date) - new Date(b.date);
+    } else if (currentSort === 'value-desc') {
+      return b.amount - a.amount;
+    } else if (currentSort === 'value-asc') {
+      return a.amount - b.amount;
+    } else if (currentSort === 'alpha-asc') {
+      return (a.description || '').localeCompare(b.description || '');
+    } else if (currentSort === 'alpha-desc') {
+      return (b.description || '').localeCompare(a.description || '');
+    }
+    return 0; // fallback
   });
 
   if (filteredTransactions.length === 0) {
