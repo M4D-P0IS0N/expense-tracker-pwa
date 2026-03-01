@@ -382,6 +382,21 @@ addBtn.addEventListener('click', () => {
   document.querySelector('#modal-content h3').textContent = 'Nova Transação';
   document.querySelector('#transaction-form button[type="submit"]').textContent = 'Salvar Transação';
   document.getElementById('tx-date').valueAsDate = new Date();
+
+  // Fix visual bugs by explicitly triggering state changes
+  const incomeRadio = document.querySelector('input[name="type"][value="Income"]');
+  incomeRadio.checked = true;
+  incomeRadio.dispatchEvent(new Event('change'));
+
+  document.getElementById('tx-custom-category-container').classList.add('hidden');
+  document.getElementById('tx-emoji-display').textContent = '🏷️';
+
+  const advancedFields = document.getElementById('advanced-fields');
+  if (advancedFields) {
+    advancedFields.classList.add('hidden');
+    document.getElementById('advanced-icon').textContent = '▼';
+  }
+
   modal.classList.remove('hidden');
   setTimeout(() => {
     modalContent.classList.remove('translate-y-full');
@@ -1055,11 +1070,10 @@ ctxEditBtn.addEventListener('click', () => {
   editTransactionId = selectedTransaction.id;
 
   // Select Type
-  if (selectedTransaction.type === 'Income') {
-    document.querySelector('input[name="type"][value="Income"]').click();
-  } else {
-    document.querySelector('input[name="type"][value="Expense"]').click();
-  }
+  const typeValue = selectedTransaction.type === 'Income' ? 'Income' : 'Expense';
+  const typeRadio = document.querySelector(`input[name="type"][value="${typeValue}"]`);
+  typeRadio.checked = true;
+  typeRadio.dispatchEvent(new Event('change'));
 
   document.getElementById('tx-amount').value = selectedTransaction.amount;
   document.getElementById('tx-description').value = selectedTransaction.description;
@@ -1123,6 +1137,7 @@ ctxEditBtn.addEventListener('click', () => {
 
   document.getElementById('tx-card').value = selectedTransaction.credit_card_name || "";
   document.getElementById('tx-install-total').value = selectedTransaction.total_installments || 1;
+  document.getElementById('tx-recurring').checked = selectedTransaction.is_recurring || false;
 
   document.querySelector('#modal-content h3').textContent = 'Editar Transação';
   document.querySelector('#transaction-form button[type="submit"]').textContent = 'Salvar Alterações';
@@ -1676,7 +1691,11 @@ function updateUI() {
       const basicText = `Parc. ${t.installment_number}/${t.total_installments}`;
       const finishText = `Fim: ${finishStr.toUpperCase()}`;
 
-      tagsHtml += `<span title="Finaliza em: ${finishStr.toUpperCase()}" onclick="this.textContent = this.textContent === '${basicText}' ? '${finishText}' : '${basicText}'; event.stopPropagation();" class="text-[10px] cursor-help font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/20 hover:bg-purple-500/40 transition active:scale-95 inline-block">${basicText}</span>`;
+      tagsHtml += `<span title="Finaliza em: ${finishStr.toUpperCase()}" onclick="this.textContent = this.textContent === '${basicText}' ? '${finishText}' : '${basicText}'; event.stopPropagation();" class="text-[10px] cursor-help font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/20 hover:bg-purple-500/40 transition active:scale-95 inline-block mr-1">${basicText}</span>`;
+    }
+
+    if (!isIncome && t.is_recurring) {
+      tagsHtml += `<span title="Despesa Recorrente" class="text-[12px] cursor-help font-extrabold px-2 py-0 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/40 transition inline-block shadow-[0_0_8px_rgba(250,204,21,0.5)]">∞</span>`;
     }
 
     const el = document.createElement('div');
@@ -1691,9 +1710,9 @@ function updateUI() {
             <h4 class="text-white font-semibold truncate">${t.description}</h4>
             <span class="${amountColor} font-bold whitespace-nowrap">${sign}${formatCurrency(Math.abs(t.amount))}</span>
           </div>
-          <div class="flex justify-between items-center">
+          <div class="flex justify-between items-center mt-1">
             <p class="text-xs text-slate-400">${subText}</p>
-            <div>${tagsHtml}</div>
+            <div class="flex items-center justify-end flex-wrap">${tagsHtml}</div>
           </div>
         </div>
       `;

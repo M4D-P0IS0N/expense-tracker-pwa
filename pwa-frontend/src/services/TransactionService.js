@@ -285,7 +285,8 @@ export class TransactionService {
             type: transaction.type,
             category: transaction.category || 'General',
             date: baseDateStr ? new Date(baseDateStr).toISOString() : undefined,
-            credit_card_name: transaction.credit_card_name || null
+            credit_card_name: transaction.credit_card_name || null,
+            is_recurring: transaction.is_recurring !== undefined ? transaction.is_recurring : false
         };
 
         const { data, error } = await supabase
