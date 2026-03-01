@@ -4,3 +4,4 @@ Sempre que uma nova funcionalidade for adicionada ao aplicativo ou o comportamen
 1. **Guia de Dúvidas**: Você deve OBRIGATORIAMENTE atualizar o modal "Dúvidas" (`index.html` -> `#help-modal`) com as novas explicações, passo-a-passo e dicas relacionadas à mudança.
 2. **README.md**: Se a funcionalidade for de impacto médio/alto (ex: novo sistema de RPG, nova visualização de métricas, etc), você deve atualizar o arquivo `README.md` listando as novas features na tabela ou visão geral.
 3. **Imagens/Sprites**: Ao substituir imagens, lembre-se de limpar `mix-blend-mode` espúrios ou propriedades de formatação específicas de sprites antigos (como `image-rendering: pixelated`).
+4. **Deploy Automático**: Sempre que algo for modificado no projeto e estiver pronto, você OBRIGATORIAMENTE deve sugerir os comandos de build, commitar as alterações e dar `git push` para realizar o upload no GitHub Pages corretamente, garantindo que a versão online esteja sincronizada com o GitHub.
