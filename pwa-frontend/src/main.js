@@ -1749,6 +1749,7 @@ form.addEventListener('submit', async (e) => {
     const txDateStr = document.getElementById('tx-date').value;
     const cardName = document.getElementById('tx-card').value || null;
     const installmentsStr = document.getElementById('tx-install-total').value;
+    const currentInstallmentStr = document.getElementById('tx-install-number').value;
 
     const txPayload = {
       description: txDesc,
@@ -1757,7 +1758,9 @@ form.addEventListener('submit', async (e) => {
       category: finalCategory,
       date: txDateStr,
       credit_card_name: cardName,
-      total_installments: parseInt(installmentsStr) || 1
+      total_installments: parseInt(installmentsStr) || 1,
+      installment_number: parseInt(currentInstallmentStr) || 1,
+      is_recurring: document.getElementById('tx-recurring').checked
     };
 
     if (editTransactionId) {

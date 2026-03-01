@@ -212,55 +212,79 @@ export class TransactionService {
     }
 
     /**
-     * Add a new transaction
-     */
+ * Add a new transaction (supports multiple installments)
+ */
     static async addTransaction(transaction) {
         const userId = await getCurrentUserId();
         if (!userId) throw new Error("Usuário não autenticado");
 
-        // Prepare the basic object
-        const txToInsert = {
-            user_id: userId,
-            description: transaction.description,
-            amount: transaction.amount,
-            type: transaction.type, // 'Income' ou 'Expense'
-            category: transaction.category || 'General',
-            date: transaction.date || new Date().toISOString(),
-            is_recurring: transaction.is_recurring || false,
-            credit_card_name: transaction.credit_card_name || null
-        };
+        let baseDateStr = transaction.date || new Date().toISOString();
+        // Fix timezone issue when only date is provided (YYYY-MM-DD from input[type="date"])
+        if (baseDateStr.length === 10) {
+            baseDateStr += 'T12:00:00Z'; // Forces it to noon UTC, dodging UTC midnight day-boundary jumps
+        }
+        const baseDate = new Date(baseDateStr);
 
-        // Handle installments if exist
-        if (transaction.total_installments > 1) {
-            txToInsert.total_installments = transaction.total_installments;
-            txToInsert.installment_number = transaction.installment_number || 1;
-            // Generate a fake group ID since Vanilla JS doesn't have Guid.NewGuid natively
-            // In a real scenario we'd use crypto.randomUUID()
-            txToInsert.installment_group_id = crypto.randomUUID();
+        const txList = [];
+        const totalInstallments = transaction.total_installments || 1;
+        const currentInstallment = transaction.installment_number || 1;
+
+        // Group ID
+        let groupId = null;
+        if (totalInstallments > 1) {
+            groupId = crypto.randomUUID();
+        }
+
+        // Insert from current to total (generating multiple rows for DB)
+        for (let i = currentInstallment; i <= totalInstallments; i++) {
+            const txDate = new Date(baseDate);
+            txDate.setMonth(txDate.getMonth() + (i - currentInstallment));
+
+            const txToInsert = {
+                user_id: userId,
+                description: transaction.description,
+                amount: transaction.amount,
+                type: transaction.type, // 'Income' ou 'Expense'
+                category: transaction.category || 'General',
+                date: txDate.toISOString(),
+                is_recurring: transaction.is_recurring || false,
+                credit_card_name: transaction.credit_card_name || null
+            };
+
+            if (totalInstallments > 1) {
+                txToInsert.total_installments = totalInstallments;
+                txToInsert.installment_number = i;
+                txToInsert.installment_group_id = groupId;
+            }
+            txList.push(txToInsert);
         }
 
         const { data, error } = await supabase
             .from('transactions')
-            .insert([txToInsert])
+            .insert(txList)
             .select();
 
         if (error) {
             console.error("Error adding transaction:", error);
             throw error;
         }
-        return data[0];
+        // Return all generated transactions
+        return data;
     }
 
     /**
      * Update an existing transaction
      */
     static async updateTransaction(id, transaction) {
+        let baseDateStr = transaction.date;
+        if (baseDateStr && baseDateStr.length === 10) baseDateStr += 'T12:00:00Z';
+
         const txToUpdate = {
             description: transaction.description,
             amount: transaction.amount,
             type: transaction.type,
             category: transaction.category || 'General',
-            date: transaction.date,
+            date: baseDateStr ? new Date(baseDateStr).toISOString() : undefined,
             credit_card_name: transaction.credit_card_name || null
         };
 
