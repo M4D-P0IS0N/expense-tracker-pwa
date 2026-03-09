@@ -1,4 +1,4 @@
-﻿import './style.css';
+import './style.css';
 import { TransactionService } from './services/TransactionService.js';
 import { BudgetService } from './services/BudgetService.js';
 import { TrashService } from './services/TrashService.js';
@@ -254,7 +254,7 @@ async function initTemporalNav() {
           filterYearEl.value = String(newYear);
           loadData();
         } else {
-          showNotification('Ano invÃ¡lido. Use entre 2020 e 2050.', 'error');
+          showNotification('Ano inválido. Use entre 2020 e 2050.', 'error');
           filterYearEl.value = currentDate.getFullYear().toString();
         }
       } else {
@@ -382,8 +382,8 @@ let editTransactionId = null;
 addBtn.addEventListener('click', () => {
   form.reset();
   editTransactionId = null;
-  document.querySelector('#modal-content h3').textContent = 'Nova TransaÃ§Ã£o';
-  document.querySelector('#transaction-form button[type="submit"]').textContent = 'Salvar TransaÃ§Ã£o';
+  document.querySelector('#modal-content h3').textContent = 'Nova Transação';
+  document.querySelector('#transaction-form button[type="submit"]').textContent = 'Salvar Transação';
   // Use the month/year from the temporal nav panel as the default date
   const selectedMonth = parseInt(filterMonthEl.value);
   const selectedYear = parseInt(filterYearEl.value);
@@ -401,12 +401,12 @@ addBtn.addEventListener('click', () => {
   incomeRadio.dispatchEvent(new Event('change'));
 
   document.getElementById('tx-custom-category-container').classList.add('hidden');
-  document.getElementById('tx-emoji-display').textContent = 'ðŸ·ï¸';
+  document.getElementById('tx-emoji-display').textContent = '🏷️';
 
   const advancedFields = document.getElementById('advanced-fields');
   if (advancedFields) {
     advancedFields.classList.add('hidden');
-    document.getElementById('advanced-icon').textContent = 'â–¼';
+    document.getElementById('advanced-icon').textContent = '▼';
   }
 
   modal.classList.remove('hidden');
@@ -434,7 +434,7 @@ document.getElementById('tx-category').addEventListener('change', (e) => {
 
   if (val === 'New') {
     customDiv.classList.remove('hidden');
-    document.getElementById('tx-emoji-display').textContent = 'ðŸ·ï¸';
+    document.getElementById('tx-emoji-display').textContent = '🏷️';
   } else {
     customDiv.classList.add('hidden');
     // Predict emoji from historical transactions
@@ -449,7 +449,7 @@ document.getElementById('tx-category').addEventListener('change', (e) => {
       }
     }
     // Fallback if not found in history
-    document.getElementById('tx-emoji-display').textContent = 'ðŸ·ï¸';
+    document.getElementById('tx-emoji-display').textContent = '🏷️';
   }
 });
 
@@ -480,7 +480,7 @@ typeRadios.forEach(radio => {
 toggleAdvancedBtn.addEventListener('click', () => {
   advancedFields.classList.toggle('hidden');
   const icon = document.getElementById('advanced-icon');
-  icon.textContent = advancedFields.classList.contains('hidden') ? 'â–¼' : 'â–²';
+  icon.textContent = advancedFields.classList.contains('hidden') ? '▼' : '▲';
 });
 
 // --- UI Logic: Budgets Modal ---
@@ -562,7 +562,7 @@ notesBtn.addEventListener('click', () => {
 
     diffBox.innerHTML = '';
     if (meta.added.length === 0 && meta.removed.length === 0) {
-      diffBox.innerHTML = '<span class="text-slate-500 italic">Nenhuma alteraÃ§Ã£o de linha significativa detectada na Ãºltima ediÃ§Ã£o.</span>';
+      diffBox.innerHTML = '<span class="text-slate-500 italic">Nenhuma alteração de linha significativa detectada na última edição.</span>';
     } else {
       meta.added.forEach(line => {
         diffBox.innerHTML += `<div class="text-accent-green backdrop-blur-sm bg-accent-green/10 px-1.5 py-0.5 rounded truncate">+ ${line}</div>`;
@@ -638,14 +638,14 @@ function showGenderChoiceModal() {
         <div>
           <span class="material-symbols-outlined text-primary text-4xl">person</span>
           <h3 class="text-xl font-bold text-white mt-2">Escolha seu Avatar</h3>
-          <p class="text-sm text-slate-400 mt-1">A linha evolutiva seguirÃ¡ a sua escolha.</p>
+          <p class="text-sm text-slate-400 mt-1">A linha evolutiva seguirá a sua escolha.</p>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <button id="choose-male-btn" class="flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-slate-700 hover:border-primary bg-slate-800 hover:bg-primary/10 transition-all group overflow-hidden">
             <div class="w-28 h-28 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
-              <img src="./assets/sprites/stage1-m.png" alt="CamponÃªs" class="w-full h-full object-cover" style="transform: scale(1.3);" />
+              <img src="./assets/sprites/stage1-m.png" alt="Camponês" class="w-full h-full object-cover" style="transform: scale(1.3);" />
             </div>
-            <span class="text-sm font-bold text-white group-hover:text-primary transition-colors">CamponÃªs</span>
+            <span class="text-sm font-bold text-white group-hover:text-primary transition-colors">Camponês</span>
           </button>
           <button id="choose-female-btn" class="flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-slate-700 hover:border-pink-400 bg-slate-800 hover:bg-pink-400/10 transition-all group overflow-hidden">
             <div class="w-28 h-28 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
@@ -722,7 +722,7 @@ function openRpgModal() {
       : "bg-slate-900/50 border-slate-700/30 grayscale opacity-40";
     const titleClass = isUnlocked ? "text-white" : "text-slate-500";
     const descClass = isUnlocked ? "text-slate-400" : "text-slate-600";
-    const dateHtml = isUnlocked ? `<span class="text-[9px] text-primary font-bold">âœ“ ConcluÃ­da</span>` : '';
+    const dateHtml = isUnlocked ? `<span class="text-[9px] text-primary font-bold">✓ Concluída</span>` : '';
 
     // Progress bar (show for non-unlocked achievements with valid tracking)
     const showProgress = !isUnlocked && def.MaxProgress > 1 && def.TrackKey;
@@ -757,7 +757,7 @@ function openRpgModal() {
     buttonsWrapper.className = "mt-4 pt-4 border-t border-slate-700 space-y-3";
     buttonsWrapper.innerHTML = `
           <button id="rpg-help-btn" class="w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
-              <span class="material-symbols-outlined">help</span> DÃºvidas
+              <span class="material-symbols-outlined">help</span> Dúvidas
           </button>
           <button id="rpg-logout-btn" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
               <span class="material-symbols-outlined">logout</span> Sair da Conta
@@ -852,7 +852,7 @@ document.getElementById('onb-avatar-female').addEventListener('click', () => {
   document.getElementById('onb-avatar-male').querySelector('div').classList.remove('border-primary', 'ring-2', 'ring-primary/50');
 });
 
-// Step 1 â†’ Step 2
+// Step 1 → Step 2
 document.getElementById('onb-next-1').addEventListener('click', () => {
   const name = onbNameInput.value.trim();
   if (!name) {
@@ -882,10 +882,10 @@ document.getElementById('onb-next-1').addEventListener('click', () => {
 document.getElementById('onb-finish').addEventListener('click', () => {
   markOnboardingCompleted();
   onboardingModal.classList.add('hidden');
-  showNotification('Bem-vindo! Adicione suas primeiras transaÃ§Ãµes ðŸŽ‰', 'success');
+  showNotification('Bem-vindo! Adicione suas primeiras transações 🎉', 'success');
 });
 
-// PatrimÃ´nio reminder: show after first transaction if not yet calibrated
+// Patrimônio reminder: show after first transaction if not yet calibrated
 function checkPatrimonioReminder() {
   if (!isOnboardingCompleted()) return;
   if (isPatrimonioCalibrated()) return;
@@ -990,7 +990,7 @@ ctxEditBtn.addEventListener('click', () => {
       document.getElementById('tx-custom-category-container').classList.add('hidden');
     }
   } else {
-    document.getElementById('tx-emoji-display').textContent = 'ðŸ·ï¸';
+    document.getElementById('tx-emoji-display').textContent = '🏷️';
 
     const select = document.getElementById('tx-category');
     let optionFound = Array.from(select.options).some(opt => opt.value === fullCat);
@@ -1016,8 +1016,8 @@ ctxEditBtn.addEventListener('click', () => {
   document.getElementById('tx-install-total').value = selectedTransaction.total_installments || 1;
   document.getElementById('tx-recurring').checked = selectedTransaction.is_recurring || false;
 
-  document.querySelector('#modal-content h3').textContent = 'Editar TransaÃ§Ã£o';
-  document.querySelector('#transaction-form button[type="submit"]').textContent = 'Salvar AlteraÃ§Ãµes';
+  document.querySelector('#modal-content h3').textContent = 'Editar Transação';
+  document.querySelector('#transaction-form button[type="submit"]').textContent = 'Salvar Alterações';
 
   closeContextMenu();
   modal.classList.remove('hidden');
@@ -1036,16 +1036,16 @@ const customCategoryContainer = document.getElementById('tx-custom-category-cont
 const customCategoryInput = document.getElementById('tx-custom-category');
 
 const defaultEmojis = [
-  'ðŸ”', 'ðŸ•', 'ðŸ£', 'ðŸ›’', 'ðŸ›ï¸', 'ðŸŽ', 'ðŸšŒ', 'ðŸš—', 'âœˆï¸', 'ðŸ ', 'ðŸ¢', 'ðŸ’¡', 'ðŸ’§', 'ðŸ”¥',
-  'ðŸ¥', 'ðŸ’Š', 'ðŸ¦·', 'ðŸŽ®', 'ðŸŽ¬', 'ðŸŽµ', 'âš½', 'ðŸ‹ï¸', 'ðŸ‘•', 'ðŸ‘—', 'ðŸ“š', 'âœï¸', 'ðŸ’¼', 'ðŸ’»',
-  'ðŸ’¸', 'ðŸ’°', 'ðŸ’³', 'ðŸ“ˆ', 'ðŸ·ï¸', 'ðŸ¶', 'ðŸ±', 'ðŸ› ï¸', 'â“'
+  '🍔', '🍕', '🍣', '🛒', '🛍️', '🎁', '🚌', '🚗', '✈️', '🏠', '🏢', '💡', '💧', '🔥',
+  '🏥', '💊', '🦷', '🎮', '🎬', '🎵', '⚽', '🏋️', '👕', '👗', '📚', '✏️', '💼', '💻',
+  '💸', '💰', '💳', '📈', '🏷️', '🐶', '🐱', '🛠️', '❓'
 ];
 const categoryToEmoji = {
-  'General': 'ðŸ·ï¸',
-  'Food': 'ðŸ”',
-  'Transport': 'ðŸšŒ',
-  'Home': 'ðŸ ',
-  'Salary': 'ðŸ’°'
+  'General': '🏷️',
+  'Food': '🍔',
+  'Transport': '🚌',
+  'Home': '🏠',
+  'Salary': '💰'
 };
 
 // Populate picker
@@ -1105,7 +1105,7 @@ categorySelect.addEventListener('change', (e) => {
   if (val === 'New') {
     customCategoryContainer.classList.remove('hidden');
     customCategoryInput.required = true;
-    emojiDisplay.textContent = 'â“'; // Empty/Question mark for new
+    emojiDisplay.textContent = '❓'; // Empty/Question mark for new
   } else {
     customCategoryContainer.classList.add('hidden');
     customCategoryInput.required = false;
@@ -1140,7 +1140,7 @@ async function loadData() {
     if (currentTab === 'Dashboard') {
       renderDashboard();
     }
-    // Check if patrimÃ´nio reminder should be shown (first-time calibration)
+    // Check if patrimônio reminder should be shown (first-time calibration)
     checkPatrimonioReminder();
   } catch (e) {
     console.error("Failed to load transactions", e);
@@ -1166,7 +1166,7 @@ async function renderDashboard() {
 
   dashCategories.innerHTML = '';
   if (sortedCats.length === 0) {
-    dashCategories.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">Nenhuma despesa no perÃ­odo.</div>';
+    dashCategories.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">Nenhuma despesa no período.</div>';
   } else {
     sortedCats.forEach(([cat, amount]) => {
       const pct = totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0;
@@ -1174,7 +1174,7 @@ async function renderDashboard() {
       let firstChar = cat.split(' ')[0] || "";
       let isEmoji = /[\u1000-\uFFFF]/.test(firstChar);
 
-      const icon = isEmoji ? firstChar : 'ðŸ·ï¸';
+      const icon = isEmoji ? firstChar : '🏷️';
       const name = isEmoji ? cat.substring(firstChar.length).trim() : cat;
 
       // Budget Checks
@@ -1185,10 +1185,10 @@ async function renderDashboard() {
       if (budget > 0) {
         const pctBudget = amount / budget;
         if (pctBudget >= 1.0) {
-          budgetWarning = `<span class="text-[10px] text-accent-red border border-accent-red/30 px-1 rounded-sm ml-2 font-bold uppercase hidden sm:inline-block">ðŸš¨ Estourou!</span>`;
+          budgetWarning = `<span class="text-[10px] text-accent-red border border-accent-red/30 px-1 rounded-sm ml-2 font-bold uppercase hidden sm:inline-block">🚨 Estourou!</span>`;
           barColor = 'bg-accent-red drop-shadow-[0_0_5px_rgba(250,101,56,0.6)]';
         } else if (pctBudget >= 0.8) {
-          budgetWarning = `<span class="text-[10px] text-yellow-400 border border-yellow-400/30 px-1 rounded-sm ml-2 font-bold uppercase hidden sm:inline-block">âš ï¸ ${Math.round(pctBudget * 100)}%</span>`;
+          budgetWarning = `<span class="text-[10px] text-yellow-400 border border-yellow-400/30 px-1 rounded-sm ml-2 font-bold uppercase hidden sm:inline-block">⚠️ ${Math.round(pctBudget * 100)}%</span>`;
           barColor = 'bg-yellow-500';
         }
       }
@@ -1217,7 +1217,7 @@ async function renderDashboard() {
 
   dashCreditCards.innerHTML = '';
   if (sortedCards.length === 0) {
-    dashCreditCards.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">Nenhuma despesa no crÃ©dito.</div>';
+    dashCreditCards.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">Nenhuma despesa no crédito.</div>';
   } else {
     sortedCards.forEach(([cardName, amount]) => {
       const pct = totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0;
@@ -1318,7 +1318,7 @@ async function renderDashboard() {
     forecast = (totalExpense / currentDay) * daysInMonth;
     const dailyAvg = totalExpense / currentDay;
     if (dailyAvg > 0) {
-      dashDailyExpense.textContent = `Gasto diÃ¡rio de ${formatCurrency(dailyAvg)}`;
+      dashDailyExpense.textContent = `Gasto diário de ${formatCurrency(dailyAvg)}`;
       dashDailyExpense.classList.remove('hidden');
     }
   }
@@ -1333,24 +1333,24 @@ async function renderDashboard() {
   // 3. Smart Insights
   let insights = "";
   if (income === 0 && totalExpense === 0) {
-    insights = "Nenhuma movimentaÃ§Ã£o neste mÃªs. Que tal registrar ou planejar suas despesas?";
+    insights = "Nenhuma movimentação neste mês. Que tal registrar ou planejar suas despesas?";
   } else if (income === 0) {
-    insights = "AtenÃ§Ã£o: VocÃª tem despesas registradas, mas nenhuma receita neste mÃªs. Acompanhe de perto as suas reservas financeiras.";
+    insights = "Atenção: Você tem despesas registradas, mas nenhuma receita neste mês. Acompanhe de perto as suas reservas financeiras.";
   } else {
     const spentPct = (totalExpense / income) * 100;
     if (spentPct < 50) {
-      insights = `Excelente! VocÃª gastou apenas ${spentPct.toFixed(1)}% da sua receita. Uma Ã³tima janela para poupar, investir, ou focar em projetos de longo prazo.`;
+      insights = `Excelente! Você gastou apenas ${spentPct.toFixed(1)}% da sua receita. Uma ótima janela para poupar, investir, ou focar em projetos de longo prazo.`;
     } else if (spentPct < 80) {
-      insights = `Tudo caminhando. O grau de consumo estÃ¡ em ${spentPct.toFixed(1)}%. Mantenha esse ritmo seguro atÃ© a virada do mÃªs.`;
+      insights = `Tudo caminhando. O grau de consumo está em ${spentPct.toFixed(1)}%. Mantenha esse ritmo seguro até a virada do mês.`;
     } else if (spentPct <= 100) {
-      insights = `âš ï¸ Risco Amarelo. VocÃª jÃ¡ consumiu ${spentPct.toFixed(1)}% do orÃ§amento. Trave saÃ­das desnecessÃ¡rias para nÃ£o fechar no dÃ©ficit.`;
+      insights = `⚠️ Risco Amarelo. Você já consumiu ${spentPct.toFixed(1)}% do orçamento. Trave saídas desnecessárias para não fechar no déficit.`;
     } else {
-      insights = `ðŸš¨ Cuidado! O volume gasto excedeu sua receita em ${Math.abs(100 - spentPct).toFixed(1)}%. Repense as parcelas e os passivos de lazer rapidamente.`;
+      insights = `🚨 Cuidado! O volume gasto excedeu sua receita em ${Math.abs(100 - spentPct).toFixed(1)}%. Repense as parcelas e os passivos de lazer rapidamente.`;
     }
   }
   dashInsights.textContent = insights;
 
-  // 4. Net Worth (PatrimÃ´nio Global)
+  // 4. Net Worth (Patrimônio Global)
   dashNetworth.textContent = "Calculando...";
 
   const netWorth = await TransactionService.getNetWorth(selectedYear, selectedMonth);
@@ -1363,7 +1363,7 @@ async function renderDashboard() {
     const currentBase = await TransactionService.getBaseNetWorth();
     const sumOfTransactions = netWorth - currentBase;
 
-    const newTargetStr = prompt("Ajuste MÃ¡gico de Saldo\n\nDigite quanto de dinheiro vocÃª tem na conta bancÃ¡ria hoje (Ex: 2248,23):\nO aplicativo farÃ¡ o cÃ¡lculo retroativo para calibrar seu saldo dinamicamente na nuvem.", netWorth.toFixed(2).replace('.', ','));
+    const newTargetStr = prompt("Ajuste Mágico de Saldo\n\nDigite quanto de dinheiro você tem na conta bancária hoje (Ex: 2248,23):\nO aplicativo fará o cálculo retroativo para calibrar seu saldo dinamicamente na nuvem.", netWorth.toFixed(2).replace('.', ','));
 
     if (newTargetStr !== null) {
       const targetNetWorth = parseBrazilianCurrency(newTargetStr);
@@ -1371,13 +1371,13 @@ async function renderDashboard() {
         const newBase = targetNetWorth - sumOfTransactions;
 
         // Visual loading state
-        dashNetworthTrend.textContent = 'â˜ï¸ Sincronizando...';
+        dashNetworthTrend.textContent = '☁️ Sincronizando...';
         dashNetworthTrend.classList.replace('text-accent-green', 'text-yellow-400');
         dashNetworthTrend.classList.replace('text-accent-red', 'text-yellow-400');
 
         try {
           await TransactionService.updateBaseNetWorth(newBase);
-          // Mark patrimÃ´nio as calibrated (one-time onboarding)
+          // Mark patrimônio as calibrated (one-time onboarding)
           markPatrimonioCalibrated();
           patrimonioReminder.classList.add('hidden');
         } catch (e) {
@@ -1397,11 +1397,11 @@ async function renderDashboard() {
 
   if (freeNetWorth >= 0) {
     dashNetworth.classList.replace('text-accent-red', 'text-white');
-    dashNetworthTrend.textContent = 'ðŸ“ˆ Saldos Positivos';
+    dashNetworthTrend.textContent = '📈 Saldos Positivos';
     dashNetworthTrend.classList.replace('text-accent-red', 'text-accent-green');
   } else {
     dashNetworth.classList.add('text-accent-red');
-    dashNetworthTrend.textContent = 'ðŸ“‰ Saldos Negativos';
+    dashNetworthTrend.textContent = '📉 Saldos Negativos';
     dashNetworthTrend.classList.replace('text-accent-green', 'text-accent-red');
   }
 
@@ -1430,11 +1430,11 @@ function updateUI() {
   // Process unique cards for filter dropdown
   const uniqueCards = [...new Set(transactions.map(t => t.credit_card_name).filter(Boolean))];
   const oldCardVal = filterCardEl.value;
-  filterCardEl.innerHTML = '<option value="All">ðŸ’³ Todos (CartÃµes)</option>';
+  filterCardEl.innerHTML = '<option value="All">💳 Todos (Cartões)</option>';
   uniqueCards.forEach(card => {
     const opt = document.createElement('option');
     opt.value = card;
-    opt.textContent = `ðŸ’³ ${card} `;
+    opt.textContent = `💳 ${card} `;
     filterCardEl.appendChild(opt);
   });
   if (uniqueCards.includes(oldCardVal)) {
@@ -1538,7 +1538,7 @@ function updateUI() {
       ? `<span style="font-size: 24px;">${firstChar}</span>`
       : `<span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">${iconSymbol}</span>`;
 
-    let subText = `${subCategory} â€¢ ${txDate}`;
+    let subText = `${subCategory} • ${txDate}`;
 
     // Extra tags (Installments, Card, Budget)
     let tagsHtml = '';
@@ -1548,7 +1548,7 @@ function updateUI() {
       if (budget > 0) {
         const monthSum = catMap[subCategory] || 0;
         if (monthSum >= budget) {
-          tagsHtml += `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/20 mr-1 shadow-glow-red">OrÃ§amento Estourado</span>`;
+          tagsHtml += `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/20 mr-1 shadow-glow-red">Orçamento Estourado</span>`;
         }
       }
     }
@@ -1572,11 +1572,11 @@ function updateUI() {
     }
 
     if (!isIncome && t.is_recurring) {
-      tagsHtml += `<span title="Despesa Recorrente" class="text-[12px] cursor-help font-extrabold px-2 py-0 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/40 transition inline-block shadow-[0_0_8px_rgba(250,204,21,0.5)]">âˆž</span>`;
+      tagsHtml += `<span title="Despesa Recorrente" class="text-[12px] cursor-help font-extrabold px-2 py-0 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/40 transition inline-block shadow-[0_0_8px_rgba(250,204,21,0.5)]">∞</span>`;
     }
 
     const el = document.createElement('div');
-    // Structure based on Stitch design pattern e evitando seleÃ§Ã£o de texto no iOS durante touch and hold
+    // Structure based on Stitch design pattern e evitando seleção de texto no iOS durante touch and hold
     el.className = 'glass-card glass-card-hover rounded-xl p-3 flex items-center gap-4 transition-all duration-200 select-none';
     el.innerHTML = `
         <div class="h-12 w-12 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}">
@@ -1638,7 +1638,7 @@ form.addEventListener('submit', async (e) => {
     const parsedAmount = parseBrazilianCurrency(txAmountStr);
 
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      showNotification('Por favor, informe um valor vÃ¡lido acima de zero.', 'error');
+      showNotification('Por favor, informe um valor válido acima de zero.', 'error');
       return;
     }
 
@@ -1669,7 +1669,7 @@ form.addEventListener('submit', async (e) => {
     closeModal();
 
   } catch (error) {
-    alert("Erro ao salvar transaÃ§Ã£o. Verifique se o Supabase estÃ¡ configurado corretamente.");
+    alert("Erro ao salvar transação. Verifique se o Supabase está configurado corretamente.");
     console.error(error);
   } finally {
     submitBtn.textContent = originalText;
@@ -1677,9 +1677,8 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-// Neural Border Animation â†’ ./modules/NeuralBorderAnimation.js
-// Pull-to-Refresh â†’ ./modules/PullToRefresh.js
-initPullToRefresh();
+// Neural Border Animation -> ./modules/NeuralBorderAnimation.js
+// initNeuralBorder() is imported and called from DOMContentLoaded
 
 
 // --- UI Logic: Savings Goals ---
@@ -1740,7 +1739,7 @@ function openSavingsModal(id = null) {
   } else {
     savingsForm.reset();
     savingsId.value = '';
-    savingsIcon.value = 'ðŸŽ¯';
+    savingsIcon.value = '🎯';
     document.getElementById('savings-modal-title').innerHTML = `<span class="material-symbols-outlined text-primary">savings</span> Nova Caixinha`;
   }
 
@@ -1769,7 +1768,7 @@ savingsForm.addEventListener('submit', (e) => {
   const id = savingsId.value;
   const name = savingsName.value.trim();
   const target = parseBrazilianCurrency(savingsTarget.value);
-  const icon = savingsIcon.value.trim() || 'ðŸŽ¯';
+  const icon = savingsIcon.value.trim() || '🎯';
 
   if (id) {
     SavingsService.updateGoal(id, { name, targetAmount: target, icon });
@@ -1784,7 +1783,7 @@ savingsForm.addEventListener('submit', (e) => {
 savingsAddFundBtn.addEventListener('click', () => {
   if (!currentSavingsId) return;
   const amt = parseBrazilianCurrency(savingsFundAmount.value);
-  if (isNaN(amt) || amt <= 0) return showNotification("Valor invÃ¡lido", "error");
+  if (isNaN(amt) || amt <= 0) return showNotification("Valor inválido", "error");
   SavingsService.addFunds(currentSavingsId, amt);
   savingsFundAmount.value = '';
   GamificationService.onTransactionLogged(); // Hook XP
@@ -1796,7 +1795,7 @@ savingsAddFundBtn.addEventListener('click', () => {
 savingsWithdrawFundBtn.addEventListener('click', () => {
   if (!currentSavingsId) return;
   const amt = parseBrazilianCurrency(savingsFundAmount.value);
-  if (isNaN(amt) || amt <= 0) return showNotification("Valor invÃ¡lido", "error");
+  if (isNaN(amt) || amt <= 0) return showNotification("Valor inválido", "error");
   SavingsService.withdrawFunds(currentSavingsId, amt);
   savingsFundAmount.value = '';
   renderDashboard();
@@ -1804,12 +1803,12 @@ savingsWithdrawFundBtn.addEventListener('click', () => {
 });
 
 savingsDeleteBtn.addEventListener('click', () => {
-  if (currentSavingsId && confirm('Tem certeza que deseja excluir esta caixinha? O saldo voltarÃ¡ para o patrimÃ´nio livre.')) {
+  if (currentSavingsId && confirm('Tem certeza que deseja excluir esta caixinha? O saldo voltará para o patrimônio livre.')) {
     SavingsService.deleteGoal(currentSavingsId);
     closeSavingsModalFunc();
     renderDashboard();
   }
 });
 
-// Pull-to-Refresh is now in ./modules/PullToRefresh.js
-// initPullToRefresh() is called above
+// Pull-to-Refresh -> ./modules/PullToRefresh.js
+initPullToRefresh();
