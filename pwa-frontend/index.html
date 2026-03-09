@@ -113,9 +113,7 @@
       scrollbar-width: none;
     }
 
-    .pixelated {
-      image-rendering: pixelated;
-    }
+
 
     body {
       min-height: max(884px, 100dvh);
@@ -1008,10 +1006,25 @@
                 <li>A lista mostra suas transações do <strong class="text-white">mês/ano selecionados</strong>.</li>
                 <li>Use os seletores <strong class="text-white">Mês</strong> e <strong class="text-white">Ano</strong>
                   no topo para navegar entre períodos.</li>
-                <li>Use o filtro <strong class="text-white">Cartões</strong> para ver apenas despesas de um cartão
-                  específico.</li>
                 <li>Use a <strong class="text-white">Barra de Busca</strong> (🔍) para procurar por descrição ou
-                  categoria.</li>
+                  categoria <strong class="text-white">em todo o histórico</strong>.</li>
+                <li>Use o <strong class="text-white">filtro de Cartões</strong> (💳) para ver apenas despesas de um
+                  cartão
+                  específico.</li>
+                <li><strong class="text-white">Ordenação:</strong> Use o seletor ⏱️ para ordenar por <strong
+                    class="text-white">Data</strong> (mais recentes ou mais antigas), <strong
+                    class="text-white">Valor</strong> (maior ou menor) ou <strong class="text-white">Alfabético</strong>
+                  (A-Z ou Z-A).</li>
+                <li><strong class="text-white">Filtros Rápidos:</strong> Toque nos chips para filtrar por:
+                  <ul class="ml-4 mt-1 space-y-1 list-disc">
+                    <li><strong class="text-white">Hoje</strong> — apenas transações do dia atual.</li>
+                    <li><strong class="text-white">Esta Semana</strong> — últimos 7 dias.</li>
+                    <li><strong class="text-white">Fixas</strong> — apenas despesas/receitas marcadas como recorrentes
+                      (∞).</li>
+                    <li><strong class="text-white">Parceladas</strong> — apenas transações com múltiplas parcelas.</li>
+                  </ul>
+                </li>
+                <li>Toque no mesmo chip novamente para <strong class="text-white">desativar</strong> o filtro.</li>
               </ul>
             </div>
           </details>
@@ -1201,7 +1214,92 @@
             </div>
           </details>
 
-          <!-- Section 9: Tips -->
+          <!-- Section 9: Export CSV/PDF -->
+          <details class="help-section glass-card rounded-2xl mb-3 border border-slate-700/50 group">
+            <summary class="flex items-center gap-3 p-4 cursor-pointer list-none">
+              <span class="h-10 w-10 rounded-xl bg-teal-500/20 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-teal-400">download</span>
+              </span>
+              <span class="font-bold text-white flex-1">Exportar CSV ou PDF</span>
+              <span
+                class="material-symbols-outlined text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm text-slate-300 space-y-3">
+              <div class="bg-slate-800/50 rounded-xl p-3 space-y-2">
+                <p class="font-bold text-white text-xs uppercase tracking-wider">📍 Caminho:</p>
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                  <span class="bg-slate-700 px-2 py-1 rounded-lg">Tela principal</span>
+                  <span class="text-slate-500">→</span>
+                  <span class="bg-slate-700 px-2 py-1 rounded-lg">Botões CSV / PDF (topo da lista)</span>
+                </div>
+              </div>
+              <ul class="space-y-2 list-disc list-inside marker:text-teal-400">
+                <li><strong class="text-white">CSV:</strong> Gera um arquivo de planilha com todas as transações do mês
+                  selecionado. Compatível com <strong class="text-white">Excel</strong>, Google Sheets e Numbers.</li>
+                <li><strong class="text-white">PDF:</strong> Abre um relatório formatado em nova aba do navegador. Use o
+                  botão <strong class="text-white">"Imprimir"</strong> do navegador para salvar como PDF.</li>
+                <li>Os relatórios incluem totais de receitas, despesas, saldo e detalhes de cada transação.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Section 10: Recurring Transactions -->
+          <details class="help-section glass-card rounded-2xl mb-3 border border-slate-700/50 group">
+            <summary class="flex items-center gap-3 p-4 cursor-pointer list-none">
+              <span class="h-10 w-10 rounded-xl bg-yellow-500/20 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-yellow-400">all_inclusive</span>
+              </span>
+              <span class="font-bold text-white flex-1">Despesas Recorrentes (∞)</span>
+              <span
+                class="material-symbols-outlined text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm text-slate-300 space-y-3">
+              <div class="bg-slate-800/50 rounded-xl p-3 space-y-2">
+                <p class="font-bold text-white text-xs uppercase tracking-wider">📍 Caminho:</p>
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                  <span class="bg-primary/20 text-primary px-2 py-1 rounded-lg font-bold">Botão +</span>
+                  <span class="text-slate-500">→</span>
+                  <span class="bg-slate-700 px-2 py-1 rounded-lg">Opções Avançadas</span>
+                  <span class="text-slate-500">→</span>
+                  <span class="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-lg">Recorrente ✓</span>
+                </div>
+              </div>
+              <ul class="space-y-2 list-disc list-inside marker:text-yellow-400">
+                <li>Abra as <strong class="text-white">Opções Avançadas</strong> e marque <strong
+                    class="text-white">"Despesa/Receita Recorrente"</strong>.</li>
+                <li>Na lista, despesas recorrentes exibem o símbolo <strong class="text-yellow-400">∞</strong>
+                  (infinito) com brilho neon amarelo.</li>
+                <li>Use o filtro rápido <strong class="text-white">"Fixas"</strong> para visualizar apenas transações
+                  recorrentes.</li>
+                <li>No Dashboard, despesas recorrentes são incluídas automaticamente na <strong
+                    class="text-white">Projeção de Despesas Futuras</strong>.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Section 11: Pull-to-Refresh -->
+          <details class="help-section glass-card rounded-2xl mb-3 border border-slate-700/50 group">
+            <summary class="flex items-center gap-3 p-4 cursor-pointer list-none">
+              <span class="h-10 w-10 rounded-xl bg-cyan-500/20 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-cyan-400">refresh</span>
+              </span>
+              <span class="font-bold text-white flex-1">Atualizar Dados (Pull-to-Refresh)</span>
+              <span
+                class="material-symbols-outlined text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm text-slate-300 space-y-3">
+              <ul class="space-y-2 list-disc list-inside marker:text-cyan-400">
+                <li>No <strong class="text-white">topo da tela</strong>, <strong class="text-white">puxe para
+                    baixo</strong> com o dedo e solte para recarregar o app.</li>
+                <li>Um indicador aparecerá mostrando <strong class="text-white">"Puxe para atualizar"</strong> ou
+                  <strong class="text-white">"Solte para atualizar"</strong>.
+                </li>
+                <li>Ideal para sincronizar dados quando você edita em outro dispositivo.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Section 12: Tips -->
           <details class="help-section glass-card rounded-2xl mb-3 border border-purple-500/20 group">
             <summary class="flex items-center gap-3 p-4 cursor-pointer list-none">
               <span class="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
@@ -1259,7 +1357,7 @@
                 <button id="onb-avatar-male" class="group relative">
                   <div
                     class="w-20 h-20 rounded-2xl border-2 border-slate-600 bg-slate-800 flex items-center justify-center overflow-hidden hover:border-primary transition-all group-hover:scale-105">
-                    <img src="./assets/sprites/stage1-m.png" class="w-14 h-14 pixelated" alt="Masculino"
+                    <img src="./assets/sprites/stage1-m.png" class="w-14 h-14" alt="Masculino"
                       onerror="this.src='https://api.dicebear.com/7.x/pixel-art/svg?seed=male'" />
                   </div>
                   <span class="text-[10px] text-slate-400 mt-1 block">Camponês</span>
@@ -1267,7 +1365,7 @@
                 <button id="onb-avatar-female" class="group relative">
                   <div
                     class="w-20 h-20 rounded-2xl border-2 border-slate-600 bg-slate-800 flex items-center justify-center overflow-hidden hover:border-primary transition-all group-hover:scale-105">
-                    <img src="./assets/sprites/stage1-f.png" class="w-14 h-14 pixelated" alt="Feminino"
+                    <img src="./assets/sprites/stage1-f.png" class="w-14 h-14" alt="Feminino"
                       onerror="this.src='https://api.dicebear.com/7.x/pixel-art/svg?seed=female'" />
                   </div>
                   <span class="text-[10px] text-slate-400 mt-1 block">Camponesa</span>

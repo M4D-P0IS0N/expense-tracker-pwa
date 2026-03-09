@@ -80,11 +80,15 @@ export class TransactionService {
         const userId = await getCurrentUserId();
         if (!userId) return [];
 
+        // Sanitize query: strip PostgREST filter special characters to prevent filter manipulation
+        const sanitizedQuery = query.replace(/[,.()"\\]/g, '');
+        if (!sanitizedQuery.trim()) return [];
+
         const { data, error } = await supabase
             .from('transactions')
             .select('*')
             .eq('user_id', userId)
-            .or(`description.ilike.%${query}%,category.ilike.%${query}%`)
+            .or(`description.ilike.%${sanitizedQuery}%,category.ilike.%${sanitizedQuery}%`)
             .order('date', { ascending: false });
 
         if (error) {

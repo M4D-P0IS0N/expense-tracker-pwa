@@ -1,4 +1,4 @@
-import './style.css';
+﻿import './style.css';
 import { TransactionService } from './services/TransactionService.js';
 import { BudgetService } from './services/BudgetService.js';
 import { TrashService } from './services/TrashService.js';
@@ -6,6 +6,9 @@ import { NotebookService } from './services/NotebookService.js';
 import { GamificationService } from './services/GamificationService.js';
 import { SavingsService } from './services/SavingsService.js';
 import { AuthService } from './services/AuthService.js';
+import { initNeuralBorder } from './modules/NeuralBorderAnimation.js';
+import { initPullToRefresh } from './modules/PullToRefresh.js';
+import { initExportManager } from './modules/ExportManager.js';
 
 // --- Utils ---
 function parseBrazilianCurrency(valueStr) {
@@ -251,7 +254,7 @@ async function initTemporalNav() {
           filterYearEl.value = String(newYear);
           loadData();
         } else {
-          showNotification('Ano inválido. Use entre 2020 e 2050.', 'error');
+          showNotification('Ano invÃ¡lido. Use entre 2020 e 2050.', 'error');
           filterYearEl.value = currentDate.getFullYear().toString();
         }
       } else {
@@ -379,9 +382,18 @@ let editTransactionId = null;
 addBtn.addEventListener('click', () => {
   form.reset();
   editTransactionId = null;
-  document.querySelector('#modal-content h3').textContent = 'Nova Transação';
-  document.querySelector('#transaction-form button[type="submit"]').textContent = 'Salvar Transação';
-  document.getElementById('tx-date').valueAsDate = new Date();
+  document.querySelector('#modal-content h3').textContent = 'Nova TransaÃ§Ã£o';
+  document.querySelector('#transaction-form button[type="submit"]').textContent = 'Salvar TransaÃ§Ã£o';
+  // Use the month/year from the temporal nav panel as the default date
+  const selectedMonth = parseInt(filterMonthEl.value);
+  const selectedYear = parseInt(filterYearEl.value);
+  const today = new Date();
+  const isViewingCurrentMonth = selectedMonth === (today.getMonth() + 1) && selectedYear === today.getFullYear();
+  if (isViewingCurrentMonth) {
+    document.getElementById('tx-date').valueAsDate = today;
+  } else {
+    document.getElementById('tx-date').valueAsDate = new Date(selectedYear, selectedMonth - 1, 1);
+  }
 
   // Fix visual bugs by explicitly triggering state changes
   const incomeRadio = document.querySelector('input[name="type"][value="Income"]');
@@ -389,12 +401,12 @@ addBtn.addEventListener('click', () => {
   incomeRadio.dispatchEvent(new Event('change'));
 
   document.getElementById('tx-custom-category-container').classList.add('hidden');
-  document.getElementById('tx-emoji-display').textContent = '🏷️';
+  document.getElementById('tx-emoji-display').textContent = 'ðŸ·ï¸';
 
   const advancedFields = document.getElementById('advanced-fields');
   if (advancedFields) {
     advancedFields.classList.add('hidden');
-    document.getElementById('advanced-icon').textContent = '▼';
+    document.getElementById('advanced-icon').textContent = 'â–¼';
   }
 
   modal.classList.remove('hidden');
@@ -422,7 +434,7 @@ document.getElementById('tx-category').addEventListener('change', (e) => {
 
   if (val === 'New') {
     customDiv.classList.remove('hidden');
-    document.getElementById('tx-emoji-display').textContent = '🏷️';
+    document.getElementById('tx-emoji-display').textContent = 'ðŸ·ï¸';
   } else {
     customDiv.classList.add('hidden');
     // Predict emoji from historical transactions
@@ -437,7 +449,7 @@ document.getElementById('tx-category').addEventListener('change', (e) => {
       }
     }
     // Fallback if not found in history
-    document.getElementById('tx-emoji-display').textContent = '🏷️';
+    document.getElementById('tx-emoji-display').textContent = 'ðŸ·ï¸';
   }
 });
 
@@ -468,7 +480,7 @@ typeRadios.forEach(radio => {
 toggleAdvancedBtn.addEventListener('click', () => {
   advancedFields.classList.toggle('hidden');
   const icon = document.getElementById('advanced-icon');
-  icon.textContent = advancedFields.classList.contains('hidden') ? '▼' : '▲';
+  icon.textContent = advancedFields.classList.contains('hidden') ? 'â–¼' : 'â–²';
 });
 
 // --- UI Logic: Budgets Modal ---
@@ -550,7 +562,7 @@ notesBtn.addEventListener('click', () => {
 
     diffBox.innerHTML = '';
     if (meta.added.length === 0 && meta.removed.length === 0) {
-      diffBox.innerHTML = '<span class="text-slate-500 italic">Nenhuma alteração de linha significativa detectada na última edição.</span>';
+      diffBox.innerHTML = '<span class="text-slate-500 italic">Nenhuma alteraÃ§Ã£o de linha significativa detectada na Ãºltima ediÃ§Ã£o.</span>';
     } else {
       meta.added.forEach(line => {
         diffBox.innerHTML += `<div class="text-accent-green backdrop-blur-sm bg-accent-green/10 px-1.5 py-0.5 rounded truncate">+ ${line}</div>`;
@@ -585,143 +597,8 @@ saveNotesBtn.addEventListener('click', () => {
   }, 2000);
 });
 
-// --- UI Logic: Exports ---
-exportPdfBtn.addEventListener('click', () => {
-  if (!transactions || transactions.length === 0) return alert("Nenhuma transação carregada para exportar.");
-
-  const month = document.getElementById('filter-month').value;
-  const year = document.getElementById('filter-year').value;
-
-  let totalIncome = 0;
-  let totalExpense = 0;
-
-  const rowsHtml = transactions.map(t => {
-    if (t.type === 'Income') totalIncome += Number(t.amount);
-    if (t.type === 'Expense') totalExpense += Number(t.amount);
-
-    const isIncome = t.type === 'Income';
-    const color = isIncome ? 'green' : 'red';
-
-    // Correct timezone issues for date rendering in the report
-    const dateObj = new Date(t.date);
-    dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
-    const dateStr = dateObj.toLocaleDateString('pt-BR');
-
-    let details = '';
-    if (t.total_installments > 1) details += `Parc: ${t.installment_number}/${t.total_installments} `;
-    if (t.credit_card_name) details += `Cartão: ${t.credit_card_name}`;
-
-    const amountStr = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount);
-
-    return `<tr>
-      <td>${dateStr}</td>
-      <td style="color:${color}; font-weight:bold;">${isIncome ? 'Receita' : 'Despesa'}</td>
-      <td>${t.description || ''}</td>
-      <td>${t.category || ''}</td>
-      <td>${amountStr}</td>
-      <td>${details}</td>
-    </tr>`;
-  }).join('');
-
-  const balance = totalIncome - totalExpense;
-  const formatCur = (num) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num);
-
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>Relatório - App de Custos</title>
-      <style>
-        body { font-family: sans-serif; padding: 20px; background: #fff; color: #000; } 
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; } 
-        .card { border: 1px solid #ddd; padding: 15px; margin: 10px 10px 10px 0; border-radius: 5px; flex: 1; text-align: center; } 
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; } 
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } 
-        th { background-color: #f2f2f2; } 
-        @media print { .no-print { display: none; } }
-      </style>
-    </head>
-    <body onload="window.print()">
-      <div class="container">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h1>Relatório: ${month.padStart(2, '0')}/${year}</h1>
-          <button class="no-print" onclick="window.print()" style="padding:10px 20px; font-size:16px; cursor:pointer;">🖨️ Imprimir / Salvar PDF</button>
-        </div>
-
-        <div style="display: flex; gap: 20px;">
-          <div class="card">
-            <h3 style="margin:0 0 10px 0; font-weight:normal; color:#555;">Receitas</h3>
-            <p style="color:green; font-weight:bold; font-size:20px; margin:0;">${formatCur(totalIncome)}</p>
-          </div>
-          <div class="card">
-            <h3 style="margin:0 0 10px 0; font-weight:normal; color:#555;">Despesas</h3>
-            <p style="color:red; font-weight:bold; font-size:20px; margin:0;">${formatCur(totalExpense)}</p>
-          </div>
-          <div class="card" style="margin-right: 0;">
-            <h3 style="margin:0 0 10px 0; font-weight:normal; color:#555;">Balanço</h3>
-            <p style="font-weight:bold; font-size:20px; margin:0;">${formatCur(balance)}</p>
-          </div>
-        </div>
-
-        <h2>Transações</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Tipo</th>
-              <th>Descrição</th>
-              <th>Categoria</th>
-              <th>Valor</th>
-              <th>Detalhes</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-        
-        <p style="margin-top:40px; font-size:12px; color:#888;"><i>Gerado automaticamente por App de Custos PWA</i></p>
-      </div>
-    </body>
-    </html>
-  `;
-
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
-});
-
-exportCsvBtn.addEventListener('click', () => {
-  if (!transactions || transactions.length === 0) return alert("Nenhuma transação carregada para exportar.");
-
-  // Headers
-  const headers = ['Data', 'Tipo', 'Categoria', 'Descrição', 'Valor (R$)', 'Cartão', 'Parcelas'];
-  const rows = transactions.map(t => [
-    t.date,
-    t.type,
-    t.category || '',
-    t.description || '',
-    t.amount,
-    t.credit_card_name || '',
-    t.total_installments > 1 ? `${t.installment_number}/${t.total_installments}` : '1/1'
-  ]);
-
-  const csvContent = [
-    headers.join(','),
-    ...rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
-  ].join('\n');
-
-  // Prefix UTF-8 BOM so Excel opens with correct encoding
-  const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", `extrato_app_custos_${(new Date()).toISOString().slice(0, 10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-});
+// --- UI Logic: Exports (delegated to ExportManager module) ---
+initExportManager(exportPdfBtn, exportCsvBtn, () => transactions);
 
 // --- UI Logic: RPG Gamification ---
 
@@ -761,14 +638,14 @@ function showGenderChoiceModal() {
         <div>
           <span class="material-symbols-outlined text-primary text-4xl">person</span>
           <h3 class="text-xl font-bold text-white mt-2">Escolha seu Avatar</h3>
-          <p class="text-sm text-slate-400 mt-1">A linha evolutiva seguirá a sua escolha.</p>
+          <p class="text-sm text-slate-400 mt-1">A linha evolutiva seguirÃ¡ a sua escolha.</p>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <button id="choose-male-btn" class="flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-slate-700 hover:border-primary bg-slate-800 hover:bg-primary/10 transition-all group overflow-hidden">
             <div class="w-28 h-28 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
-              <img src="./assets/sprites/stage1-m.png" alt="Camponês" class="w-full h-full object-cover" style="transform: scale(1.3);" />
+              <img src="./assets/sprites/stage1-m.png" alt="CamponÃªs" class="w-full h-full object-cover" style="transform: scale(1.3);" />
             </div>
-            <span class="text-sm font-bold text-white group-hover:text-primary transition-colors">Camponês</span>
+            <span class="text-sm font-bold text-white group-hover:text-primary transition-colors">CamponÃªs</span>
           </button>
           <button id="choose-female-btn" class="flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-slate-700 hover:border-pink-400 bg-slate-800 hover:bg-pink-400/10 transition-all group overflow-hidden">
             <div class="w-28 h-28 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
@@ -845,7 +722,7 @@ function openRpgModal() {
       : "bg-slate-900/50 border-slate-700/30 grayscale opacity-40";
     const titleClass = isUnlocked ? "text-white" : "text-slate-500";
     const descClass = isUnlocked ? "text-slate-400" : "text-slate-600";
-    const dateHtml = isUnlocked ? `<span class="text-[9px] text-primary font-bold">✓ Concluída</span>` : '';
+    const dateHtml = isUnlocked ? `<span class="text-[9px] text-primary font-bold">âœ“ ConcluÃ­da</span>` : '';
 
     // Progress bar (show for non-unlocked achievements with valid tracking)
     const showProgress = !isUnlocked && def.MaxProgress > 1 && def.TrackKey;
@@ -880,7 +757,7 @@ function openRpgModal() {
     buttonsWrapper.className = "mt-4 pt-4 border-t border-slate-700 space-y-3";
     buttonsWrapper.innerHTML = `
           <button id="rpg-help-btn" class="w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
-              <span class="material-symbols-outlined">help</span> Dúvidas
+              <span class="material-symbols-outlined">help</span> DÃºvidas
           </button>
           <button id="rpg-logout-btn" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
               <span class="material-symbols-outlined">logout</span> Sair da Conta
@@ -913,7 +790,7 @@ function openRpgModal() {
 const closeRpgModal = () => rpgModal.classList.add('hidden');
 closeRpgBtn.addEventListener('click', closeRpgModal);
 rpgOverlay.addEventListener('click', closeRpgModal);
-avatarControl.addEventListener('click', openRpgModal);
+// avatarControl listener already registered at top of file (L748), no duplicate needed
 
 // Help Modal close handlers
 const helpModal = document.getElementById('help-modal');
@@ -975,7 +852,7 @@ document.getElementById('onb-avatar-female').addEventListener('click', () => {
   document.getElementById('onb-avatar-male').querySelector('div').classList.remove('border-primary', 'ring-2', 'ring-primary/50');
 });
 
-// Step 1 → Step 2
+// Step 1 â†’ Step 2
 document.getElementById('onb-next-1').addEventListener('click', () => {
   const name = onbNameInput.value.trim();
   if (!name) {
@@ -1005,10 +882,10 @@ document.getElementById('onb-next-1').addEventListener('click', () => {
 document.getElementById('onb-finish').addEventListener('click', () => {
   markOnboardingCompleted();
   onboardingModal.classList.add('hidden');
-  showNotification('Bem-vindo! Adicione suas primeiras transações 🎉', 'success');
+  showNotification('Bem-vindo! Adicione suas primeiras transaÃ§Ãµes ðŸŽ‰', 'success');
 });
 
-// Patrimônio reminder: show after first transaction if not yet calibrated
+// PatrimÃ´nio reminder: show after first transaction if not yet calibrated
 function checkPatrimonioReminder() {
   if (!isOnboardingCompleted()) return;
   if (isPatrimonioCalibrated()) return;
@@ -1113,7 +990,7 @@ ctxEditBtn.addEventListener('click', () => {
       document.getElementById('tx-custom-category-container').classList.add('hidden');
     }
   } else {
-    document.getElementById('tx-emoji-display').textContent = '🏷️';
+    document.getElementById('tx-emoji-display').textContent = 'ðŸ·ï¸';
 
     const select = document.getElementById('tx-category');
     let optionFound = Array.from(select.options).some(opt => opt.value === fullCat);
@@ -1139,8 +1016,8 @@ ctxEditBtn.addEventListener('click', () => {
   document.getElementById('tx-install-total').value = selectedTransaction.total_installments || 1;
   document.getElementById('tx-recurring').checked = selectedTransaction.is_recurring || false;
 
-  document.querySelector('#modal-content h3').textContent = 'Editar Transação';
-  document.querySelector('#transaction-form button[type="submit"]').textContent = 'Salvar Alterações';
+  document.querySelector('#modal-content h3').textContent = 'Editar TransaÃ§Ã£o';
+  document.querySelector('#transaction-form button[type="submit"]').textContent = 'Salvar AlteraÃ§Ãµes';
 
   closeContextMenu();
   modal.classList.remove('hidden');
@@ -1159,16 +1036,16 @@ const customCategoryContainer = document.getElementById('tx-custom-category-cont
 const customCategoryInput = document.getElementById('tx-custom-category');
 
 const defaultEmojis = [
-  '🍔', '🍕', '🍣', '🛒', '🛍️', '🎁', '🚌', '🚗', '✈️', '🏠', '🏢', '💡', '💧', '🔥',
-  '🏥', '💊', '🦷', '🎮', '🎬', '🎵', '⚽', '🏋️', '👕', '👗', '📚', '✏️', '💼', '💻',
-  '💸', '💰', '💳', '📈', '🏷️', '🐶', '🐱', '🛠️', '❓'
+  'ðŸ”', 'ðŸ•', 'ðŸ£', 'ðŸ›’', 'ðŸ›ï¸', 'ðŸŽ', 'ðŸšŒ', 'ðŸš—', 'âœˆï¸', 'ðŸ ', 'ðŸ¢', 'ðŸ’¡', 'ðŸ’§', 'ðŸ”¥',
+  'ðŸ¥', 'ðŸ’Š', 'ðŸ¦·', 'ðŸŽ®', 'ðŸŽ¬', 'ðŸŽµ', 'âš½', 'ðŸ‹ï¸', 'ðŸ‘•', 'ðŸ‘—', 'ðŸ“š', 'âœï¸', 'ðŸ’¼', 'ðŸ’»',
+  'ðŸ’¸', 'ðŸ’°', 'ðŸ’³', 'ðŸ“ˆ', 'ðŸ·ï¸', 'ðŸ¶', 'ðŸ±', 'ðŸ› ï¸', 'â“'
 ];
 const categoryToEmoji = {
-  'General': '🏷️',
-  'Food': '🍔',
-  'Transport': '🚌',
-  'Home': '🏠',
-  'Salary': '💰'
+  'General': 'ðŸ·ï¸',
+  'Food': 'ðŸ”',
+  'Transport': 'ðŸšŒ',
+  'Home': 'ðŸ ',
+  'Salary': 'ðŸ’°'
 };
 
 // Populate picker
@@ -1228,7 +1105,7 @@ categorySelect.addEventListener('change', (e) => {
   if (val === 'New') {
     customCategoryContainer.classList.remove('hidden');
     customCategoryInput.required = true;
-    emojiDisplay.textContent = '❓'; // Empty/Question mark for new
+    emojiDisplay.textContent = 'â“'; // Empty/Question mark for new
   } else {
     customCategoryContainer.classList.add('hidden');
     customCategoryInput.required = false;
@@ -1263,7 +1140,7 @@ async function loadData() {
     if (currentTab === 'Dashboard') {
       renderDashboard();
     }
-    // Check if patrimônio reminder should be shown (first-time calibration)
+    // Check if patrimÃ´nio reminder should be shown (first-time calibration)
     checkPatrimonioReminder();
   } catch (e) {
     console.error("Failed to load transactions", e);
@@ -1289,7 +1166,7 @@ async function renderDashboard() {
 
   dashCategories.innerHTML = '';
   if (sortedCats.length === 0) {
-    dashCategories.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">Nenhuma despesa no período.</div>';
+    dashCategories.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">Nenhuma despesa no perÃ­odo.</div>';
   } else {
     sortedCats.forEach(([cat, amount]) => {
       const pct = totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0;
@@ -1297,7 +1174,7 @@ async function renderDashboard() {
       let firstChar = cat.split(' ')[0] || "";
       let isEmoji = /[\u1000-\uFFFF]/.test(firstChar);
 
-      const icon = isEmoji ? firstChar : '🏷️';
+      const icon = isEmoji ? firstChar : 'ðŸ·ï¸';
       const name = isEmoji ? cat.substring(firstChar.length).trim() : cat;
 
       // Budget Checks
@@ -1308,10 +1185,10 @@ async function renderDashboard() {
       if (budget > 0) {
         const pctBudget = amount / budget;
         if (pctBudget >= 1.0) {
-          budgetWarning = `<span class="text-[10px] text-accent-red border border-accent-red/30 px-1 rounded-sm ml-2 font-bold uppercase hidden sm:inline-block">🚨 Estourou!</span>`;
+          budgetWarning = `<span class="text-[10px] text-accent-red border border-accent-red/30 px-1 rounded-sm ml-2 font-bold uppercase hidden sm:inline-block">ðŸš¨ Estourou!</span>`;
           barColor = 'bg-accent-red drop-shadow-[0_0_5px_rgba(250,101,56,0.6)]';
         } else if (pctBudget >= 0.8) {
-          budgetWarning = `<span class="text-[10px] text-yellow-400 border border-yellow-400/30 px-1 rounded-sm ml-2 font-bold uppercase hidden sm:inline-block">⚠️ ${Math.round(pctBudget * 100)}%</span>`;
+          budgetWarning = `<span class="text-[10px] text-yellow-400 border border-yellow-400/30 px-1 rounded-sm ml-2 font-bold uppercase hidden sm:inline-block">âš ï¸ ${Math.round(pctBudget * 100)}%</span>`;
           barColor = 'bg-yellow-500';
         }
       }
@@ -1340,7 +1217,7 @@ async function renderDashboard() {
 
   dashCreditCards.innerHTML = '';
   if (sortedCards.length === 0) {
-    dashCreditCards.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">Nenhuma despesa no crédito.</div>';
+    dashCreditCards.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">Nenhuma despesa no crÃ©dito.</div>';
   } else {
     sortedCards.forEach(([cardName, amount]) => {
       const pct = totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0;
@@ -1441,7 +1318,7 @@ async function renderDashboard() {
     forecast = (totalExpense / currentDay) * daysInMonth;
     const dailyAvg = totalExpense / currentDay;
     if (dailyAvg > 0) {
-      dashDailyExpense.textContent = `Gasto diário de ${formatCurrency(dailyAvg)}`;
+      dashDailyExpense.textContent = `Gasto diÃ¡rio de ${formatCurrency(dailyAvg)}`;
       dashDailyExpense.classList.remove('hidden');
     }
   }
@@ -1456,24 +1333,24 @@ async function renderDashboard() {
   // 3. Smart Insights
   let insights = "";
   if (income === 0 && totalExpense === 0) {
-    insights = "Nenhuma movimentação neste mês. Que tal registrar ou planejar suas despesas?";
+    insights = "Nenhuma movimentaÃ§Ã£o neste mÃªs. Que tal registrar ou planejar suas despesas?";
   } else if (income === 0) {
-    insights = "Atenção: Você tem despesas registradas, mas nenhuma receita neste mês. Acompanhe de perto as suas reservas financeiras.";
+    insights = "AtenÃ§Ã£o: VocÃª tem despesas registradas, mas nenhuma receita neste mÃªs. Acompanhe de perto as suas reservas financeiras.";
   } else {
     const spentPct = (totalExpense / income) * 100;
     if (spentPct < 50) {
-      insights = `Excelente! Você gastou apenas ${spentPct.toFixed(1)}% da sua receita. Uma ótima janela para poupar, investir, ou focar em projetos de longo prazo.`;
+      insights = `Excelente! VocÃª gastou apenas ${spentPct.toFixed(1)}% da sua receita. Uma Ã³tima janela para poupar, investir, ou focar em projetos de longo prazo.`;
     } else if (spentPct < 80) {
-      insights = `Tudo caminhando. O grau de consumo está em ${spentPct.toFixed(1)}%. Mantenha esse ritmo seguro até a virada do mês.`;
+      insights = `Tudo caminhando. O grau de consumo estÃ¡ em ${spentPct.toFixed(1)}%. Mantenha esse ritmo seguro atÃ© a virada do mÃªs.`;
     } else if (spentPct <= 100) {
-      insights = `⚠️ Risco Amarelo. Você já consumiu ${spentPct.toFixed(1)}% do orçamento. Trave saídas desnecessárias para não fechar no déficit.`;
+      insights = `âš ï¸ Risco Amarelo. VocÃª jÃ¡ consumiu ${spentPct.toFixed(1)}% do orÃ§amento. Trave saÃ­das desnecessÃ¡rias para nÃ£o fechar no dÃ©ficit.`;
     } else {
-      insights = `🚨 Cuidado! O volume gasto excedeu sua receita em ${Math.abs(100 - spentPct).toFixed(1)}%. Repense as parcelas e os passivos de lazer rapidamente.`;
+      insights = `ðŸš¨ Cuidado! O volume gasto excedeu sua receita em ${Math.abs(100 - spentPct).toFixed(1)}%. Repense as parcelas e os passivos de lazer rapidamente.`;
     }
   }
   dashInsights.textContent = insights;
 
-  // 4. Net Worth (Patrimônio Global)
+  // 4. Net Worth (PatrimÃ´nio Global)
   dashNetworth.textContent = "Calculando...";
 
   const netWorth = await TransactionService.getNetWorth(selectedYear, selectedMonth);
@@ -1486,7 +1363,7 @@ async function renderDashboard() {
     const currentBase = await TransactionService.getBaseNetWorth();
     const sumOfTransactions = netWorth - currentBase;
 
-    const newTargetStr = prompt("Ajuste Mágico de Saldo\n\nDigite quanto de dinheiro você tem na conta bancária hoje (Ex: 2248,23):\nO aplicativo fará o cálculo retroativo para calibrar seu saldo dinamicamente na nuvem.", netWorth.toFixed(2).replace('.', ','));
+    const newTargetStr = prompt("Ajuste MÃ¡gico de Saldo\n\nDigite quanto de dinheiro vocÃª tem na conta bancÃ¡ria hoje (Ex: 2248,23):\nO aplicativo farÃ¡ o cÃ¡lculo retroativo para calibrar seu saldo dinamicamente na nuvem.", netWorth.toFixed(2).replace('.', ','));
 
     if (newTargetStr !== null) {
       const targetNetWorth = parseBrazilianCurrency(newTargetStr);
@@ -1494,13 +1371,13 @@ async function renderDashboard() {
         const newBase = targetNetWorth - sumOfTransactions;
 
         // Visual loading state
-        dashNetworthTrend.textContent = '☁️ Sincronizando...';
+        dashNetworthTrend.textContent = 'â˜ï¸ Sincronizando...';
         dashNetworthTrend.classList.replace('text-accent-green', 'text-yellow-400');
         dashNetworthTrend.classList.replace('text-accent-red', 'text-yellow-400');
 
         try {
           await TransactionService.updateBaseNetWorth(newBase);
-          // Mark patrimônio as calibrated (one-time onboarding)
+          // Mark patrimÃ´nio as calibrated (one-time onboarding)
           markPatrimonioCalibrated();
           patrimonioReminder.classList.add('hidden');
         } catch (e) {
@@ -1520,11 +1397,11 @@ async function renderDashboard() {
 
   if (freeNetWorth >= 0) {
     dashNetworth.classList.replace('text-accent-red', 'text-white');
-    dashNetworthTrend.textContent = '📈 Saldos Positivos';
+    dashNetworthTrend.textContent = 'ðŸ“ˆ Saldos Positivos';
     dashNetworthTrend.classList.replace('text-accent-red', 'text-accent-green');
   } else {
     dashNetworth.classList.add('text-accent-red');
-    dashNetworthTrend.textContent = '📉 Saldos Negativos';
+    dashNetworthTrend.textContent = 'ðŸ“‰ Saldos Negativos';
     dashNetworthTrend.classList.replace('text-accent-green', 'text-accent-red');
   }
 
@@ -1553,11 +1430,11 @@ function updateUI() {
   // Process unique cards for filter dropdown
   const uniqueCards = [...new Set(transactions.map(t => t.credit_card_name).filter(Boolean))];
   const oldCardVal = filterCardEl.value;
-  filterCardEl.innerHTML = '<option value="All">💳 Todos (Cartões)</option>';
+  filterCardEl.innerHTML = '<option value="All">ðŸ’³ Todos (CartÃµes)</option>';
   uniqueCards.forEach(card => {
     const opt = document.createElement('option');
     opt.value = card;
-    opt.textContent = `💳 ${card} `;
+    opt.textContent = `ðŸ’³ ${card} `;
     filterCardEl.appendChild(opt);
   });
   if (uniqueCards.includes(oldCardVal)) {
@@ -1661,7 +1538,7 @@ function updateUI() {
       ? `<span style="font-size: 24px;">${firstChar}</span>`
       : `<span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">${iconSymbol}</span>`;
 
-    let subText = `${subCategory} • ${txDate}`;
+    let subText = `${subCategory} â€¢ ${txDate}`;
 
     // Extra tags (Installments, Card, Budget)
     let tagsHtml = '';
@@ -1671,7 +1548,7 @@ function updateUI() {
       if (budget > 0) {
         const monthSum = catMap[subCategory] || 0;
         if (monthSum >= budget) {
-          tagsHtml += `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/20 mr-1 shadow-glow-red">Orçamento Estourado</span>`;
+          tagsHtml += `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/20 mr-1 shadow-glow-red">OrÃ§amento Estourado</span>`;
         }
       }
     }
@@ -1695,11 +1572,11 @@ function updateUI() {
     }
 
     if (!isIncome && t.is_recurring) {
-      tagsHtml += `<span title="Despesa Recorrente" class="text-[12px] cursor-help font-extrabold px-2 py-0 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/40 transition inline-block shadow-[0_0_8px_rgba(250,204,21,0.5)]">∞</span>`;
+      tagsHtml += `<span title="Despesa Recorrente" class="text-[12px] cursor-help font-extrabold px-2 py-0 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/40 transition inline-block shadow-[0_0_8px_rgba(250,204,21,0.5)]">âˆž</span>`;
     }
 
     const el = document.createElement('div');
-    // Structure based on Stitch design pattern e evitando seleção de texto no iOS durante touch and hold
+    // Structure based on Stitch design pattern e evitando seleÃ§Ã£o de texto no iOS durante touch and hold
     el.className = 'glass-card glass-card-hover rounded-xl p-3 flex items-center gap-4 transition-all duration-200 select-none';
     el.innerHTML = `
         <div class="h-12 w-12 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}">
@@ -1761,7 +1638,7 @@ form.addEventListener('submit', async (e) => {
     const parsedAmount = parseBrazilianCurrency(txAmountStr);
 
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      showNotification('Por favor, informe um valor válido acima de zero.', 'error');
+      showNotification('Por favor, informe um valor vÃ¡lido acima de zero.', 'error');
       return;
     }
 
@@ -1792,7 +1669,7 @@ form.addEventListener('submit', async (e) => {
     closeModal();
 
   } catch (error) {
-    alert("Erro ao salvar transação. Verifique se o Supabase está configurado corretamente.");
+    alert("Erro ao salvar transaÃ§Ã£o. Verifique se o Supabase estÃ¡ configurado corretamente.");
     console.error(error);
   } finally {
     submitBtn.textContent = originalText;
@@ -1800,172 +1677,10 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-// --- Neural Border Canvas Animation ---
-function initNeuralBorder() {
-  const canvas = document.getElementById('neural-border-canvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  let width, height;
+// Neural Border Animation â†’ ./modules/NeuralBorderAnimation.js
+// Pull-to-Refresh â†’ ./modules/PullToRefresh.js
+initPullToRefresh();
 
-  function resize() {
-    width = canvas.parentElement.offsetWidth;
-    height = canvas.parentElement.offsetHeight;
-    canvas.width = width;
-    canvas.height = height;
-  }
-  window.addEventListener('resize', resize);
-  resize();
-
-  // Nodes around the perimeter
-  const colors = ['#00ff80', '#00f2ff', '#b300ff']; // Green, Cyan, Purple
-  const nodes = [];
-  for (let i = 0; i < 8; i++) {
-    nodes.push({
-      progress: i / 8 + (Math.random() * 0.05),
-      speed: 0.001 + Math.random() * 0.0015,
-      color: colors[i % colors.length]
-    });
-  }
-
-  const sparkles = [];
-  let time = 0;
-
-  function hexToRgb(h) {
-    return {
-      r: parseInt(h.substring(1, 3), 16),
-      g: parseInt(h.substring(3, 5), 16),
-      b: parseInt(h.substring(5, 7), 16)
-    };
-  }
-
-  function interpolateColor(c1, c2, factor) {
-    const c1Rgb = hexToRgb(c1);
-    const c2Rgb = hexToRgb(c2);
-    const r = Math.round(c1Rgb.r + factor * (c2Rgb.r - c1Rgb.r));
-    const g = Math.round(c1Rgb.g + factor * (c2Rgb.g - c1Rgb.g));
-    const b = Math.round(c1Rgb.b + factor * (c2Rgb.b - c1Rgb.b));
-    return `rgb(${r}, ${g}, ${b})`;
-  }
-  function getPoint(p) {
-    p = p % 1;
-    if (p < 0) p += 1;
-    const total = width * 2 + height * 2;
-    let d = p * total;
-    if (d < width) return { x: d, y: 0, nx: 0, ny: 1 };
-    d -= width;
-    if (d < height) return { x: width, y: d, nx: -1, ny: 0 };
-    d -= height;
-    if (d < width) return { x: width - d, y: height, nx: 0, ny: -1 };
-    d -= width;
-    return { x: 0, y: height - d, nx: 1, ny: 0 };
-  }
-
-  function draw() {
-    ctx.clearRect(0, 0, width, height);
-    time += 0.006; // Slowed down significantly for hypnotic effect
-
-    nodes.forEach(n => { n.progress += n.speed * 0.15; }); // Slowed movement on perimeter
-    nodes.sort((a, b) => (a.progress % 1) - (b.progress % 1));
-
-    // Spawn random sparkles
-    if (Math.random() < 0.15) {
-      sparkles.push({
-        progress: Math.random(),
-        life: 1.0,
-        decay: 0.01 + Math.random() * 0.02,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        offset: (Math.random() - 0.5) * 4 // slight deviation from line
-      });
-    }
-
-    ctx.lineWidth = 1.5;
-
-    for (let i = 0; i < nodes.length; i++) {
-      const n1 = nodes[i];
-      const n2 = nodes[(i + 1) % nodes.length];
-
-      let d1 = n1.progress % 1;
-      let d2 = n2.progress % 1;
-      if (d2 < d1) d2 += 1; // Wrap around for interpolation
-
-      const dist1D = (d2 - d1) * (width * 2 + height * 2);
-      const steps = Math.floor(dist1D / 5) || 1;
-
-      let prevX, prevY;
-      for (let j = 0; j <= steps; j++) {
-        const prog = j / steps;
-        const curr1D = d1 + (d2 - d1) * prog;
-        const pt = getPoint(curr1D);
-
-        // Sin wave amplitude only in the middle of the segment
-        const amp = 4 * Math.sin(prog * Math.PI);
-        const waveOffset = amp * Math.sin((j * 0.5) - time * 2);
-
-        // Inset to prevent clipping/bleeding 
-        const inset = 3;
-        // Apply offset along normal vector
-        const finalX = pt.x + pt.nx * waveOffset + pt.nx * inset;
-        const finalY = pt.y + pt.ny * waveOffset + pt.ny * inset;
-
-        if (j > 0) {
-          ctx.beginPath();
-          ctx.moveTo(prevX, prevY);
-          ctx.lineTo(finalX, finalY);
-
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-
-          const color = interpolateColor(n1.color, n2.color, prog);
-          ctx.strokeStyle = color;
-          ctx.shadowColor = color;
-          ctx.shadowBlur = 10;
-          ctx.stroke();
-        }
-        prevX = finalX;
-        prevY = finalY;
-      }
-      ctx.shadowBlur = 0; // reset
-    }
-
-    // Draw sparkles
-    for (let i = sparkles.length - 1; i >= 0; i--) {
-      // ... (sparkle code remains identical to target, see full block) ...
-      const s = sparkles[i];
-      s.life -= s.decay;
-      if (s.life <= 0) {
-        sparkles.splice(i, 1);
-        continue;
-      }
-
-      const pt = getPoint(s.progress);
-      const inset = 3;
-      const sX = pt.x + pt.nx * (inset + s.offset);
-      const sY = pt.y + pt.ny * (inset + s.offset);
-
-      ctx.beginPath();
-      ctx.arc(sX, sY, 1.0 + Math.random() * 0.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#fff';
-      ctx.shadowColor = s.color;
-      ctx.shadowBlur = 8;
-      ctx.globalAlpha = Math.max(0, s.life);
-      ctx.fill();
-      ctx.globalAlpha = 1.0;
-      ctx.shadowBlur = 0;
-    }
-  }
-
-  // Throttle animation to ~30fps for better mobile performance
-  let lastFrameTime = 0;
-  function loop(timestamp) {
-    requestAnimationFrame(loop);
-    // Limit to 30 FPS -> ~33ms per frame
-    if (timestamp - lastFrameTime < 33) return;
-    lastFrameTime = timestamp;
-    draw();
-  }
-
-  requestAnimationFrame(loop);
-}
 
 // --- UI Logic: Savings Goals ---
 let currentSavingsId = null;
@@ -2025,7 +1740,7 @@ function openSavingsModal(id = null) {
   } else {
     savingsForm.reset();
     savingsId.value = '';
-    savingsIcon.value = '🎯';
+    savingsIcon.value = 'ðŸŽ¯';
     document.getElementById('savings-modal-title').innerHTML = `<span class="material-symbols-outlined text-primary">savings</span> Nova Caixinha`;
   }
 
@@ -2054,7 +1769,7 @@ savingsForm.addEventListener('submit', (e) => {
   const id = savingsId.value;
   const name = savingsName.value.trim();
   const target = parseBrazilianCurrency(savingsTarget.value);
-  const icon = savingsIcon.value.trim() || '🎯';
+  const icon = savingsIcon.value.trim() || 'ðŸŽ¯';
 
   if (id) {
     SavingsService.updateGoal(id, { name, targetAmount: target, icon });
@@ -2069,7 +1784,7 @@ savingsForm.addEventListener('submit', (e) => {
 savingsAddFundBtn.addEventListener('click', () => {
   if (!currentSavingsId) return;
   const amt = parseBrazilianCurrency(savingsFundAmount.value);
-  if (isNaN(amt) || amt <= 0) return showNotification("Valor inválido", "error");
+  if (isNaN(amt) || amt <= 0) return showNotification("Valor invÃ¡lido", "error");
   SavingsService.addFunds(currentSavingsId, amt);
   savingsFundAmount.value = '';
   GamificationService.onTransactionLogged(); // Hook XP
@@ -2081,7 +1796,7 @@ savingsAddFundBtn.addEventListener('click', () => {
 savingsWithdrawFundBtn.addEventListener('click', () => {
   if (!currentSavingsId) return;
   const amt = parseBrazilianCurrency(savingsFundAmount.value);
-  if (isNaN(amt) || amt <= 0) return showNotification("Valor inválido", "error");
+  if (isNaN(amt) || amt <= 0) return showNotification("Valor invÃ¡lido", "error");
   SavingsService.withdrawFunds(currentSavingsId, amt);
   savingsFundAmount.value = '';
   renderDashboard();
@@ -2089,93 +1804,12 @@ savingsWithdrawFundBtn.addEventListener('click', () => {
 });
 
 savingsDeleteBtn.addEventListener('click', () => {
-  if (currentSavingsId && confirm('Tem certeza que deseja excluir esta caixinha? O saldo voltará para o patrimônio livre.')) {
+  if (currentSavingsId && confirm('Tem certeza que deseja excluir esta caixinha? O saldo voltarÃ¡ para o patrimÃ´nio livre.')) {
     SavingsService.deleteGoal(currentSavingsId);
     closeSavingsModalFunc();
     renderDashboard();
   }
 });
 
-// --- Pull-to-Refresh (iOS PWA) ---
-let pStart = { y: 0 };
-let pCurrent = { y: 0 };
-const ptrContainer = document.getElementById('ptr-indicator');
-const ptrIcon = document.getElementById('ptr-icon');
-const ptrText = document.getElementById('ptr-text');
-const MAX_PULL = 150;
-const TRIGGER_PULL = 80;
-let isPulling = false;
-
-document.addEventListener('touchstart', (e) => {
-  // Use scrollY or scrollTop to be extremely safe about position 0
-  const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
-
-  if (scrollTop <= 5) {
-    pStart.y = e.touches[0].clientY;
-    isPulling = true;
-    ptrContainer.style.transition = 'none';
-  }
-}, { passive: true });
-
-document.addEventListener('touchmove', (e) => {
-  if (!isPulling) return;
-  pCurrent.y = e.touches[0].clientY;
-  const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
-
-  let pullDistance = pCurrent.y - pStart.y;
-
-  // Only pull down when at the top
-  if (pullDistance > 0 && scrollTop <= 5) {
-    // CRITICAL for iOS Safari: Prevent native bouncing
-    if (e.cancelable) {
-      e.preventDefault();
-    }
-
-    let visualPull = pullDistance * 0.45;
-
-    // Hard cap
-    if (visualPull > MAX_PULL) visualPull = MAX_PULL + (visualPull - MAX_PULL) * 0.1;
-
-    ptrContainer.style.transform = `translateY(${visualPull}px)`;
-    ptrContainer.classList.remove('opacity-0', '-translate-y-full'); // Unhide fast
-
-    if (visualPull >= TRIGGER_PULL) {
-      ptrIcon.textContent = 'autorenew';
-      ptrIcon.classList.add('animate-spin');
-      ptrText.textContent = 'Solte para atualizar';
-    } else {
-      ptrIcon.textContent = 'arrow_downward';
-      ptrIcon.classList.remove('animate-spin');
-      ptrText.textContent = 'Puxe para atualizar';
-    }
-  }
-}, { passive: false });
-
-document.addEventListener('touchend', (e) => {
-  if (!isPulling) return;
-  isPulling = false;
-
-  const pullDistance = pCurrent.y - pStart.y;
-  let visualPull = pullDistance * 0.45;
-  const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
-
-  ptrContainer.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease';
-
-  if (visualPull >= TRIGGER_PULL && scrollTop <= 5) {
-    ptrContainer.style.transform = `translateY(${TRIGGER_PULL - 20}px)`;
-    ptrText.textContent = 'Atualizando...';
-
-    setTimeout(() => {
-      window.location.reload(true);
-    }, 400);
-  } else {
-    // Snap back and hide completely
-    ptrContainer.style.transform = `translateY(-150px)`;
-    ptrContainer.classList.add('opacity-0');
-    setTimeout(() => {
-      ptrIcon.classList.remove('animate-spin');
-      ptrIcon.textContent = 'arrow_downward';
-      ptrContainer.classList.add('-translate-y-full');
-    }, 400);
-  }
-});
+// Pull-to-Refresh is now in ./modules/PullToRefresh.js
+// initPullToRefresh() is called above
