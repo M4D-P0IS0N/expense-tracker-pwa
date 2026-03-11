@@ -57,13 +57,99 @@ export function initExportManager(exportPdfBtn, exportCsvBtn, getTransactions) {
         const balance = totalIncome - totalExpense;
         const formatCur = (num) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num);
 
-        // Prepare chart data as JSON strings for embedding in the HTML
-        const categoryLabelsJson = JSON.stringify(Object.keys(expensesByCategory));
-        const categoryValuesJson = JSON.stringify(Object.values(expensesByCategory));
-        const cardLabelsJson = JSON.stringify(Object.keys(expensesByCard));
-        const cardValuesJson = JSON.stringify(Object.values(expensesByCard));
-
         const hasExpenses = totalExpense > 0;
+
+        // --- Render doughnut charts as base64 images using native Canvas 2D ---
+        const chartColorPalette = [
+            '#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6',
+            '#8b5cf6', '#ec4899', '#14b8a6', '#ef4444', '#06b6d4',
+            '#84cc16', '#a855f7', '#f97316', '#22d3ee', '#e11d48',
+            '#059669', '#7c3aed', '#d946ef', '#0ea5e9', '#ca8a04'
+        ];
+
+        function renderDoughnutToDataUrl(labels, values) {
+            const total = values.reduce((sum, v) => sum + v, 0);
+            if (total === 0 || labels.length === 0) return '';
+
+            const devicePixelRatio = window.devicePixelRatio || 1;
+            const canvasLogicalWidth = 380;
+            const outerRadius = 90;
+            const innerRadius = 55;
+            const chartCenterX = canvasLogicalWidth / 2;
+            const chartTopPadding = 16;
+            const chartCenterY = chartTopPadding + outerRadius;
+
+            // Legend layout — single column for clarity
+            const legendTopPadding = 20;
+            const legendStartY = chartCenterY + outerRadius + legendTopPadding;
+            const legendItemHeight = 20;
+            const legendRows = labels.length;
+            const legendHeight = legendRows * legendItemHeight;
+
+            const canvasLogicalHeight = legendStartY + legendHeight + 12;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = canvasLogicalWidth * devicePixelRatio;
+            canvas.height = canvasLogicalHeight * devicePixelRatio;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(devicePixelRatio, devicePixelRatio);
+
+            // Transparent background
+            ctx.clearRect(0, 0, canvasLogicalWidth, canvasLogicalHeight);
+
+            // Draw doughnut segments
+            let currentAngle = -Math.PI / 2;
+            values.forEach((value, segmentIndex) => {
+                const sliceAngle = (value / total) * 2 * Math.PI;
+                ctx.beginPath();
+                ctx.arc(chartCenterX, chartCenterY, outerRadius, currentAngle, currentAngle + sliceAngle);
+                ctx.arc(chartCenterX, chartCenterY, innerRadius, currentAngle + sliceAngle, currentAngle, true);
+                ctx.closePath();
+                ctx.fillStyle = chartColorPalette[segmentIndex % chartColorPalette.length];
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                currentAngle += sliceAngle;
+            });
+
+            // Draw legend items (single column, left-aligned)
+            ctx.textBaseline = 'middle';
+            const legendLeftPadding = 24;
+
+            labels.forEach((label, legendIndex) => {
+                const itemY = legendStartY + legendIndex * legendItemHeight;
+                const percentage = ((values[legendIndex] / total) * 100).toFixed(1);
+                const segmentColor = chartColorPalette[legendIndex % chartColorPalette.length];
+
+                // Colored circle
+                ctx.beginPath();
+                ctx.arc(legendLeftPadding + 6, itemY + 9, 6, 0, 2 * Math.PI);
+                ctx.fillStyle = segmentColor;
+                ctx.fill();
+
+                // Label text
+                ctx.fillStyle = '#333333';
+                ctx.font = '12px Segoe UI, system-ui, sans-serif';
+                ctx.fillText(`${label} (${percentage}%)`, legendLeftPadding + 18, itemY + 9);
+            });
+
+            return canvas.toDataURL('image/png');
+        }
+
+        let categoryChartDataUrl = '';
+        let cardChartDataUrl = '';
+
+        if (hasExpenses) {
+            categoryChartDataUrl = renderDoughnutToDataUrl(
+                Object.keys(expensesByCategory),
+                Object.values(expensesByCategory)
+            );
+            cardChartDataUrl = renderDoughnutToDataUrl(
+                Object.keys(expensesByCard),
+                Object.values(expensesByCard)
+            );
+        }
 
         const html = `
     <!DOCTYPE html>
@@ -71,7 +157,6 @@ export function initExportManager(exportPdfBtn, exportCsvBtn, getTransactions) {
     <head>
       <meta charset="utf-8">
       <title>Relatório - App de Custos</title>
-      <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"><\/script>
       <style>
         body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; padding: 20px; background: #fff; color: #1a1a2e; }
         .container { max-width: 850px; margin: 0 auto; background: white; padding: 24px; }
@@ -82,9 +167,7 @@ export function initExportManager(exportPdfBtn, exportCsvBtn, getTransactions) {
         .charts-section { display: flex; gap: 24px; margin: 28px 0; page-break-inside: avoid; }
         .chart-box { flex: 1; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; background: #fafafa; text-align: center; }
         .chart-box h3 { margin: 0 0 12px 0; font-size: 15px; font-weight: 600; color: #333; }
-        .chart-box canvas { max-width: 280px; max-height: 280px; margin: 0 auto; display: block; }
-        .chart-box img { max-width: 280px; max-height: 280px; margin: 0 auto; display: block; }
-        .no-data-msg { color: #999; font-style: italic; padding: 40px 0; }
+        .chart-box img { width: 100%; height: auto; display: block; margin: 0 auto; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
         th, td { border: 1px solid #e0e0e0; padding: 8px 10px; text-align: left; }
         th { background-color: #f5f5f5; font-weight: 600; color: #444; }
@@ -96,7 +179,7 @@ export function initExportManager(exportPdfBtn, exportCsvBtn, getTransactions) {
         }
       </style>
     </head>
-    <body>
+    <body onload="window.print()">
       <div class="container">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
           <h1 style="margin:0; font-size: 24px; color: #1a1a2e;">Relatório: ${month.padStart(2, '0')}/${year}</h1>
@@ -122,11 +205,11 @@ export function initExportManager(exportPdfBtn, exportCsvBtn, getTransactions) {
         <div class="charts-section">
           <div class="chart-box">
             <h3>Despesas por Categoria</h3>
-            <canvas id="chartCategory" width="280" height="280"></canvas>
+            <img src="${categoryChartDataUrl}" alt="Gráfico de despesas por categoria">
           </div>
           <div class="chart-box">
             <h3>Despesas por Cartão</h3>
-            <canvas id="chartCard" width="280" height="280"></canvas>
+            <img src="${cardChartDataUrl}" alt="Gráfico de despesas por cartão">
           </div>
         </div>
         ` : ''}
@@ -150,122 +233,6 @@ export function initExportManager(exportPdfBtn, exportCsvBtn, getTransactions) {
 
         <p style="margin-top:40px; font-size:11px; color:#aaa;"><i>Gerado automaticamente por App de Custos PWA</i></p>
       </div>
-
-      ${hasExpenses ? `
-      <script>
-        // Curated color palette for chart segments
-        const chartColorPalette = [
-          '#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6',
-          '#8b5cf6', '#ec4899', '#14b8a6', '#ef4444', '#06b6d4',
-          '#84cc16', '#a855f7', '#f97316', '#22d3ee', '#e11d48',
-          '#059669', '#7c3aed', '#d946ef', '#0ea5e9', '#ca8a04'
-        ];
-
-        function assignColors(count) {
-          return Array.from({ length: count }, (_, i) => chartColorPalette[i % chartColorPalette.length]);
-        }
-
-        const categoryLabels = ${categoryLabelsJson};
-        const categoryValues = ${categoryValuesJson};
-        const cardLabels = ${cardLabelsJson};
-        const cardValues = ${cardValuesJson};
-
-        const formatBRL = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-
-        function buildDoughnutChart(canvasId, labels, values) {
-          const ctx = document.getElementById(canvasId);
-          if (!ctx || labels.length === 0) return null;
-
-          const colors = assignColors(labels.length);
-
-          return new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-              labels: labels,
-              datasets: [{
-                data: values,
-                backgroundColor: colors,
-                borderColor: '#ffffff',
-                borderWidth: 2,
-                hoverOffset: 6
-              }]
-            },
-            options: {
-              responsive: false,
-              animation: { duration: 0 },
-              plugins: {
-                legend: {
-                  position: 'bottom',
-                  labels: {
-                    font: { size: 11 },
-                    padding: 10,
-                    usePointStyle: true,
-                    pointStyleWidth: 10,
-                    generateLabels: function(chart) {
-                      const dataset = chart.data.datasets[0];
-                      const total = dataset.data.reduce((sum, v) => sum + v, 0);
-                      return chart.data.labels.map((label, i) => {
-                        const value = dataset.data[i];
-                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
-                        return {
-                          text: label + ' (' + percentage + '%)',
-                          fillStyle: dataset.backgroundColor[i],
-                          strokeStyle: '#fff',
-                          lineWidth: 1,
-                          index: i
-                        };
-                      });
-                    }
-                  }
-                },
-                tooltip: {
-                  callbacks: {
-                    label: function(context) {
-                      return context.label + ': ' + formatBRL(context.parsed);
-                    }
-                  }
-                }
-              }
-            }
-          });
-        }
-
-        // Render charts, then convert canvases to static images for reliable PDF printing
-        function renderAndFreeze() {
-          const chartCat = buildDoughnutChart('chartCategory', categoryLabels, categoryValues);
-          const chartCrd = buildDoughnutChart('chartCard', cardLabels, cardValues);
-
-          // Small delay to ensure Chart.js finishes rendering the canvas pixels
-          setTimeout(() => {
-            ['chartCategory', 'chartCard'].forEach(id => {
-              const canvas = document.getElementById(id);
-              if (!canvas) return;
-              try {
-                const imageDataUrl = canvas.toDataURL('image/png');
-                const img = document.createElement('img');
-                img.src = imageDataUrl;
-                img.style.maxWidth = '280px';
-                img.style.maxHeight = '280px';
-                img.style.display = 'block';
-                img.style.margin = '0 auto';
-                canvas.parentNode.replaceChild(img, canvas);
-              } catch (err) {
-                console.warn('Could not freeze chart ' + id + ' to image:', err);
-              }
-            });
-
-            // Trigger print after charts are frozen as images
-            window.print();
-          }, 600);
-        }
-
-        window.addEventListener('load', renderAndFreeze);
-      <\/script>
-      ` : `
-      <script>
-        window.addEventListener('load', () => window.print());
-      <\/script>
-      `}
     </body>
     </html>
   `;
