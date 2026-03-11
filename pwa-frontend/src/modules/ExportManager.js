@@ -128,10 +128,12 @@ export function initExportManager(exportPdfBtn, exportCsvBtn, getTransactions) {
                 ctx.fillStyle = segmentColor;
                 ctx.fill();
 
+                const formattedValue = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(values[legendIndex]);
+
                 // Label text
                 ctx.fillStyle = '#333333';
                 ctx.font = '12px Segoe UI, system-ui, sans-serif';
-                ctx.fillText(`${label} (${percentage}%)`, legendLeftPadding + 18, itemY + 9);
+                ctx.fillText(`${label} (${percentage}%) — ${formattedValue}`, legendLeftPadding + 18, itemY + 9);
             });
 
             return canvas.toDataURL('image/png');
