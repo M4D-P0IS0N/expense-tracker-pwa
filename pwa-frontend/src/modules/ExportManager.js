@@ -140,16 +140,32 @@ export function initExportManager(exportPdfBtn, exportCsvBtn, getTransactions) {
         let categoryChartDataUrl = '';
         let cardChartDataUrl = '';
 
-        if (hasExpenses) {
-            categoryChartDataUrl = renderDoughnutToDataUrl(
-                Object.keys(expensesByCategory),
-                Object.values(expensesByCategory)
-            );
-            cardChartDataUrl = renderDoughnutToDataUrl(
-                Object.keys(expensesByCard),
-                Object.values(expensesByCard)
-            );
+        // Sort entries from highest to lowest value
+        function sortedEntriesDescending(dataObject) {
+            const sortedPairs = Object.entries(dataObject).sort((a, b) => b[1] - a[1]);
+            return { labels: sortedPairs.map(p => p[0]), values: sortedPairs.map(p => p[1]) };
         }
+
+        if (hasExpenses) {
+            const sortedCategoryData = sortedEntriesDescending(expensesByCategory);
+            categoryChartDataUrl = renderDoughnutToDataUrl(
+                sortedCategoryData.labels,
+                sortedCategoryData.values
+            );
+
+            // Remove "Sem Cartão" — only show actual credit cards
+            delete expensesByCard['Sem Cartão'];
+
+            if (Object.keys(expensesByCard).length > 0) {
+                const sortedCardData = sortedEntriesDescending(expensesByCard);
+                cardChartDataUrl = renderDoughnutToDataUrl(
+                    sortedCardData.labels,
+                    sortedCardData.values
+                );
+            }
+        }
+
+        const hasCardChartData = cardChartDataUrl !== '';
 
         const html = `
     <!DOCTYPE html>
@@ -207,10 +223,12 @@ export function initExportManager(exportPdfBtn, exportCsvBtn, getTransactions) {
             <h3>Despesas por Categoria</h3>
             <img src="${categoryChartDataUrl}" alt="Gráfico de despesas por categoria">
           </div>
+          ${hasCardChartData ? `
           <div class="chart-box">
             <h3>Despesas por Cartão</h3>
             <img src="${cardChartDataUrl}" alt="Gráfico de despesas por cartão">
           </div>
+          ` : ''}
         </div>
         ` : ''}
 
