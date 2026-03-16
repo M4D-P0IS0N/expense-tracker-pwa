@@ -936,7 +936,33 @@ contextOverlay.addEventListener('click', closeContextMenu);
 
 ctxDeleteBtn.addEventListener('click', async () => {
   if (!selectedTransaction) return;
-  TrashService.moveToTrash(selectedTransaction.id);
+  
+  // Lógica para Parceladas ou Recorrentes
+  if (selectedTransaction.installment_group_id) {
+    const isRecurring = selectedTransaction.is_recurring;
+    const typeLabel = isRecurring ? 'Recorrente' : 'Parcelada';
+    
+    // Simple native prompt asking what to delete
+    // We don't have a complex DOM modal for this specifically yet, so confirm works for now
+    const deleteFuture = window.confirm(`Esta transação é ${typeLabel}.\n\nDeseja excluir também TODAS as cobranças (desta série) deste mês em diante?\n\n[OK] = Sim, excluir esta e as futuras.\n[Cancelar] = Apenas esta.`);
+    
+    if (deleteFuture) {
+      // Find all transactions in the same group that are ON or AFTER this transaction's date/installment
+      const groupTransactions = transactions.filter(t => 
+        t.installment_group_id === selectedTransaction.installment_group_id &&
+        new Date(t.date) >= new Date(selectedTransaction.date)
+      );
+      
+      groupTransactions.forEach(t => TrashService.moveToTrash(t.id));
+    } else {
+      // Delete just this one
+      TrashService.moveToTrash(selectedTransaction.id);
+    }
+  } else {
+    // Normal transaction
+    TrashService.moveToTrash(selectedTransaction.id);
+  }
+  
   closeContextMenu();
   await loadData(); // Reload to apply filter
 });
@@ -1517,6 +1543,10 @@ function updateUI() {
   });
 
   filteredTransactions.forEach(t => {
+     // This iteration block has to be refactored into a builder method so we can reuse it easily for groups
+  });
+
+  const createTransactionCard = (t) => {
     const isIncome = t.type === 'Income';
     const sign = isIncome ? '+' : '-';
 
@@ -1598,25 +1628,108 @@ function updateUI() {
     let pressTimer;
     const cancelPress = () => clearTimeout(pressTimer);
 
+    // Context menu opening behavior
+    el.addEventListener('touchstart', (e) => {
+      pressTimer = setTimeout(() => {
+        // Vibrate if supported
+        if (navigator.vibrate) navigator.vibrate(50);
+        openContextMenu(t);
+      }, 500); // 500ms for long press
+    }, { passive: true });
+
+    el.addEventListener('touchend', cancelPress);
+    el.addEventListener('touchmove', cancelPress);
+    el.addEventListener('touchcancel', cancelPress);
+
+    // For desktop / mouse users (Right Click or Long Click)
+    el.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return; // Only process left click for long-press
+      pressTimer = setTimeout(() => {
+        openContextMenu(t);
+      }, 500);
+    });
+    el.addEventListener('mouseup', cancelPress);
+    el.addEventListener('mouseleave', cancelPress);
+
+    // Standard Desktop Right Click
+    el.addEventListener('contextmenu', (e) => {
+      e.preventDefault(); // Prevent browser context menu
+      openContextMenu(t);
+    });
+
+    el.addEventListener('touchend', cancelPress);
+    el.addEventListener('touchmove', cancelPress);
+    el.addEventListener('touchcancel', cancelPress);
+
+    // For desktop / mouse users (Right Click or Long Click)
+    // Clicks normais (abrir edição - opcional, mantendo o padrão do sistema original caso aplicável)
     el.addEventListener('pointerdown', (e) => {
       // Only trigger on primary touch/click avoiding right clicks
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      pressTimer = setTimeout(() => {
-        // Avoid triggering if we navigated
-        openContextMenu(t);
-      }, 600);
+      el.dataset.pointerDownStarted = 'true';
+    });
+    el.addEventListener('pointermove', () => {
+      el.dataset.pointerDownStarted = 'false';
+    });
+    el.addEventListener('pointerup', (e) => {
+      if (el.dataset.pointerDownStarted === 'true') {
+        // Optional: click to open context menu or edit?
+        // Right now the user needs to long-press to open context menu
+        // For quick access we could optionally trigger it here too, but we will leave as original design
+      }
+      el.dataset.pointerDownStarted = 'false';
     });
 
-    el.addEventListener('pointerup', cancelPress);
-    el.addEventListener('pointerleave', cancelPress);
-    el.addEventListener('pointermove', cancelPress);
-    el.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      if (!selectedTransaction) openContextMenu(t);
-    }); // Also hook native right click if desired
+    return el;
+  }; // End of createTransactionCard helper
 
-    listEl.appendChild(el);
-  });
+  // --- Grouping Logic for Search ---
+  if (currentSearchQuery.length > 0) {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const currentMatches = [];
+    const futureMatches = [];
+    const pastMatches = [];
+
+    filteredTransactions.forEach(t => {
+      const d = new Date(t.date);
+      if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+        currentMatches.push(t);
+      } else if (d > now) {
+        futureMatches.push(t);
+      } else {
+        pastMatches.push(t);
+      }
+    });
+
+    const createDivider = (text) => {
+      const div = document.createElement('div');
+      div.className = 'text-[10px] text-slate-500 font-bold mt-4 mb-1 uppercase tracking-wider border-b border-slate-700/50 pb-1 px-1';
+      div.textContent = text;
+      return div;
+    };
+
+    if (currentMatches.length > 0) {
+      listEl.appendChild(createDivider('Mês Atual'));
+      currentMatches.forEach(t => listEl.appendChild(createTransactionCard(t)));
+    }
+    if (futureMatches.length > 0) {
+      listEl.appendChild(createDivider('Futuras'));
+      futureMatches.forEach(t => listEl.appendChild(createTransactionCard(t)));
+    }
+    if (pastMatches.length > 0) {
+      listEl.appendChild(createDivider('Passadas'));
+      pastMatches.forEach(t => listEl.appendChild(createTransactionCard(t)));
+    }
+
+  } else {
+    // Normal Rendering (No Search Grouping)
+    filteredTransactions.forEach(t => {
+      listEl.appendChild(createTransactionCard(t));
+    });
+  }
 }
 
 // Form Submission

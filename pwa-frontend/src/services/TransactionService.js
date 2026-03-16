@@ -232,17 +232,30 @@ export class TransactionService {
         const txList = [];
         const totalInstallments = transaction.total_installments || 1;
         const currentInstallment = transaction.installment_number || 1;
+        const isRecurring = transaction.is_recurring || false;
+        
+        // Define how many transactions to generate
+        let iterations = 1;
+        if (totalInstallments > 1) {
+             iterations = (totalInstallments - currentInstallment) + 1; // e.g 10 - 1 + 1 = 10
+        } else if (isRecurring) {
+             iterations = 12; // Generate next 12 months for recurring by default
+        }
 
         // Group ID
-        let groupId = null;
+        let installmentGroupId = null;
+        let recurringGroupId = null;
+
         if (totalInstallments > 1) {
-            groupId = crypto.randomUUID();
+            installmentGroupId = crypto.randomUUID();
+        } else if (isRecurring) {
+            recurringGroupId = crypto.randomUUID();
         }
 
         // Insert from current to total (generating multiple rows for DB)
-        for (let i = currentInstallment; i <= totalInstallments; i++) {
+        for (let i = 0; i < iterations; i++) {
             const txDate = new Date(baseDate);
-            txDate.setMonth(txDate.getMonth() + (i - currentInstallment));
+            txDate.setMonth(txDate.getMonth() + i);
 
             const txToInsert = {
                 user_id: userId,
@@ -251,14 +264,19 @@ export class TransactionService {
                 type: transaction.type, // 'Income' ou 'Expense'
                 category: transaction.category || 'General',
                 date: txDate.toISOString(),
-                is_recurring: transaction.is_recurring || false,
+                is_recurring: isRecurring,
                 credit_card_name: transaction.credit_card_name || null
             };
 
             if (totalInstallments > 1) {
                 txToInsert.total_installments = totalInstallments;
-                txToInsert.installment_number = i;
-                txToInsert.installment_group_id = groupId;
+                txToInsert.installment_number = currentInstallment + i;
+                txToInsert.installment_group_id = installmentGroupId;
+            } else if (isRecurring) {
+                // To track recurring siblings we reuse installment_group_id conceptually
+                // or add a new custom field if DB allowed, but since DB has no recurring_group_id 
+                // we will stick to installment_group_id to group recurring transactions too
+                txToInsert.installment_group_id = recurringGroupId;
             }
             txList.push(txToInsert);
         }
