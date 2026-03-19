@@ -325,6 +325,28 @@ export class TransactionService {
     }
 
     /**
+     * Fetch all transactions that belong to the same installment or recurring group
+     */
+    static async getTransactionsByInstallmentGroup(installmentGroupId) {
+        const userId = await getCurrentUserId();
+        if (!userId || !installmentGroupId) return [];
+
+        const { data, error } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('installment_group_id', installmentGroupId)
+            .order('date', { ascending: true });
+
+        if (error) {
+            console.error("Error fetching grouped transactions:", error);
+            throw error;
+        }
+
+        return data || [];
+    }
+
+    /**
      * Delete a transaction by ID
      */
     static async deleteTransaction(id) {

@@ -9,6 +9,7 @@ import { AuthService } from './services/AuthService.js';
 import { initNeuralBorder } from './modules/NeuralBorderAnimation.js';
 import { initPullToRefresh } from './modules/PullToRefresh.js';
 import { initExportManager } from './modules/ExportManager.js';
+import { selectGroupedTransactionsForDeletion } from './utils/installmentDeletion.js';
 
 // --- Utils ---
 function parseBrazilianCurrency(valueStr) {
@@ -936,35 +937,48 @@ contextOverlay.addEventListener('click', closeContextMenu);
 
 ctxDeleteBtn.addEventListener('click', async () => {
   if (!selectedTransaction) return;
-  
-  // Lógica para Parceladas ou Recorrentes
-  if (selectedTransaction.installment_group_id) {
-    const isRecurring = selectedTransaction.is_recurring;
-    const typeLabel = isRecurring ? 'Recorrente' : 'Parcelada';
-    
-    // Simple native prompt asking what to delete
-    // We don't have a complex DOM modal for this specifically yet, so confirm works for now
-    const deleteFuture = window.confirm(`Esta transação é ${typeLabel}.\n\nDeseja excluir também TODAS as cobranças (desta série) deste mês em diante?\n\n[OK] = Sim, excluir esta e as futuras.\n[Cancelar] = Apenas esta.`);
-    
-    if (deleteFuture) {
-      // Find all transactions in the same group that are ON or AFTER this transaction's date/installment
-      const groupTransactions = transactions.filter(t => 
-        t.installment_group_id === selectedTransaction.installment_group_id &&
-        new Date(t.date) >= new Date(selectedTransaction.date)
-      );
-      
-      groupTransactions.forEach(t => TrashService.moveToTrash(t.id));
+
+  const originalDeleteButtonText = ctxDeleteBtn.textContent;
+  ctxDeleteBtn.textContent = 'Apagando...';
+  ctxDeleteBtn.disabled = true;
+
+  try {
+    if (selectedTransaction.installment_group_id) {
+      const isRecurringTransaction = selectedTransaction.is_recurring;
+      const groupedTransactionTypeLabel = isRecurringTransaction ? 'Recorrente' : 'Parcelada';
+
+      const shouldDeleteFutureTransactions = window.confirm(`Esta transação é ${groupedTransactionTypeLabel}.\n\nDeseja excluir também TODAS as cobranças (desta série) deste mês em diante?\n\n[OK] = Sim, excluir esta e as futuras.\n[Cancelar] = Apenas esta.`);
+
+      if (shouldDeleteFutureTransactions) {
+        const groupedTransactions = await TransactionService.getTransactionsByInstallmentGroup(selectedTransaction.installment_group_id);
+        const groupedTransactionsToDelete = selectGroupedTransactionsForDeletion(groupedTransactions, selectedTransaction);
+
+        if (groupedTransactionsToDelete.length === 0) {
+          console.warn('Nenhuma transação futura foi encontrada para a série selecionada.', {
+            installmentGroupId: selectedTransaction.installment_group_id,
+            selectedTransactionId: selectedTransaction.id
+          });
+          TrashService.moveToTrash(selectedTransaction.id);
+        } else {
+          groupedTransactionsToDelete.forEach((groupedTransaction) => TrashService.moveToTrash(groupedTransaction.id));
+        }
+      } else {
+        TrashService.moveToTrash(selectedTransaction.id);
+      }
     } else {
-      // Delete just this one
       TrashService.moveToTrash(selectedTransaction.id);
     }
-  } else {
-    // Normal transaction
-    TrashService.moveToTrash(selectedTransaction.id);
+
+    closeContextMenu();
+    await loadData();
+    showNotification('Despesa apagada com sucesso.', 'success');
+  } catch (error) {
+    console.error('Falha ao apagar a transação parcelada/recorrente:', error);
+    showNotification('Não foi possível apagar a despesa. Verifique sua conexão e tente novamente.', 'error');
+  } finally {
+    ctxDeleteBtn.textContent = originalDeleteButtonText;
+    ctxDeleteBtn.disabled = false;
   }
-  
-  closeContextMenu();
-  await loadData(); // Reload to apply filter
 });
 
 // Edit function implementation
