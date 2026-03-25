@@ -9,6 +9,7 @@ import { AuthService } from './services/AuthService.js';
 import { initNeuralBorder } from './modules/NeuralBorderAnimation.js';
 import { initPullToRefresh } from './modules/PullToRefresh.js';
 import { initExportManager } from './modules/ExportManager.js';
+import { initOnboardingFlow } from './modules/OnboardingManager.js';
 import { selectGroupedTransactionsForDeletion } from './utils/installmentDeletion.js';
 import { parseBrazilianCurrency } from './utils/parseBrazilianCurrency.js';
 import { showNotification } from './ui/showNotification.js';
@@ -115,6 +116,7 @@ const {
   onbNameInput,
   onbAvatarChosen,
   patrimonioReminder,
+  userDisplayNameEl,
 } = appElements;
 
 let selectedTransaction = null;
@@ -130,7 +132,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- Populate user display name ---
-  const userDisplayNameEl = document.getElementById('user-display-name');
   if (userDisplayNameEl && session.user) {
     const emailPrefix = session.user.email?.split('@')[0] || 'Meu Perfil';
     userDisplayNameEl.textContent = emailPrefix;
@@ -738,80 +739,17 @@ document.getElementById('help-overlay').addEventListener('click', () => helpModa
 updateAvatarUI();
 
 // --- Onboarding Flow (First-Time Users) ---
-let onboardingAvatarGender = null;
-
-// Show onboarding if first time AND user has no avatar set
-const existingProfile = GamificationService.getProfile();
-if (!isOnboardingCompleted() && !existingProfile.AvatarGender) {
-  onboardingModal.classList.remove('hidden');
-} else if (!isOnboardingCompleted() && existingProfile.AvatarGender) {
-  // Existing user who already has avatar: skip onboarding silently
-  markOnboardingCompleted();
-}
-
-// Avatar selection in onboarding
-document.getElementById('onb-avatar-male').addEventListener('click', () => {
-  onboardingAvatarGender = 'male';
-  onbAvatarChosen.classList.remove('hidden');
-  document.getElementById('onb-avatar-male').querySelector('div').classList.add('border-primary', 'ring-2', 'ring-primary/50');
-  document.getElementById('onb-avatar-female').querySelector('div').classList.remove('border-primary', 'ring-2', 'ring-primary/50');
-});
-
-document.getElementById('onb-avatar-female').addEventListener('click', () => {
-  onboardingAvatarGender = 'female';
-  onbAvatarChosen.classList.remove('hidden');
-  document.getElementById('onb-avatar-female').querySelector('div').classList.add('border-primary', 'ring-2', 'ring-primary/50');
-  document.getElementById('onb-avatar-male').querySelector('div').classList.remove('border-primary', 'ring-2', 'ring-primary/50');
-});
-
-// Step 1 → Step 2
-document.getElementById('onb-next-1').addEventListener('click', () => {
-  const name = onbNameInput.value.trim();
-  if (!name) {
-    showNotification('Por favor, digite seu nome.', 'error');
-    return;
-  }
-  if (!onboardingAvatarGender) {
-    showNotification('Escolha um avatar para continuar.', 'error');
-    return;
-  }
-
-  // Save name and avatar
-  const userDisplayNameEl = document.getElementById('user-display-name');
-  if (userDisplayNameEl) userDisplayNameEl.textContent = name;
-  localStorage.setItem('userDisplayName', name);
-  GamificationService.setAvatarGender(onboardingAvatarGender);
-  updateAvatarUI();
-
-  // Transition to step 2
-  onbStep1.classList.add('hidden');
-  onbStep2.classList.remove('hidden');
-  onbDot1.classList.replace('bg-primary', 'bg-slate-600');
-  onbDot2.classList.replace('bg-slate-600', 'bg-primary');
-});
-
-// Finish onboarding
-document.getElementById('onb-finish').addEventListener('click', () => {
-  markOnboardingCompleted();
-  onboardingModal.classList.add('hidden');
-  showNotification('Bem-vindo! Adicione suas primeiras transações 🎉', 'success');
-});
-
-// Patrimônio reminder: show after first transaction if not yet calibrated
-function checkPatrimonioReminder() {
-  if (!isOnboardingCompleted()) return;
-  if (isPatrimonioCalibrated()) return;
-
-  // Check if user has at least 1 transaction
-  if (transactions && transactions.length > 0) {
-    patrimonioReminder.classList.remove('hidden');
-  }
-}
-
-// Dismiss reminder
-document.getElementById('dismiss-patrimonio-reminder').addEventListener('click', () => {
-  markPatrimonioCalibrated();
-  patrimonioReminder.classList.add('hidden');
+const { checkPatrimonioReminder } = initOnboardingFlow({
+  appElements,
+  getElementById,
+  getTransactions: () => transactions,
+  showNotification,
+  updateAvatarUI,
+  gamificationService: GamificationService,
+  isOnboardingCompleted,
+  markOnboardingCompleted,
+  isPatrimonioCalibrated,
+  markPatrimonioCalibrated,
 });
 
 

@@ -93,6 +93,7 @@ export const appElements = {
   onbNameInput: getElementById('onb-name'),
   onbAvatarChosen: getElementById('onb-avatar-chosen'),
   patrimonioReminder: getElementById('patrimonio-reminder'),
+  userDisplayNameEl: getElementById('user-display-name'),
 };
 
 export { getElementById };
