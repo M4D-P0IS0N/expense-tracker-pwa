@@ -10,178 +10,114 @@ import { initNeuralBorder } from './modules/NeuralBorderAnimation.js';
 import { initPullToRefresh } from './modules/PullToRefresh.js';
 import { initExportManager } from './modules/ExportManager.js';
 import { selectGroupedTransactionsForDeletion } from './utils/installmentDeletion.js';
-
-// --- Utils ---
-function parseBrazilianCurrency(valueStr) {
-  if (!valueStr) return 0;
-  let str = String(valueStr).trim();
-  if (str === '') return 0;
-
-  if (!isNaN(str) && !str.includes(',')) return parseFloat(str);
-
-  str = str.replace(/[^\d.,-]/g, '');
-
-  const commaCount = (str.match(/,/g) || []).length;
-  const dotCount = (str.match(/\./g) || []).length;
-
-  if (commaCount > 0 && dotCount > 0) {
-    const lastComma = str.lastIndexOf(',');
-    const lastDot = str.lastIndexOf('.');
-    if (lastComma > lastDot) str = str.replace(/\./g, '').replace(',', '.');
-    else str = str.replace(/,/g, '');
-  } else if (commaCount > 0) {
-    if (commaCount === 1) str = str.replace(',', '.');
-    else str = str.replace(/,/g, '');
-  } else if (dotCount === 1) {
-    const parts = str.split('.');
-    if (parts[1].length === 3) str = str.replace('.', '');
-  } else if (dotCount > 1) {
-    str = str.replace(/\./g, '');
-  }
-
-  const num = parseFloat(str);
-  return isNaN(num) ? 0 : num;
-}
-
-// --- Notification Toast ---
-function showNotification(message, type = 'info') {
-  const existing = document.getElementById('app-toast');
-  if (existing) existing.remove();
-
-  const colorMap = {
-    success: 'border-accent-green bg-accent-green/10 text-accent-green',
-    error: 'border-accent-red bg-accent-red/10 text-accent-red',
-    info: 'border-primary bg-primary/10 text-primary',
-  };
-  const colors = colorMap[type] || colorMap.info;
-
-  const toast = document.createElement('div');
-  toast.id = 'app-toast';
-  toast.className = `fixed top-16 left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-xl border text-sm font-medium shadow-lg backdrop-blur-md transition-all duration-300 ${colors}`;
-  toast.textContent = message;
-  toast.style.opacity = '0';
-  toast.style.transform = 'translate(-50%, -10px)';
-  document.body.appendChild(toast);
-
-  requestAnimationFrame(() => {
-    toast.style.opacity = '1';
-    toast.style.transform = 'translate(-50%, 0)';
-  });
-
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translate(-50%, -10px)';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
+import { parseBrazilianCurrency } from './utils/parseBrazilianCurrency.js';
+import { showNotification } from './ui/showNotification.js';
+import {
+  isOnboardingCompleted,
+  markOnboardingCompleted,
+  isPatrimonioCalibrated,
+  markPatrimonioCalibrated,
+} from './state/localFlags.js';
+import { appElements, getElementById } from './dom/appElements.js';
 
 // --- State ---
 let transactions = [];
 
 // --- DOM Elements ---
-const balanceEl = document.getElementById('total-balance');
-const incomeEl = document.getElementById('total-income');
-const expenseEl = document.getElementById('total-expense');
-const listEl = document.getElementById('transactions-list');
-const emptyEl = document.getElementById('empty-state');
-
-// Temporal Navigation Elements
-const filterMonthEl = document.getElementById('filter-month');
-const filterYearEl = document.getElementById('filter-year');
-
-const tabAll = document.getElementById('tab-all');
-const tabIncome = document.getElementById('tab-income');
-const tabExpense = document.getElementById('tab-expense');
-const tabDashboard = document.getElementById('tab-dashboard');
-
-const dashboardView = document.getElementById('dashboard-view');
-const dashInsights = document.getElementById('dash-insights');
-const dashForecast = document.getElementById('dash-forecast');
-const dashNetworth = document.getElementById('dash-networth');
-const dashNetworthTrend = document.getElementById('dash-networth-trend');
-const dashCategories = document.getElementById('dash-categories');
-const dashCreditCards = document.getElementById('dash-credit-cards');
-// Savings Elements
-const addSavingsBtn = document.getElementById('add-savings-btn');
-const savingsList = document.getElementById('savings-list');
-const savingsTotal = document.getElementById('savings-total');
-const savingsModal = document.getElementById('savings-modal');
-const savingsModalContent = document.getElementById('savings-modal-content');
-const closeSavingsBtn = document.getElementById('close-savings-btn');
-const savingsForm = document.getElementById('savings-form');
-const savingsId = document.getElementById('savings-id');
-const savingsName = document.getElementById('savings-name');
-const savingsTarget = document.getElementById('savings-target');
-const savingsIcon = document.getElementById('savings-icon');
-const savingsManageFunds = document.getElementById('savings-manage-funds');
-const savingsFundAmount = document.getElementById('savings-fund-amount');
-const savingsAddFundBtn = document.getElementById('savings-add-fund-btn');
-const savingsWithdrawFundBtn = document.getElementById('savings-withdraw-fund-btn');
-const savingsDeleteBtn = document.getElementById('savings-delete-btn');
-
-// Search & Filter Elements
-const searchInput = document.getElementById('search-input');
-const filterCardEl = document.getElementById('filter-card');
-const sortTransactionsEl = document.getElementById('sort-transactions');
-const filterChips = document.querySelectorAll('.filter-chip');
-
-// Budget Tools
-const configBudgetsBtn = document.getElementById('config-budgets-btn');
-const budgetModal = document.getElementById('budget-modal');
-const budgetOverlay = document.getElementById('budget-overlay');
-const closeBudgetBtn = document.getElementById('close-budget-btn');
-const saveBudgetsBtn = document.getElementById('save-budgets-btn');
-const budgetListEl = document.getElementById('budget-list');
-
-// Context Menu Elements
-const contextMenuModal = document.getElementById('context-menu-modal');
-const contextOverlay = document.getElementById('context-overlay');
-const contextSheet = document.getElementById('context-sheet');
-const ctxIcon = document.getElementById('ctx-icon');
-const ctxTitle = document.getElementById('ctx-title');
-const ctxAmount = document.getElementById('ctx-amount');
-const ctxEditBtn = document.getElementById('ctx-edit-btn');
-const ctxDeleteBtn = document.getElementById('ctx-delete-btn');
-const ctxCancelBtn = document.getElementById('ctx-cancel-btn');
-
-// Notebook Elements
-const notesBtn = document.getElementById('notes-btn');
-const notesModal = document.getElementById('notes-modal');
-const notesOverlay = document.getElementById('notes-overlay');
-const closeNotesBtn = document.getElementById('close-notes-btn');
-const saveNotesBtn = document.getElementById('save-notes-btn');
-const notesTextarea = document.getElementById('notes-textarea');
-
-// Export Elements
-const exportCsvBtn = document.getElementById('export-csv-btn');
-const exportPdfBtn = document.getElementById('export-pdf-btn');
-
-// RPG Elements
-const avatarControl = document.getElementById('avatar-control');
-const avatarImg = document.getElementById('avatar-img');
-const avatarLevelBadge = document.getElementById('avatar-level-badge');
-const avatarStageName = document.getElementById('avatar-stage-name');
-const rpgModal = document.getElementById('rpg-modal');
-const rpgOverlay = document.getElementById('rpg-overlay');
-const closeRpgBtn = document.getElementById('close-rpg-btn');
-const rpgLargeAvatar = document.getElementById('rpg-large-avatar');
-const rpgStageTitle = document.getElementById('rpg-stage-title');
-const rpgLevelText = document.getElementById('rpg-level-text');
-const rpgXpText = document.getElementById('rpg-xp-text');
-const rpgXpBar = document.getElementById('rpg-xp-bar');
-const achievementsGrid = document.getElementById('achievements-grid');
+const {
+  balanceEl,
+  incomeEl,
+  expenseEl,
+  listEl,
+  emptyEl,
+  filterMonthEl,
+  filterYearEl,
+  tabAll,
+  tabIncome,
+  tabExpense,
+  tabDashboard,
+  dashboardView,
+  dashInsights,
+  dashForecast,
+  dashNetworth,
+  dashNetworthTrend,
+  dashCategories,
+  dashCreditCards,
+  addSavingsBtn,
+  savingsList,
+  savingsTotal,
+  savingsModal,
+  savingsModalContent,
+  closeSavingsBtn,
+  savingsForm,
+  savingsId,
+  savingsName,
+  savingsTarget,
+  savingsIcon,
+  savingsManageFunds,
+  savingsFundAmount,
+  savingsAddFundBtn,
+  savingsWithdrawFundBtn,
+  savingsDeleteBtn,
+  searchInput,
+  filterCardEl,
+  sortTransactionsEl,
+  filterChips,
+  configBudgetsBtn,
+  budgetModal,
+  budgetOverlay,
+  closeBudgetBtn,
+  saveBudgetsBtn,
+  budgetListEl,
+  contextMenuModal,
+  contextOverlay,
+  contextSheet,
+  ctxIcon,
+  ctxTitle,
+  ctxAmount,
+  ctxEditBtn,
+  ctxDeleteBtn,
+  ctxCancelBtn,
+  notesBtn,
+  notesModal,
+  notesOverlay,
+  closeNotesBtn,
+  saveNotesBtn,
+  notesTextarea,
+  exportCsvBtn,
+  exportPdfBtn,
+  avatarControl,
+  avatarImg,
+  avatarLevelBadge,
+  avatarStageName,
+  rpgModal,
+  rpgOverlay,
+  closeRpgBtn,
+  rpgLargeAvatar,
+  rpgStageTitle,
+  rpgLevelText,
+  rpgXpText,
+  rpgXpBar,
+  achievementsGrid,
+  modal,
+  modalContent,
+  addBtn,
+  closeBtn,
+  form,
+  typeRadios,
+  toggleAdvancedBtn,
+  advancedFields,
+  onboardingModal,
+  onbStep1,
+  onbStep2,
+  onbDot1,
+  onbDot2,
+  onbNameInput,
+  onbAvatarChosen,
+  patrimonioReminder,
+} = appElements;
 
 let selectedTransaction = null;
-
-const modal = document.getElementById('add-modal');
-const modalContent = document.getElementById('modal-content');
-const addBtn = document.getElementById('add-btn');
-const closeBtn = document.getElementById('close-modal-btn');
-const form = document.getElementById('transaction-form');
-
-const typeRadios = document.querySelectorAll('input[name="type"]');
-const toggleAdvancedBtn = document.getElementById('toggle-advanced-btn');
-const advancedFields = document.getElementById('advanced-fields');
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -201,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Set default date
-  document.getElementById('tx-date').valueAsDate = new Date();
+  getElementById('tx-date').valueAsDate = new Date();
 
   // Load Years and set default selectors
   await initTemporalNav();
@@ -802,32 +738,7 @@ document.getElementById('help-overlay').addEventListener('click', () => helpModa
 updateAvatarUI();
 
 // --- Onboarding Flow (First-Time Users) ---
-const onboardingModal = document.getElementById('onboarding-modal');
-const onbStep1 = document.getElementById('onb-step-1');
-const onbStep2 = document.getElementById('onb-step-2');
-const onbDot1 = document.getElementById('onb-dot-1');
-const onbDot2 = document.getElementById('onb-dot-2');
-const onbNameInput = document.getElementById('onb-name');
-const onbAvatarChosen = document.getElementById('onb-avatar-chosen');
-const patrimonioReminder = document.getElementById('patrimonio-reminder');
-
 let onboardingAvatarGender = null;
-
-function isOnboardingCompleted() {
-  return localStorage.getItem('onboardingCompleted') === 'true';
-}
-
-function markOnboardingCompleted() {
-  localStorage.setItem('onboardingCompleted', 'true');
-}
-
-function isPatrimonioCalibrated() {
-  return localStorage.getItem('patrimonioCalibrated') === 'true';
-}
-
-function markPatrimonioCalibrated() {
-  localStorage.setItem('patrimonioCalibrated', 'true');
-}
 
 // Show onboarding if first time AND user has no avatar set
 const existingProfile = GamificationService.getProfile();
