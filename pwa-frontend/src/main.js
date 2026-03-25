@@ -16,6 +16,7 @@ import { initEmojiCategoryManager } from './modules/EmojiCategoryManager.js';
 import { initNotebookModal } from './modules/NotebookModalManager.js';
 import { initOnboardingFlow } from './modules/OnboardingManager.js';
 import { initRpgManager } from './modules/RpgManager.js';
+import { initSavingsManager } from './modules/SavingsModalManager.js';
 import { selectGroupedTransactionsForDeletion } from './utils/installmentDeletion.js';
 import { parseBrazilianCurrency } from './utils/parseBrazilianCurrency.js';
 import { showNotification } from './ui/showNotification.js';
@@ -1127,132 +1128,15 @@ form.addEventListener('submit', async (e) => {
 
 
 // --- UI Logic: Savings Goals ---
-let currentSavingsId = null;
-
-function renderSavingsGoals() {
-  const goals = SavingsService.getGoals();
-  const total = SavingsService.getTotalSaved();
-
-  savingsTotal.textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total);
-
-  if (goals.length === 0) {
-    savingsList.innerHTML = '<div class="text-center text-slate-500 text-xs py-4 w-full">Nenhuma caixinha criada.</div>';
-    return;
-  }
-
-  savingsList.innerHTML = '';
-  goals.forEach(goal => {
-    const pct = goal.targetAmount > 0 ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100)) : 0;
-    const remaining = Math.max(0, goal.targetAmount - goal.currentAmount);
-
-    const card = document.createElement('div');
-    card.className = 'flex-shrink-0 w-44 bg-slate-800/50 rounded-xl p-3 border border-slate-700 cursor-pointer hover:bg-slate-800 transition group';
-    card.onclick = () => openSavingsModal(goal.id);
-
-    card.innerHTML = `
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xl">${goal.icon}</span>
-                <span class="text-[10px] font-bold text-slate-400 group-hover:text-primary transition">${pct}%</span>
-            </div>
-            <h5 class="text-xs font-bold text-slate-300 truncate mb-1">${goal.name}</h5>
-            <p class="text-[10px] text-slate-500 mb-2">Faltam R$ ${remaining.toFixed(2)}</p>
-            <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div class="h-full bg-primary rounded-full transition-all duration-1000" style="width: ${pct}%"></div>
-            </div>
-        `;
-    savingsList.appendChild(card);
-  });
-}
-
-function openSavingsModal(id = null) {
-  currentSavingsId = id;
-  savingsManageFunds.classList.add('hidden');
-  savingsDeleteBtn.classList.add('hidden');
-
-  if (id) {
-    const goal = SavingsService.getGoalById(id);
-    if (goal) {
-      savingsId.value = goal.id;
-      savingsName.value = goal.name;
-      savingsTarget.value = goal.targetAmount;
-      savingsIcon.value = goal.icon;
-
-      savingsManageFunds.classList.remove('hidden');
-      savingsDeleteBtn.classList.remove('hidden');
-      document.getElementById('savings-modal-title').innerHTML = `<span class="material-symbols-outlined text-primary">savings</span> Editar Caixinha`;
-    }
-  } else {
-    savingsForm.reset();
-    savingsId.value = '';
-    savingsIcon.value = '🎯';
-    document.getElementById('savings-modal-title').innerHTML = `<span class="material-symbols-outlined text-primary">savings</span> Nova Caixinha`;
-  }
-
-  savingsModal.classList.remove('hidden');
-  setTimeout(() => {
-    savingsModalContent.classList.remove('scale-95');
-  }, 10);
-}
-
-function closeSavingsModalFunc() {
-  savingsModalContent.classList.add('scale-95');
-  setTimeout(() => {
-    savingsModal.classList.add('hidden');
-  }, 300);
-}
-
-closeSavingsBtn.addEventListener('click', closeSavingsModalFunc);
-savingsModal.addEventListener('click', (e) => {
-  if (e.target === savingsModal) closeSavingsModalFunc();
-});
-
-addSavingsBtn.addEventListener('click', () => openSavingsModal());
-
-savingsForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const id = savingsId.value;
-  const name = savingsName.value.trim();
-  const target = parseBrazilianCurrency(savingsTarget.value);
-  const icon = savingsIcon.value.trim() || '🎯';
-
-  if (id) {
-    SavingsService.updateGoal(id, { name, targetAmount: target, icon });
-  } else {
-    SavingsService.addGoal(name, target, icon);
-  }
-
-  closeSavingsModalFunc();
-  renderDashboard();
-});
-
-savingsAddFundBtn.addEventListener('click', () => {
-  if (!currentSavingsId) return;
-  const amt = parseBrazilianCurrency(savingsFundAmount.value);
-  if (isNaN(amt) || amt <= 0) return showNotification("Valor inválido", "error");
-  SavingsService.addFunds(currentSavingsId, amt);
-  savingsFundAmount.value = '';
-  GamificationService.onTransactionLogged(); // Hook XP
-  updateAvatarUI();
-  renderDashboard();
-  closeSavingsModalFunc();
-});
-
-savingsWithdrawFundBtn.addEventListener('click', () => {
-  if (!currentSavingsId) return;
-  const amt = parseBrazilianCurrency(savingsFundAmount.value);
-  if (isNaN(amt) || amt <= 0) return showNotification("Valor inválido", "error");
-  SavingsService.withdrawFunds(currentSavingsId, amt);
-  savingsFundAmount.value = '';
-  renderDashboard();
-  closeSavingsModalFunc();
-});
-
-savingsDeleteBtn.addEventListener('click', () => {
-  if (currentSavingsId && confirm('Tem certeza que deseja excluir esta caixinha? O saldo voltará para o patrimônio livre.')) {
-    SavingsService.deleteGoal(currentSavingsId);
-    closeSavingsModalFunc();
-    renderDashboard();
-  }
+const { renderSavingsGoals } = initSavingsManager({
+  appElements,
+  getElementById,
+  savingsService: SavingsService,
+  parseBrazilianCurrency,
+  showNotification,
+  gamificationService: GamificationService,
+  updateAvatarUI,
+  renderDashboard: () => renderDashboard(),
 });
 
 // Pull-to-Refresh -> ./modules/PullToRefresh.js
