@@ -9,6 +9,7 @@ import { AuthService } from './services/AuthService.js';
 import { initNeuralBorder } from './modules/NeuralBorderAnimation.js';
 import { initPullToRefresh } from './modules/PullToRefresh.js';
 import { initExportManager } from './modules/ExportManager.js';
+import { initAppBootstrap } from './modules/AppBootstrap.js';
 import { initOnboardingFlow } from './modules/OnboardingManager.js';
 import { selectGroupedTransactionsForDeletion } from './utils/installmentDeletion.js';
 import { parseBrazilianCurrency } from './utils/parseBrazilianCurrency.js';
@@ -122,30 +123,13 @@ const {
 let selectedTransaction = null;
 
 // --- Initialization ---
-document.addEventListener('DOMContentLoaded', async () => {
-
-  // --- AUTH GUARD ---
-  const session = await AuthService.getSession();
-  if (!session) {
-    window.location.replace(import.meta.env.BASE_URL + "login.html");
-    return;
-  }
-
-  // --- Populate user display name ---
-  if (userDisplayNameEl && session.user) {
-    const emailPrefix = session.user.email?.split('@')[0] || 'Meu Perfil';
-    userDisplayNameEl.textContent = emailPrefix;
-  }
-
-  // Set default date
-  getElementById('tx-date').valueAsDate = new Date();
-
-  // Load Years and set default selectors
-  await initTemporalNav();
-  initFilters();
-
-  // Init neural border
-  initNeuralBorder();
+initAppBootstrap({
+  authService: AuthService,
+  userDisplayNameEl,
+  getElementById,
+  initTemporalNav,
+  initFilters,
+  initNeuralBorder,
 });
 
 // --- Temporal Nav Logic ---
