@@ -11,6 +11,7 @@ import { initPullToRefresh } from './modules/PullToRefresh.js';
 import { initExportManager } from './modules/ExportManager.js';
 import { initAppBootstrap } from './modules/AppBootstrap.js';
 import { initContextMenu } from './modules/ContextMenuManager.js';
+import { initEmojiCategoryManager } from './modules/EmojiCategoryManager.js';
 import { initOnboardingFlow } from './modules/OnboardingManager.js';
 import { initRpgManager } from './modules/RpgManager.js';
 import { selectGroupedTransactionsForDeletion } from './utils/installmentDeletion.js';
@@ -565,94 +566,7 @@ const { openContextMenu } = initContextMenu({
 });
 
 // --- Emoji & Category Logic ---
-const emojiBtn = document.getElementById('tx-emoji-btn');
-const emojiDisplay = document.getElementById('tx-emoji-display');
-const emojiPicker = document.getElementById('emoji-picker');
-const emojiList = document.getElementById('emoji-list');
-const categorySelect = document.getElementById('tx-category');
-const customCategoryContainer = document.getElementById('tx-custom-category-container');
-const customCategoryInput = document.getElementById('tx-custom-category');
-
-const defaultEmojis = [
-  '🍔', '🍕', '🍣', '🛒', '🛍️', '🎁', '🚌', '🚗', '✈️', '🏠', '🏢', '💡', '💧', '🔥',
-  '🏥', '💊', '🦷', '🎮', '🎬', '🎵', '⚽', '🏋️', '👕', '👗', '📚', '✏️', '💼', '💻',
-  '💸', '💰', '💳', '📈', '🏷️', '🐶', '🐱', '🛠️', '❓'
-];
-const categoryToEmoji = {
-  'General': '🏷️',
-  'Food': '🍔',
-  'Transport': '🚌',
-  'Home': '🏠',
-  'Salary': '💰'
-};
-
-// Populate picker
-defaultEmojis.forEach(emoji => {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'hover:bg-slate-700 rounded p-1 transition';
-  btn.textContent = emoji;
-  btn.addEventListener('click', () => {
-    emojiDisplay.textContent = emoji;
-    emojiPicker.classList.add('hidden');
-  });
-  emojiList.appendChild(btn);
-});
-
-emojiBtn.addEventListener('click', () => {
-  emojiPicker.classList.toggle('hidden');
-});
-
-// --- Savings Emoji Picker Logic ---
-const savingsIconInput = document.getElementById('savings-icon');
-const savingsEmojiPicker = document.getElementById('savings-emoji-picker');
-const savingsEmojiList = document.getElementById('savings-emoji-list');
-
-if (savingsEmojiList) {
-  defaultEmojis.forEach(emoji => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'hover:bg-slate-700 rounded p-1 transition';
-    btn.textContent = emoji;
-    btn.addEventListener('click', () => {
-      savingsIconInput.value = emoji;
-      savingsEmojiPicker.classList.add('hidden');
-    });
-    savingsEmojiList.appendChild(btn);
-  });
-}
-
-if (savingsIconInput) {
-  savingsIconInput.addEventListener('click', () => {
-    savingsEmojiPicker.classList.toggle('hidden');
-  });
-}
-
-// Close picker on outside click
-document.addEventListener('click', (e) => {
-  if (emojiBtn && emojiPicker && !emojiBtn.contains(e.target) && !emojiPicker.contains(e.target)) {
-    emojiPicker.classList.add('hidden');
-  }
-  if (savingsIconInput && savingsEmojiPicker && !savingsIconInput.contains(e.target) && !savingsEmojiPicker.contains(e.target)) {
-    savingsEmojiPicker.classList.add('hidden');
-  }
-});
-
-categorySelect.addEventListener('change', (e) => {
-  const val = e.target.value;
-  if (val === 'New') {
-    customCategoryContainer.classList.remove('hidden');
-    customCategoryInput.required = true;
-    emojiDisplay.textContent = '❓'; // Empty/Question mark for new
-  } else {
-    customCategoryContainer.classList.add('hidden');
-    customCategoryInput.required = false;
-    customCategoryInput.value = '';
-    if (categoryToEmoji[val]) {
-      emojiDisplay.textContent = categoryToEmoji[val];
-    }
-  }
-});
+initEmojiCategoryManager({ getElementById });
 
 
 // --- Business Logic ---
