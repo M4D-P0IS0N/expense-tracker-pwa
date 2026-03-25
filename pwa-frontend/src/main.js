@@ -12,6 +12,7 @@ import { initExportManager } from './modules/ExportManager.js';
 import { initAppBootstrap } from './modules/AppBootstrap.js';
 import { initContextMenu } from './modules/ContextMenuManager.js';
 import { initOnboardingFlow } from './modules/OnboardingManager.js';
+import { initRpgManager } from './modules/RpgManager.js';
 import { selectGroupedTransactionsForDeletion } from './utils/installmentDeletion.js';
 import { parseBrazilianCurrency } from './utils/parseBrazilianCurrency.js';
 import { showNotification } from './ui/showNotification.js';
@@ -522,201 +523,14 @@ saveNotesBtn.addEventListener('click', () => {
 initExportManager(exportPdfBtn, exportCsvBtn, () => transactions);
 
 // --- UI Logic: RPG Gamification ---
-
-function updateAvatarUI() {
-  const profile = GamificationService.getProfile();
-  const spriteFile = GamificationService.getSpriteFilename(profile.EvolutionStage, profile.AvatarGender);
-  const stageLabel = GamificationService.getStageLabel(profile.EvolutionStage, profile.AvatarGender);
-  const avatarPlaceholder = document.getElementById('avatar-placeholder');
-
-  avatarLevelBadge.textContent = `Lvl ${profile.Level}`;
-  avatarStageName.textContent = profile.AvatarGender ? stageLabel : 'Escolha seu Avatar';
-
-  if (profile.AvatarGender) {
-    avatarImg.src = `./assets/sprites/${spriteFile}`;
-    avatarImg.classList.remove('hidden');
-    if (avatarPlaceholder) avatarPlaceholder.classList.add('hidden');
-    avatarImg.onerror = () => { avatarImg.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${profile.EvolutionStage}`; };
-  } else {
-    avatarImg.classList.add('hidden');
-    if (avatarPlaceholder) avatarPlaceholder.classList.remove('hidden');
-  }
-}
-
-avatarControl.addEventListener('click', openRpgModal);
-
-function showGenderChoiceModal() {
-  const existingModal = document.getElementById('gender-choice-modal');
-  if (existingModal) existingModal.remove();
-
-  const choiceModal = document.createElement('div');
-  choiceModal.id = 'gender-choice-modal';
-  choiceModal.className = 'fixed inset-0 z-[70] flex items-center justify-center p-6';
-  choiceModal.innerHTML = `
-    <div class="fixed inset-0 bg-slate-900/95"></div>
-    <div class="relative z-10 w-full max-w-sm">
-      <div class="glass-card rounded-3xl p-6 border border-primary/20 text-center space-y-5">
-        <div>
-          <span class="material-symbols-outlined text-primary text-4xl">person</span>
-          <h3 class="text-xl font-bold text-white mt-2">Escolha seu Avatar</h3>
-          <p class="text-sm text-slate-400 mt-1">A linha evolutiva seguirá a sua escolha.</p>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <button id="choose-male-btn" class="flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-slate-700 hover:border-primary bg-slate-800 hover:bg-primary/10 transition-all group overflow-hidden">
-            <div class="w-28 h-28 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
-              <img src="./assets/sprites/stage1-m.png" alt="Camponês" class="w-full h-full object-cover" style="transform: scale(1.3);" />
-            </div>
-            <span class="text-sm font-bold text-white group-hover:text-primary transition-colors">Camponês</span>
-          </button>
-          <button id="choose-female-btn" class="flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-slate-700 hover:border-pink-400 bg-slate-800 hover:bg-pink-400/10 transition-all group overflow-hidden">
-            <div class="w-28 h-28 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
-              <img src="./assets/sprites/stage1-f.png" alt="Camponesa" class="w-full h-full object-cover" style="transform: scale(1.3);" />
-            </div>
-            <span class="text-sm font-bold text-white group-hover:text-pink-400 transition-colors">Camponesa</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(choiceModal);
-
-  document.getElementById('choose-male-btn').addEventListener('click', () => {
-    GamificationService.setAvatarGender('male');
-    choiceModal.remove();
-    updateAvatarUI();
-    openRpgModal();
-  });
-
-  document.getElementById('choose-female-btn').addEventListener('click', () => {
-    GamificationService.setAvatarGender('female');
-    choiceModal.remove();
-    updateAvatarUI();
-    openRpgModal();
-  });
-}
-
-function openRpgModal() {
-  const profile = GamificationService.getProfile();
-
-  // If gender not chosen yet, show choice modal instead
-  if (!profile.AvatarGender) {
-    showGenderChoiceModal();
-    return;
-  }
-
-  const spriteFile = GamificationService.getSpriteFilename(profile.EvolutionStage, profile.AvatarGender);
-  const stageLabel = GamificationService.getStageLabel(profile.EvolutionStage, profile.AvatarGender);
-
-  rpgStageTitle.textContent = stageLabel;
-  rpgLevelText.textContent = profile.Level;
-  rpgXpText.textContent = `${profile.CurrentXP} / ${profile.XPToNextLevel}`;
-
-  const pct = Math.min(100, Math.round((profile.CurrentXP / profile.XPToNextLevel) * 100));
-  rpgXpBar.style.width = '0%';
-  setTimeout(() => { rpgXpBar.style.width = `${pct}%`; }, 100);
-
-  rpgLargeAvatar.src = `./assets/sprites/${spriteFile}`;
-  rpgLargeAvatar.onerror = () => { rpgLargeAvatar.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${profile.EvolutionStage}`; };
-
-  // Render Achievements
-  achievementsGrid.innerHTML = '';
-  GamificationService.ALL_ACHIEVEMENTS.forEach(def => {
-    const isUnlocked = profile.UnlockedAchievements.some(a => a.Id === def.Id);
-    const progress = GamificationService.getAchievementProgress(def, profile);
-    const progressPct = progress.max > 0 ? Math.min(Math.round((progress.current / progress.max) * 100), 100) : 0;
-
-    // Secret achievement handling
-    const isSecret = def.IsSecret && !isUnlocked;
-    const displayName = isSecret ? def.Name : (isUnlocked && def.RevealedName ? def.RevealedName : def.Name);
-    const displayDesc = isSecret ? def.Description : (isUnlocked && def.RevealedDescription ? def.RevealedDescription : def.Description);
-    const iconName = isSecret ? def.Icon : (isUnlocked && def.RevealedIcon ? def.RevealedIcon : def.Icon);
-    const iconColor = isUnlocked
-      ? (def.RevealedIconColor || def.IconColor || 'text-yellow-400')
-      : 'text-slate-600';
-
-    // Locked/Unlocked styling
-    const cardClass = isUnlocked
-      ? "border-purple-500/40 bg-purple-500/10"
-      : "border-slate-700/50 bg-slate-800/30";
-    const iconWrapperClass = isUnlocked
-      ? "bg-slate-900/80 border-purple-500/30"
-      : "bg-slate-900/50 border-slate-700/30 grayscale opacity-40";
-    const titleClass = isUnlocked ? "text-white" : "text-slate-500";
-    const descClass = isUnlocked ? "text-slate-400" : "text-slate-600";
-    const dateHtml = isUnlocked ? `<span class="text-[9px] text-primary font-bold">✓ Concluída</span>` : '';
-
-    // Progress bar (show for non-unlocked achievements with valid tracking)
-    const showProgress = !isUnlocked && def.MaxProgress > 1 && def.TrackKey;
-    const progressBarHtml = showProgress ? `
-      <div class="mt-1.5 flex items-center gap-2">
-        <div class="flex-1 h-1.5 bg-slate-700/40 rounded-full overflow-hidden">
-          <div class="h-full bg-slate-500/40 rounded-full transition-all duration-700" style="width: ${progressPct}%"></div>
-        </div>
-        <span class="text-[9px] text-slate-600 font-medium shrink-0">${progress.current}/${progress.max}</span>
-      </div>` : '';
-
-    achievementsGrid.innerHTML += `
-            <div class="flex items-start gap-3 p-3 rounded-xl border ${cardClass} transition-all">
-               <div class="h-10 w-10 shrink-0 rounded-full flex items-center justify-center border ${iconWrapperClass}">
-                  <span class="material-symbols-outlined ${iconColor}" style="font-size: 22px;">${iconName}</span>
-               </div>
-               <div class="flex-1 min-w-0">
-                  <div class="flex justify-between items-center mb-0.5">
-                     <h5 class="text-sm font-bold ${titleClass} truncate">${displayName}</h5>
-                     ${dateHtml}
-                  </div>
-                  <p class="text-xs ${descClass}">${displayDesc}</p>
-                  ${progressBarHtml}
-               </div>
-            </div>
-        `;
-  });
-
-  // Inject Help + Logout Buttons if they don't exist
-  if (!document.getElementById('rpg-logout-btn')) {
-    const buttonsWrapper = document.createElement('div');
-    buttonsWrapper.className = "mt-4 pt-4 border-t border-slate-700 space-y-3";
-    buttonsWrapper.innerHTML = `
-          <button id="rpg-help-btn" class="w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
-              <span class="material-symbols-outlined">help</span> Dúvidas
-          </button>
-          <button id="rpg-logout-btn" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
-              <span class="material-symbols-outlined">logout</span> Sair da Conta
-          </button>
-      `;
-    achievementsGrid.parentElement.appendChild(buttonsWrapper);
-
-    // Help button opens guide modal
-    document.getElementById('rpg-help-btn').addEventListener('click', () => {
-      rpgModal.classList.add('hidden');
-      document.getElementById('help-modal').classList.remove('hidden');
-    });
-
-    document.getElementById('rpg-logout-btn').addEventListener('click', async () => {
-      try {
-        document.getElementById('rpg-logout-btn').innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> Saindo...';
-        await AuthService.signOut();
-        window.location.replace(import.meta.env.BASE_URL + "login.html");
-      } catch (err) {
-        alert("Erro ao sair da conta: " + err.message);
-      }
-    });
-  }
-
-  rpgModal.classList.remove('hidden');
-}
+const { updateAvatarUI } = initRpgManager({
+  appElements,
+  authService: AuthService,
+  gamificationService: GamificationService,
+  getElementById,
+});
 
 // Track daily login for streak and anniversary achievements (Moved to initTemporalNav)
-
-const closeRpgModal = () => rpgModal.classList.add('hidden');
-closeRpgBtn.addEventListener('click', closeRpgModal);
-rpgOverlay.addEventListener('click', closeRpgModal);
-// avatarControl listener already registered at top of file (L748), no duplicate needed
-
-// Help Modal close handlers
-const helpModal = document.getElementById('help-modal');
-document.getElementById('close-help-btn').addEventListener('click', () => helpModal.classList.add('hidden'));
-document.getElementById('help-overlay').addEventListener('click', () => helpModal.classList.add('hidden'));
 
 // Execute UI refresh on load
 updateAvatarUI();
