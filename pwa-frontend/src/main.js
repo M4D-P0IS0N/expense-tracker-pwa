@@ -11,6 +11,7 @@ import { initPullToRefresh } from './modules/PullToRefresh.js';
 import { renderDashboardSection } from './modules/DashboardRenderer.js';
 import { initExportManager } from './modules/ExportManager.js';
 import { initNavigationFilters } from './modules/NavigationFiltersManager.js';
+import { initTransactionModal } from './modules/TransactionModalManager.js';
 import { renderTransactionList } from './modules/TransactionListRenderer.js';
 import { initTransactionForm } from './modules/TransactionFormManager.js';
 import { selectGroupedTransactionsForDeletion } from './utils/installmentDeletion.js';
@@ -266,108 +267,22 @@ const { initTemporalNav, initFilters } = initNavigationFilters({
 let editTransactionId = null;
 
 // --- UI Logic: Modal & Interactions ---
-addBtn.addEventListener('click', () => {
-  form.reset();
-  editTransactionId = null;
-  document.querySelector('#modal-content h3').textContent = 'Nova Transação';
-  document.querySelector('#transaction-form button[type="submit"]').textContent = 'Salvar Transação';
-  // Use the month/year from the temporal nav panel as the default date
-  const selectedMonth = parseInt(filterMonthEl.value);
-  const selectedYear = parseInt(filterYearEl.value);
-  const today = new Date();
-  const isViewingCurrentMonth = selectedMonth === (today.getMonth() + 1) && selectedYear === today.getFullYear();
-  if (isViewingCurrentMonth) {
-    document.getElementById('tx-date').valueAsDate = today;
-  } else {
-    document.getElementById('tx-date').valueAsDate = new Date(selectedYear, selectedMonth - 1, 1);
-  }
-
-  // Fix visual bugs by explicitly triggering state changes
-  const incomeRadio = document.querySelector('input[name="type"][value="Income"]');
-  incomeRadio.checked = true;
-  incomeRadio.dispatchEvent(new Event('change'));
-
-  document.getElementById('tx-custom-category-container').classList.add('hidden');
-  document.getElementById('tx-emoji-display').textContent = '🏷️';
-
-  const advancedFields = document.getElementById('advanced-fields');
-  if (advancedFields) {
-    advancedFields.classList.add('hidden');
-    document.getElementById('advanced-icon').textContent = '▼';
-  }
-
-  modal.classList.remove('hidden');
-  setTimeout(() => {
-    modalContent.classList.remove('translate-y-full');
-  }, 10);
-});
-
-closeBtn.addEventListener('click', closeModal);
-modalContent.parentElement.addEventListener('click', (e) => {
-  if (e.target === modalContent.parentElement) closeModal();
-});
-
-function closeModal() {
-  modalContent.classList.add('translate-y-full');
-  setTimeout(() => {
-    modal.classList.add('hidden');
-  }, 300);
-}
-
-// Custom Category toggling
-document.getElementById('tx-category').addEventListener('change', (e) => {
-  const customDiv = document.getElementById('tx-custom-category-container');
-  const val = e.target.value;
-
-  if (val === 'New') {
-    customDiv.classList.remove('hidden');
-    document.getElementById('tx-emoji-display').textContent = '🏷️';
-  } else {
-    customDiv.classList.add('hidden');
-    // Predict emoji from historical transactions
-    if (typeof transactions !== 'undefined' && transactions.length > 0) {
-      const foundTx = transactions.find(t => (t.category || '').includes(val));
-      if (foundTx) {
-        let firstChar = (foundTx.category || "").split(' ')[0] || "";
-        if (/[\u1000-\uFFFF]/.test(firstChar)) {
-          document.getElementById('tx-emoji-display').textContent = firstChar;
-          return;
-        }
-      }
-    }
-    // Fallback if not found in history
-    document.getElementById('tx-emoji-display').textContent = '🏷️';
-  }
-});
-
-// Type radio buttons styling
-typeRadios.forEach(radio => {
-  radio.addEventListener('change', () => {
-    document.querySelectorAll('label.flex-1').forEach(label => {
-      // Clear all active states (Income and Expense)
-      label.classList.remove('border-green-500', 'bg-green-500/10', 'text-green-400');
-      label.classList.remove('border-red-500', 'bg-red-500/10', 'text-red-400');
-
-      // Set to inactive state
-      label.classList.add('border-transparent', 'bg-slate-800', 'text-slate-400');
-    });
-
-    const activeLabel = radio.parentElement;
-    // Remove inactive state from selected
-    activeLabel.classList.remove('border-transparent', 'bg-slate-800', 'text-slate-400');
-
-    if (radio.value === 'Income') {
-      activeLabel.classList.add('border-green-500', 'bg-green-500/10', 'text-green-400');
-    } else {
-      activeLabel.classList.add('border-red-500', 'bg-red-500/10', 'text-red-400');
-    }
-  });
-});
-
-toggleAdvancedBtn.addEventListener('click', () => {
-  advancedFields.classList.toggle('hidden');
-  const icon = document.getElementById('advanced-icon');
-  icon.textContent = advancedFields.classList.contains('hidden') ? '▼' : '▲';
+const { closeModal } = initTransactionModal({
+  addButton: addBtn,
+  closeButton: closeBtn,
+  formElement: form,
+  modalElement: modal,
+  modalContentElement: modalContent,
+  filterMonthEl,
+  filterYearEl,
+  typeRadios,
+  toggleAdvancedButton: toggleAdvancedBtn,
+  advancedFields,
+  getElementById: (elementId) => document.getElementById(elementId),
+  getTransactions: () => transactions,
+  clearEditTransactionId: () => {
+    editTransactionId = null;
+  },
 });
 
 // --- UI Logic: Budgets Modal ---
