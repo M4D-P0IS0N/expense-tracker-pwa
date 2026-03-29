@@ -20,70 +20,8 @@ import { initTransactionModal } from './modules/TransactionModalManager.js';
 import { renderTransactionList } from './modules/TransactionListRenderer.js';
 import { initTransactionForm } from './modules/TransactionFormManager.js';
 import { selectGroupedTransactionsForDeletion } from './utils/installmentDeletion.js';
-
-// --- Utils ---
-function parseBrazilianCurrency(valueStr) {
-  if (!valueStr) return 0;
-  let str = String(valueStr).trim();
-  if (str === '') return 0;
-
-  if (!isNaN(str) && !str.includes(',')) return parseFloat(str);
-
-  str = str.replace(/[^\d.,-]/g, '');
-
-  const commaCount = (str.match(/,/g) || []).length;
-  const dotCount = (str.match(/\./g) || []).length;
-
-  if (commaCount > 0 && dotCount > 0) {
-    const lastComma = str.lastIndexOf(',');
-    const lastDot = str.lastIndexOf('.');
-    if (lastComma > lastDot) str = str.replace(/\./g, '').replace(',', '.');
-    else str = str.replace(/,/g, '');
-  } else if (commaCount > 0) {
-    if (commaCount === 1) str = str.replace(',', '.');
-    else str = str.replace(/,/g, '');
-  } else if (dotCount === 1) {
-    const parts = str.split('.');
-    if (parts[1].length === 3) str = str.replace('.', '');
-  } else if (dotCount > 1) {
-    str = str.replace(/\./g, '');
-  }
-
-  const num = parseFloat(str);
-  return isNaN(num) ? 0 : num;
-}
-
-// --- Notification Toast ---
-function showNotification(message, type = 'info') {
-  const existing = document.getElementById('app-toast');
-  if (existing) existing.remove();
-
-  const colorMap = {
-    success: 'border-accent-green bg-accent-green/10 text-accent-green',
-    error: 'border-accent-red bg-accent-red/10 text-accent-red',
-    info: 'border-primary bg-primary/10 text-primary',
-  };
-  const colors = colorMap[type] || colorMap.info;
-
-  const toast = document.createElement('div');
-  toast.id = 'app-toast';
-  toast.className = `fixed top-16 left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-xl border text-sm font-medium shadow-lg backdrop-blur-md transition-all duration-300 ${colors}`;
-  toast.textContent = message;
-  toast.style.opacity = '0';
-  toast.style.transform = 'translate(-50%, -10px)';
-  document.body.appendChild(toast);
-
-  requestAnimationFrame(() => {
-    toast.style.opacity = '1';
-    toast.style.transform = 'translate(-50%, 0)';
-  });
-
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translate(-50%, -10px)';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
+import { parseBrazilianCurrency } from './utils/currencyParser.js';
+import { showNotification } from './ui/notificationToast.js';
 
 // --- State ---
 let transactions = [];
