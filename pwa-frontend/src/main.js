@@ -10,6 +10,7 @@ import { initNeuralBorder } from './modules/NeuralBorderAnimation.js';
 import { initPullToRefresh } from './modules/PullToRefresh.js';
 import { renderDashboardSection } from './modules/DashboardRenderer.js';
 import { initExportManager } from './modules/ExportManager.js';
+import { initNavigationFilters } from './modules/NavigationFiltersManager.js';
 import { renderTransactionList } from './modules/TransactionListRenderer.js';
 import { initTransactionForm } from './modules/TransactionFormManager.js';
 import { selectGroupedTransactionsForDeletion } from './utils/installmentDeletion.js';
@@ -80,6 +81,11 @@ function showNotification(message, type = 'info') {
 
 // --- State ---
 let transactions = [];
+let currentSearchQuery = '';
+let currentQuickFilter = null;
+let currentCardFilter = 'All';
+let currentSort = 'date-desc';
+let currentTab = 'All';
 
 // --- DOM Elements ---
 const balanceEl = document.getElementById('total-balance');
@@ -223,171 +229,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   initNeuralBorder();
 });
 
-// --- Temporal Nav Logic ---
-async function initTemporalNav() {
-  const currentDate = new Date();
-
-  // Populate Years dynamically
-  const years = await TransactionService.getAvailableYears();
-  filterYearEl.innerHTML = '';
-  years.forEach(year => {
-    const option = document.createElement('option');
-    option.value = year;
-    option.textContent = year;
-    filterYearEl.appendChild(option);
-  });
-
-  // Add "+" option to allow custom year entry
-  const addYearOption = document.createElement('option');
-  addYearOption.value = '__add_year__';
-  addYearOption.textContent = '+ Ano';
-  filterYearEl.appendChild(addYearOption);
-
-  // Set default logic to Current Month and Year
-  filterMonthEl.value = (currentDate.getMonth() + 1).toString();
-  filterYearEl.value = currentDate.getFullYear().toString();
-
-  // Attach auto-fetch events
-  filterMonthEl.addEventListener('change', loadData);
-  filterYearEl.addEventListener('change', () => {
-    if (filterYearEl.value === '__add_year__') {
-      const newYearStr = prompt('Digite o ano que deseja adicionar (ex: 2030):');
-      if (newYearStr) {
-        const newYear = parseInt(newYearStr);
-        if (!isNaN(newYear) && newYear >= 2020 && newYear <= 2050) {
-          // Check if already exists
-          const existingValues = Array.from(filterYearEl.options).map(o => o.value);
-          if (!existingValues.includes(String(newYear))) {
-            const newOption = document.createElement('option');
-            newOption.value = newYear;
-            newOption.textContent = newYear;
-            // Insert before the "+ Ano" option
-            filterYearEl.insertBefore(newOption, addYearOption);
-          }
-          filterYearEl.value = String(newYear);
-          loadData();
-        } else {
-          showNotification('Ano inválido. Use entre 2020 e 2050.', 'error');
-          filterYearEl.value = currentDate.getFullYear().toString();
-        }
-      } else {
-        filterYearEl.value = currentDate.getFullYear().toString();
-      }
-    } else {
-      loadData();
-    }
-  });
-
-  // Sync legacy stats to gamification profile
-  await GamificationService.syncWithDatabase(TransactionService);
-  GamificationService.trackDailyLogin();
-
-  // Initial load
-  await loadData();
-}
-
-// --- Search & Filters Logic ---
-let currentSearchQuery = '';
-let currentQuickFilter = null; // 'Today', 'Week', 'Fixed', 'Install'
-let currentCardFilter = 'All';
-let currentSort = 'date-desc';
-
-function initFilters() {
-  // Global Search Debounce
-  let searchTimeout;
-  searchInput.addEventListener('input', (e) => {
-    clearTimeout(searchTimeout);
-    currentSearchQuery = e.target.value.trim();
-
-    // Visual feedback for ignoring temporal nav
-    if (currentSearchQuery.length > 0) {
-      filterMonthEl.parentElement.classList.add('opacity-50', 'pointer-events-none');
-    } else {
-      filterMonthEl.parentElement.classList.remove('opacity-50', 'pointer-events-none');
-    }
-
-    searchTimeout = setTimeout(() => {
-      loadData();
-    }, 400); // 400ms debounce
-  });
-
-  // Card Filter
-  filterCardEl.addEventListener('change', (e) => {
-    currentCardFilter = e.target.value;
-    updateUI();
-  });
-
-  if (sortTransactionsEl) {
-    sortTransactionsEl.addEventListener('change', (e) => {
-      currentSort = e.target.value;
-      updateUI();
-    });
-  }
-
-  // Quick Filters (Chips)
-  filterChips.forEach(chip => {
-    chip.addEventListener('click', (e) => {
-      const filterType = e.target.getAttribute('data-filter');
-
-      // Toggle off if already selected
-      if (currentQuickFilter === filterType) {
-        currentQuickFilter = null;
-        e.target.classList.remove('bg-primary/20', 'text-white', 'border-primary');
-        e.target.classList.add('bg-slate-800/50', 'text-slate-400', 'border-slate-700');
-      } else {
-        // Reset all chips visual state
-        filterChips.forEach(c => {
-          c.classList.remove('bg-primary/20', 'text-white', 'border-primary');
-          c.classList.add('bg-slate-800/50', 'text-slate-400', 'border-slate-700');
-        });
-
-        // Select this one
-        currentQuickFilter = filterType;
-        e.target.classList.remove('bg-slate-800/50', 'text-slate-400', 'border-slate-700');
-        e.target.classList.add('bg-primary/20', 'text-white', 'border-primary');
-      }
-
-      updateUI();
-    });
-  });
-}
-
-// --- UI Logic: Tabs ---
-let currentTab = 'All';
-
-function setActiveTab(tabId, type) {
-  currentTab = type;
-
-  // Reset all tabs
-  const inactiveClass = 'text-slate-400 hover:text-white hover:bg-slate-700/50'.split(' ');
-  const activeClass = 'text-white bg-slate-700 shadow-sm'.split(' ');
-
-  [tabAll, tabIncome, tabExpense, tabDashboard].forEach(tab => {
-    tab.classList.remove(...activeClass);
-    tab.classList.add(...inactiveClass);
-  });
-
-  // Set Active Tab
-  const activeTab = document.getElementById(tabId);
-  activeTab.classList.remove(...inactiveClass);
-  activeTab.classList.add(...activeClass);
-
-  if (type === 'Dashboard') {
-    listEl.classList.add('hidden');
-    dashboardView.classList.remove('hidden');
-    emptyEl.style.display = 'none'; // Ensure main empty state is hidden
-    renderDashboard();
-  } else {
-    listEl.classList.remove('hidden');
-    dashboardView.classList.add('hidden');
-    updateUI();
-  }
-}
-
-tabAll.addEventListener('click', () => setActiveTab('tab-all', 'All'));
-tabIncome.addEventListener('click', () => setActiveTab('tab-income', 'Income'));
-tabExpense.addEventListener('click', () => setActiveTab('tab-expense', 'Expense'));
-tabDashboard.addEventListener('click', () => setActiveTab('tab-dashboard', 'Dashboard'));
+const { initTemporalNav, initFilters } = initNavigationFilters({
+  transactionService: TransactionService,
+  gamificationService: GamificationService,
+  showNotification,
+  loadData,
+  updateUI,
+  renderDashboard,
+  elements: {
+    filterMonthEl,
+    filterYearEl,
+    searchInput,
+    filterCardEl,
+    sortTransactionsEl,
+    filterChips,
+    tabAll,
+    tabIncome,
+    tabExpense,
+    tabDashboard,
+    listEl,
+    dashboardView,
+    emptyEl,
+  },
+  getCurrentSearchQuery: () => currentSearchQuery,
+  setCurrentSearchQuery: (value) => { currentSearchQuery = value; },
+  getCurrentQuickFilter: () => currentQuickFilter,
+  setCurrentQuickFilter: (value) => { currentQuickFilter = value; },
+  getCurrentCardFilter: () => currentCardFilter,
+  setCurrentCardFilter: (value) => { currentCardFilter = value; },
+  getCurrentSort: () => currentSort,
+  setCurrentSort: (value) => { currentSort = value; },
+  getCurrentTab: () => currentTab,
+  setCurrentTab: (value) => { currentTab = value; },
+});
 
 let editTransactionId = null;
 
