@@ -14,6 +14,7 @@ import { initBudgetNotebookManager } from './modules/BudgetNotebookManager.js';
 import { initEmojiCategoryManager } from './modules/EmojiCategoryManager.js';
 import { initExportManager } from './modules/ExportManager.js';
 import { initNavigationFilters } from './modules/NavigationFiltersManager.js';
+import { initProfileOnboardingManager } from './modules/ProfileOnboardingManager.js';
 import { initSavingsFlow } from './modules/SavingsFlowManager.js';
 import { initTransactionModal } from './modules/TransactionModalManager.js';
 import { renderTransactionList } from './modules/TransactionListRenderer.js';
@@ -188,7 +189,27 @@ const rpgLevelText = document.getElementById('rpg-level-text');
 const rpgXpText = document.getElementById('rpg-xp-text');
 const rpgXpBar = document.getElementById('rpg-xp-bar');
 const achievementsGrid = document.getElementById('achievements-grid');
+const helpModal = document.getElementById('help-modal');
+const closeHelpBtn = document.getElementById('close-help-btn');
+const helpOverlay = document.getElementById('help-overlay');
+const onboardingModal = document.getElementById('onboarding-modal');
+const onbStep1 = document.getElementById('onb-step-1');
+const onbStep2 = document.getElementById('onb-step-2');
+const onbDot1 = document.getElementById('onb-dot-1');
+const onbDot2 = document.getElementById('onb-dot-2');
+const onbNameInput = document.getElementById('onb-name');
+const onbAvatarChosen = document.getElementById('onb-avatar-chosen');
+const onbAvatarMale = document.getElementById('onb-avatar-male');
+const onbAvatarFemale = document.getElementById('onb-avatar-female');
+const onbNext1 = document.getElementById('onb-next-1');
+const onbFinish = document.getElementById('onb-finish');
+const patrimonioReminder = document.getElementById('patrimonio-reminder');
+const dismissPatrimonioReminder = document.getElementById('dismiss-patrimonio-reminder');
+const userDisplayNameEl = document.getElementById('user-display-name');
 let renderSavingsGoals = () => {};
+let updateAvatarUI = () => {};
+let checkPatrimonioReminder = () => {};
+let markPatrimonioCalibrated = () => {};
 
 const modal = document.getElementById('add-modal');
 const modalContent = document.getElementById('modal-content');
@@ -240,7 +261,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- Populate user display name ---
-  const userDisplayNameEl = document.getElementById('user-display-name');
   if (userDisplayNameEl && session.user) {
     const emailPrefix = session.user.email?.split('@')[0] || 'Meu Perfil';
     userDisplayNameEl.textContent = emailPrefix;
@@ -341,308 +361,6 @@ initBudgetNotebookManager({
 
 // --- UI Logic: Exports (delegated to ExportManager module) ---
 initExportManager(exportPdfBtn, exportCsvBtn, () => transactions);
-
-// --- UI Logic: RPG Gamification ---
-
-function updateAvatarUI() {
-  const profile = GamificationService.getProfile();
-  const spriteFile = GamificationService.getSpriteFilename(profile.EvolutionStage, profile.AvatarGender);
-  const stageLabel = GamificationService.getStageLabel(profile.EvolutionStage, profile.AvatarGender);
-  const avatarPlaceholder = document.getElementById('avatar-placeholder');
-
-  avatarLevelBadge.textContent = `Lvl ${profile.Level}`;
-  avatarStageName.textContent = profile.AvatarGender ? stageLabel : 'Escolha seu Avatar';
-
-  if (profile.AvatarGender) {
-    avatarImg.src = `./assets/sprites/${spriteFile}`;
-    avatarImg.classList.remove('hidden');
-    if (avatarPlaceholder) avatarPlaceholder.classList.add('hidden');
-    avatarImg.onerror = () => { avatarImg.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${profile.EvolutionStage}`; };
-  } else {
-    avatarImg.classList.add('hidden');
-    if (avatarPlaceholder) avatarPlaceholder.classList.remove('hidden');
-  }
-}
-
-avatarControl.addEventListener('click', openRpgModal);
-
-function showGenderChoiceModal() {
-  const existingModal = document.getElementById('gender-choice-modal');
-  if (existingModal) existingModal.remove();
-
-  const choiceModal = document.createElement('div');
-  choiceModal.id = 'gender-choice-modal';
-  choiceModal.className = 'fixed inset-0 z-[70] flex items-center justify-center p-6';
-  choiceModal.innerHTML = `
-    <div class="fixed inset-0 bg-slate-900/95"></div>
-    <div class="relative z-10 w-full max-w-sm">
-      <div class="glass-card rounded-3xl p-6 border border-primary/20 text-center space-y-5">
-        <div>
-          <span class="material-symbols-outlined text-primary text-4xl">person</span>
-          <h3 class="text-xl font-bold text-white mt-2">Escolha seu Avatar</h3>
-          <p class="text-sm text-slate-400 mt-1">A linha evolutiva seguirá a sua escolha.</p>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <button id="choose-male-btn" class="flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-slate-700 hover:border-primary bg-slate-800 hover:bg-primary/10 transition-all group overflow-hidden">
-            <div class="w-28 h-28 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
-              <img src="./assets/sprites/stage1-m.png" alt="Camponês" class="w-full h-full object-cover" style="transform: scale(1.3);" />
-            </div>
-            <span class="text-sm font-bold text-white group-hover:text-primary transition-colors">Camponês</span>
-          </button>
-          <button id="choose-female-btn" class="flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-slate-700 hover:border-pink-400 bg-slate-800 hover:bg-pink-400/10 transition-all group overflow-hidden">
-            <div class="w-28 h-28 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
-              <img src="./assets/sprites/stage1-f.png" alt="Camponesa" class="w-full h-full object-cover" style="transform: scale(1.3);" />
-            </div>
-            <span class="text-sm font-bold text-white group-hover:text-pink-400 transition-colors">Camponesa</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(choiceModal);
-
-  document.getElementById('choose-male-btn').addEventListener('click', () => {
-    GamificationService.setAvatarGender('male');
-    choiceModal.remove();
-    updateAvatarUI();
-    openRpgModal();
-  });
-
-  document.getElementById('choose-female-btn').addEventListener('click', () => {
-    GamificationService.setAvatarGender('female');
-    choiceModal.remove();
-    updateAvatarUI();
-    openRpgModal();
-  });
-}
-
-function openRpgModal() {
-  const profile = GamificationService.getProfile();
-
-  // If gender not chosen yet, show choice modal instead
-  if (!profile.AvatarGender) {
-    showGenderChoiceModal();
-    return;
-  }
-
-  const spriteFile = GamificationService.getSpriteFilename(profile.EvolutionStage, profile.AvatarGender);
-  const stageLabel = GamificationService.getStageLabel(profile.EvolutionStage, profile.AvatarGender);
-
-  rpgStageTitle.textContent = stageLabel;
-  rpgLevelText.textContent = profile.Level;
-  rpgXpText.textContent = `${profile.CurrentXP} / ${profile.XPToNextLevel}`;
-
-  const pct = Math.min(100, Math.round((profile.CurrentXP / profile.XPToNextLevel) * 100));
-  rpgXpBar.style.width = '0%';
-  setTimeout(() => { rpgXpBar.style.width = `${pct}%`; }, 100);
-
-  rpgLargeAvatar.src = `./assets/sprites/${spriteFile}`;
-  rpgLargeAvatar.onerror = () => { rpgLargeAvatar.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${profile.EvolutionStage}`; };
-
-  // Render Achievements
-  achievementsGrid.innerHTML = '';
-  GamificationService.ALL_ACHIEVEMENTS.forEach(def => {
-    const isUnlocked = profile.UnlockedAchievements.some(a => a.Id === def.Id);
-    const progress = GamificationService.getAchievementProgress(def, profile);
-    const progressPct = progress.max > 0 ? Math.min(Math.round((progress.current / progress.max) * 100), 100) : 0;
-
-    // Secret achievement handling
-    const isSecret = def.IsSecret && !isUnlocked;
-    const displayName = isSecret ? def.Name : (isUnlocked && def.RevealedName ? def.RevealedName : def.Name);
-    const displayDesc = isSecret ? def.Description : (isUnlocked && def.RevealedDescription ? def.RevealedDescription : def.Description);
-    const iconName = isSecret ? def.Icon : (isUnlocked && def.RevealedIcon ? def.RevealedIcon : def.Icon);
-    const iconColor = isUnlocked
-      ? (def.RevealedIconColor || def.IconColor || 'text-yellow-400')
-      : 'text-slate-600';
-
-    // Locked/Unlocked styling
-    const cardClass = isUnlocked
-      ? "border-purple-500/40 bg-purple-500/10"
-      : "border-slate-700/50 bg-slate-800/30";
-    const iconWrapperClass = isUnlocked
-      ? "bg-slate-900/80 border-purple-500/30"
-      : "bg-slate-900/50 border-slate-700/30 grayscale opacity-40";
-    const titleClass = isUnlocked ? "text-white" : "text-slate-500";
-    const descClass = isUnlocked ? "text-slate-400" : "text-slate-600";
-    const dateHtml = isUnlocked ? `<span class="text-[9px] text-primary font-bold">✓ Concluída</span>` : '';
-
-    // Progress bar (show for non-unlocked achievements with valid tracking)
-    const showProgress = !isUnlocked && def.MaxProgress > 1 && def.TrackKey;
-    const progressBarHtml = showProgress ? `
-      <div class="mt-1.5 flex items-center gap-2">
-        <div class="flex-1 h-1.5 bg-slate-700/40 rounded-full overflow-hidden">
-          <div class="h-full bg-slate-500/40 rounded-full transition-all duration-700" style="width: ${progressPct}%"></div>
-        </div>
-        <span class="text-[9px] text-slate-600 font-medium shrink-0">${progress.current}/${progress.max}</span>
-      </div>` : '';
-
-    achievementsGrid.innerHTML += `
-            <div class="flex items-start gap-3 p-3 rounded-xl border ${cardClass} transition-all">
-               <div class="h-10 w-10 shrink-0 rounded-full flex items-center justify-center border ${iconWrapperClass}">
-                  <span class="material-symbols-outlined ${iconColor}" style="font-size: 22px;">${iconName}</span>
-               </div>
-               <div class="flex-1 min-w-0">
-                  <div class="flex justify-between items-center mb-0.5">
-                     <h5 class="text-sm font-bold ${titleClass} truncate">${displayName}</h5>
-                     ${dateHtml}
-                  </div>
-                  <p class="text-xs ${descClass}">${displayDesc}</p>
-                  ${progressBarHtml}
-               </div>
-            </div>
-        `;
-  });
-
-  // Inject Help + Logout Buttons if they don't exist
-  if (!document.getElementById('rpg-logout-btn')) {
-    const buttonsWrapper = document.createElement('div');
-    buttonsWrapper.className = "mt-4 pt-4 border-t border-slate-700 space-y-3";
-    buttonsWrapper.innerHTML = `
-          <button id="rpg-help-btn" class="w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
-              <span class="material-symbols-outlined">help</span> Dúvidas
-          </button>
-          <button id="rpg-logout-btn" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
-              <span class="material-symbols-outlined">logout</span> Sair da Conta
-          </button>
-      `;
-    achievementsGrid.parentElement.appendChild(buttonsWrapper);
-
-    // Help button opens guide modal
-    document.getElementById('rpg-help-btn').addEventListener('click', () => {
-      rpgModal.classList.add('hidden');
-      document.getElementById('help-modal').classList.remove('hidden');
-    });
-
-    document.getElementById('rpg-logout-btn').addEventListener('click', async () => {
-      try {
-        document.getElementById('rpg-logout-btn').innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> Saindo...';
-        await AuthService.signOut();
-        window.location.replace(import.meta.env.BASE_URL + "login.html");
-      } catch (err) {
-        alert("Erro ao sair da conta: " + err.message);
-      }
-    });
-  }
-
-  rpgModal.classList.remove('hidden');
-}
-
-// Track daily login for streak and anniversary achievements (Moved to initTemporalNav)
-
-const closeRpgModal = () => rpgModal.classList.add('hidden');
-closeRpgBtn.addEventListener('click', closeRpgModal);
-rpgOverlay.addEventListener('click', closeRpgModal);
-// avatarControl listener already registered at top of file (L748), no duplicate needed
-
-// Help Modal close handlers
-const helpModal = document.getElementById('help-modal');
-document.getElementById('close-help-btn').addEventListener('click', () => helpModal.classList.add('hidden'));
-document.getElementById('help-overlay').addEventListener('click', () => helpModal.classList.add('hidden'));
-
-// Execute UI refresh on load
-updateAvatarUI();
-
-// --- Onboarding Flow (First-Time Users) ---
-const onboardingModal = document.getElementById('onboarding-modal');
-const onbStep1 = document.getElementById('onb-step-1');
-const onbStep2 = document.getElementById('onb-step-2');
-const onbDot1 = document.getElementById('onb-dot-1');
-const onbDot2 = document.getElementById('onb-dot-2');
-const onbNameInput = document.getElementById('onb-name');
-const onbAvatarChosen = document.getElementById('onb-avatar-chosen');
-const patrimonioReminder = document.getElementById('patrimonio-reminder');
-
-let onboardingAvatarGender = null;
-
-function isOnboardingCompleted() {
-  return localStorage.getItem('onboardingCompleted') === 'true';
-}
-
-function markOnboardingCompleted() {
-  localStorage.setItem('onboardingCompleted', 'true');
-}
-
-function isPatrimonioCalibrated() {
-  return localStorage.getItem('patrimonioCalibrated') === 'true';
-}
-
-function markPatrimonioCalibrated() {
-  localStorage.setItem('patrimonioCalibrated', 'true');
-}
-
-// Show onboarding if first time AND user has no avatar set
-const existingProfile = GamificationService.getProfile();
-if (!isOnboardingCompleted() && !existingProfile.AvatarGender) {
-  onboardingModal.classList.remove('hidden');
-} else if (!isOnboardingCompleted() && existingProfile.AvatarGender) {
-  // Existing user who already has avatar: skip onboarding silently
-  markOnboardingCompleted();
-}
-
-// Avatar selection in onboarding
-document.getElementById('onb-avatar-male').addEventListener('click', () => {
-  onboardingAvatarGender = 'male';
-  onbAvatarChosen.classList.remove('hidden');
-  document.getElementById('onb-avatar-male').querySelector('div').classList.add('border-primary', 'ring-2', 'ring-primary/50');
-  document.getElementById('onb-avatar-female').querySelector('div').classList.remove('border-primary', 'ring-2', 'ring-primary/50');
-});
-
-document.getElementById('onb-avatar-female').addEventListener('click', () => {
-  onboardingAvatarGender = 'female';
-  onbAvatarChosen.classList.remove('hidden');
-  document.getElementById('onb-avatar-female').querySelector('div').classList.add('border-primary', 'ring-2', 'ring-primary/50');
-  document.getElementById('onb-avatar-male').querySelector('div').classList.remove('border-primary', 'ring-2', 'ring-primary/50');
-});
-
-// Step 1 → Step 2
-document.getElementById('onb-next-1').addEventListener('click', () => {
-  const name = onbNameInput.value.trim();
-  if (!name) {
-    showNotification('Por favor, digite seu nome.', 'error');
-    return;
-  }
-  if (!onboardingAvatarGender) {
-    showNotification('Escolha um avatar para continuar.', 'error');
-    return;
-  }
-
-  // Save name and avatar
-  const userDisplayNameEl = document.getElementById('user-display-name');
-  if (userDisplayNameEl) userDisplayNameEl.textContent = name;
-  localStorage.setItem('userDisplayName', name);
-  GamificationService.setAvatarGender(onboardingAvatarGender);
-  updateAvatarUI();
-
-  // Transition to step 2
-  onbStep1.classList.add('hidden');
-  onbStep2.classList.remove('hidden');
-  onbDot1.classList.replace('bg-primary', 'bg-slate-600');
-  onbDot2.classList.replace('bg-slate-600', 'bg-primary');
-});
-
-// Finish onboarding
-document.getElementById('onb-finish').addEventListener('click', () => {
-  markOnboardingCompleted();
-  onboardingModal.classList.add('hidden');
-  showNotification('Bem-vindo! Adicione suas primeiras transações 🎉', 'success');
-});
-
-// Patrimônio reminder: show after first transaction if not yet calibrated
-function checkPatrimonioReminder() {
-  if (!isOnboardingCompleted()) return;
-  if (isPatrimonioCalibrated()) return;
-
-  // Check if user has at least 1 transaction
-  if (transactions && transactions.length > 0) {
-    patrimonioReminder.classList.remove('hidden');
-  }
-}
-
-// Dismiss reminder
-document.getElementById('dismiss-patrimonio-reminder').addEventListener('click', () => {
-  markPatrimonioCalibrated();
-  patrimonioReminder.classList.add('hidden');
-});
 
 
 // --- Business Logic ---
@@ -785,6 +503,50 @@ initEmojiCategoryManager({
     savingsEmojiList,
   },
 });
+
+const profileOnboardingManager = initProfileOnboardingManager({
+  gamificationService: GamificationService,
+  authService: AuthService,
+  showNotification,
+  getTransactions: () => transactions,
+  elements: {
+    avatarControl,
+    avatarImg,
+    avatarLevelBadge,
+    avatarStageName,
+    avatarPlaceholder: document.getElementById('avatar-placeholder'),
+    rpgModal,
+    rpgOverlay,
+    closeRpgBtn,
+    rpgLargeAvatar,
+    rpgStageTitle,
+    rpgLevelText,
+    rpgXpText,
+    rpgXpBar,
+    achievementsGrid,
+    helpModal,
+    closeHelpBtn,
+    helpOverlay,
+    onboardingModal,
+    onbStep1,
+    onbStep2,
+    onbDot1,
+    onbDot2,
+    onbNameInput,
+    onbAvatarChosen,
+    onbAvatarMale,
+    onbAvatarFemale,
+    onbNext1,
+    onbFinish,
+    userDisplayNameEl,
+    patrimonioReminder,
+    dismissPatrimonioReminder,
+  },
+});
+
+updateAvatarUI = profileOnboardingManager.updateAvatarUI;
+checkPatrimonioReminder = profileOnboardingManager.checkPatrimonioReminder;
+markPatrimonioCalibrated = profileOnboardingManager.markPatrimonioCalibrated;
 
 const savingsFlow = initSavingsFlow({
   savingsService: SavingsService,
