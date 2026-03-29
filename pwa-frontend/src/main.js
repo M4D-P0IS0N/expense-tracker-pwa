@@ -969,15 +969,15 @@ ctxDeleteBtn.addEventListener('click', async () => {
             installmentGroupId: selectedTransaction.installment_group_id,
             selectedTransactionId: selectedTransaction.id
           });
-          TrashService.moveToTrash(selectedTransaction.id);
+          await TransactionService.deleteTransaction(selectedTransaction.id);
         } else {
-          groupedTransactionsToDelete.forEach((groupedTransaction) => TrashService.moveToTrash(groupedTransaction.id));
+          await TransactionService.deleteTransactions(groupedTransactionsToDelete.map((groupedTransaction) => groupedTransaction.id));
         }
       } else {
-        TrashService.moveToTrash(selectedTransaction.id);
+        await TransactionService.deleteTransaction(selectedTransaction.id);
       }
     } else {
-      TrashService.moveToTrash(selectedTransaction.id);
+      await TransactionService.deleteTransaction(selectedTransaction.id);
     }
 
     closeContextMenu();
@@ -1174,6 +1174,12 @@ async function loadData() {
   emptyEl.style.display = 'none';
 
   try {
+    const pendingDeletedIds = TrashService.getDeletedIds();
+    if (pendingDeletedIds.length > 0) {
+      await TransactionService.deleteTransactions(pendingDeletedIds);
+      TrashService.clearTrash();
+    }
+
     if (currentSearchQuery.length > 0) {
       transactions = await TransactionService.searchTransactions(currentSearchQuery);
     } else {
@@ -1181,10 +1187,6 @@ async function loadData() {
       const selectedYear = parseInt(filterYearEl.value);
       transactions = await TransactionService.getTransactions(selectedYear, selectedMonth);
     }
-
-    // Filter out Soft Deleted Transacitons (Virtual Recycle Bin)
-    const deletedIds = TrashService.getDeletedIds();
-    transactions = transactions.filter(t => !deletedIds.includes(t.id));
 
     updateUI();
     // Check if we are in Dashboard mode

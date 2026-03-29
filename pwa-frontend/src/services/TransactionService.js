@@ -361,4 +361,23 @@ export class TransactionService {
         }
         return true;
     }
+
+    /**
+     * Delete multiple transactions by ID in a single request
+     */
+    static async deleteTransactions(ids) {
+        const validIds = Array.isArray(ids) ? ids.filter(Boolean) : [];
+        if (validIds.length === 0) return true;
+
+        const { error } = await supabase
+            .from('transactions')
+            .delete()
+            .in('id', validIds);
+
+        if (error) {
+            console.error("Error deleting transactions:", error);
+            throw error;
+        }
+        return true;
+    }
 }

@@ -19,4 +19,8 @@ export class TrashService {
         ids = ids.filter(id => id !== transactionId);
         localStorage.setItem(this.storageKey, JSON.stringify(ids));
     }
+
+    static clearTrash() {
+        localStorage.removeItem(this.storageKey);
+    }
 }
