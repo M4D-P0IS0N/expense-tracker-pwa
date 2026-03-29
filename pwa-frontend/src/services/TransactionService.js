@@ -7,6 +7,28 @@ async function getCurrentUserId() {
 }
 
 export class TransactionService {
+    static async ensureUserProfile(userId) {
+        if (!userId) return null;
+
+        const profilePayload = {
+            id: userId,
+            last_sync: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+            .from('user_profiles')
+            .upsert(profilePayload, { onConflict: 'id' })
+            .select('id, base_net_worth')
+            .single();
+
+        if (error) {
+            console.error("Error ensuring user profile:", error);
+            return null;
+        }
+
+        return data;
+    }
+
     /**
      * Get all transactions ordered by date descending, filtered by year and month
      * @param {number} year 
@@ -163,6 +185,13 @@ export class TransactionService {
             return base;
         }
 
+        const ensuredProfile = await this.ensureUserProfile(userId);
+        if (ensuredProfile) {
+            const base = Number(ensuredProfile.base_net_worth || 0);
+            localStorage.setItem('baseNetWorth', base.toString());
+            return base;
+        }
+
         return Number(localStorage.getItem('baseNetWorth') || 0);
     }
 
@@ -178,14 +207,18 @@ export class TransactionService {
         // Save locally immediately for fast UI response
         localStorage.setItem('baseNetWorth', numericBase.toString());
 
-        // Sync to cloud
-        await supabase
+        // Sync to cloud, creating the profile row if needed
+        const { error } = await supabase
             .from('user_profiles')
-            .update({
+            .upsert({
+                id: userId,
                 base_net_worth: numericBase,
                 last_sync: new Date().toISOString()
-            })
-            .eq('id', userId);
+            }, { onConflict: 'id' });
+
+        if (error) {
+            console.error("Error updating base net worth:", error);
+        }
     }
 
     /**

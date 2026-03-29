@@ -65,6 +65,7 @@ cp .env.example .env
 # 2. supabase_migration_user_id.sql
 # 3. supabase_migration_net_worth.sql
 # 4. supabase_migration_security_rls.sql
+# 5. supabase_migration_user_profiles_bootstrap.sql
 
 # Start the dev server
 npm run dev
