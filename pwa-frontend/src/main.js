@@ -11,6 +11,7 @@ import { initPullToRefresh } from './modules/PullToRefresh.js';
 import { renderDashboardSection } from './modules/DashboardRenderer.js';
 import { initExportManager } from './modules/ExportManager.js';
 import { renderTransactionList } from './modules/TransactionListRenderer.js';
+import { initTransactionForm } from './modules/TransactionFormManager.js';
 import { selectGroupedTransactionsForDeletion } from './utils/installmentDeletion.js';
 
 // --- Utils ---
@@ -1244,61 +1245,15 @@ function updateUI() {
 }
 
 // Form Submission
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  const submitBtn = form.querySelector('button[type="submit"]');
-  const originalText = submitBtn.textContent;
-  submitBtn.textContent = 'Salvando...';
-  submitBtn.disabled = true;
-
-  try {
-    const type = document.querySelector('input[name="type"]:checked').value;
-    const catVal = document.getElementById('tx-category').value;
-    const finalCategory = document.getElementById('tx-emoji-display').textContent + " " + (catVal === 'New' ? document.getElementById('tx-custom-category').value : catVal);
-
-    const txDesc = document.getElementById('tx-description').value;
-    const txAmountStr = document.getElementById('tx-amount').value;
-    const parsedAmount = parseBrazilianCurrency(txAmountStr);
-
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      showNotification('Por favor, informe um valor válido acima de zero.', 'error');
-      return;
-    }
-
-    const txDateStr = document.getElementById('tx-date').value;
-    const cardName = document.getElementById('tx-card').value || null;
-    const installmentsStr = document.getElementById('tx-install-total').value;
-    const currentInstallmentStr = document.getElementById('tx-install-number').value;
-
-    const txPayload = {
-      description: txDesc,
-      amount: parsedAmount,
-      type: type,
-      category: finalCategory,
-      date: txDateStr,
-      credit_card_name: cardName,
-      total_installments: parseInt(installmentsStr) || 1,
-      installment_number: parseInt(currentInstallmentStr) || 1,
-      is_recurring: document.getElementById('tx-recurring').checked
-    };
-
-    if (editTransactionId) {
-      await TransactionService.updateTransaction(editTransactionId, txPayload);
-    } else {
-      await TransactionService.addTransaction(txPayload);
-    }
-
-    await loadData();
-    closeModal();
-
-  } catch (error) {
-    alert("Erro ao salvar transação. Verifique se o Supabase está configurado corretamente.");
-    console.error(error);
-  } finally {
-    submitBtn.textContent = originalText;
-    submitBtn.disabled = false;
-  }
+initTransactionForm({
+  formElement: form,
+  getElementById: (elementId) => document.getElementById(elementId),
+  parseBrazilianCurrency,
+  showNotification,
+  transactionService: TransactionService,
+  loadData,
+  closeModal,
+  getEditTransactionId: () => editTransactionId,
 });
 
 // Neural Border Animation -> ./modules/NeuralBorderAnimation.js
