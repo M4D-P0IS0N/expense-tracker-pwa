@@ -59,6 +59,13 @@ npm install
 cp .env.example .env
 # Edit .env with your Supabase credentials
 
+# Apply the Supabase schema / migrations, including RLS policies
+# Recommended order:
+# 1. supabase_schema.sql
+# 2. supabase_migration_user_id.sql
+# 3. supabase_migration_net_worth.sql
+# 4. supabase_migration_security_rls.sql
+
 # Start the dev server
 npm run dev
 ```
@@ -105,6 +112,7 @@ pwa-frontend/
 - Environment variables are **never committed** — `.env` is in `.gitignore`
 - Supabase credentials in production are injected via **GitHub Secrets**
 - **Row Level Security (RLS)** ensures users can only access their own data
+- Any table exposed in the `public` schema must have **RLS enabled and explicit policies**
 - Service Worker **excludes Supabase API calls** from caching
 - Auth Guard redirects unauthenticated users to the login page
 

@@ -52,6 +52,9 @@ Estas são as diretrizes do projeto e regras de codificação que a IA deve segu
 - **Logs Censurados:** Nunca exiba senhas, tokens ou dados pessoais de usuários no `console.log` ou logs de erro.
 - **O "Botão de Pânico":** Se a alteração for arriscada, diga-me como reverter o código (rollback do Git) antes mesmo de eu testar.
 - **Transparência no Terminal:** Nunca me mande executar um comando no terminal sem me explicar em linguagem simples o que ele vai instalar ou modificar na minha máquina.
+- **RLS Obrigatório no Supabase:** Toda tabela em schema exposto pela API (`public`, por padrão) DEVE nascer com `ENABLE ROW LEVEL SECURITY` e policies explícitas de `SELECT/INSERT/UPDATE/DELETE`. Não basta criar a tabela.
+- **Dono do Registro Definido:** Toda tabela multiusuário no banco DEVE ter coluna de ownership (`user_id` ou equivalente) ligada ao `auth.users(id)`. Se o app consultar `auth.uid()`, a policy deve usar esse mesmo vínculo.
+- **Schema e Migração Andam Juntos:** Ao criar ou alterar tabela no Supabase, atualize o schema versionado e a migração correspondente no repositório. Nunca deixe a segurança “só no painel”.
 
 ## 🛑 9. PREVENÇÃO CONTRA DESASTRES (ROLLBACK E BACKUP)
 - **Obrigatório Salvar o Jogo ("Save Point"):** ANTES de executar qualquer script de build (`python build.py`, `npm run build`), processo em lote de "Find & Replace" ou deleção de arquivos, você DEVE exigir que eu faça um Commit no Git (ex: `git add . && git commit -m "backup antes do script"`) ou crie uma cópia ZIP da pasta. Nunca execute uma alteração destrutiva sem rede de segurança.
