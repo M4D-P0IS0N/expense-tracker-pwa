@@ -11,6 +11,7 @@ import { initNeuralBorder } from './modules/NeuralBorderAnimation.js';
 import { initPullToRefresh } from './modules/PullToRefresh.js';
 import { renderDashboardSection } from './modules/DashboardRenderer.js';
 import { initBudgetNotebookManager } from './modules/BudgetNotebookManager.js';
+import { initEmojiCategoryManager } from './modules/EmojiCategoryManager.js';
 import { initExportManager } from './modules/ExportManager.js';
 import { initNavigationFilters } from './modules/NavigationFiltersManager.js';
 import { initSavingsFlow } from './modules/SavingsFlowManager.js';
@@ -209,6 +210,15 @@ const txInstallTotalInput = document.getElementById('tx-install-total');
 const txRecurringInput = document.getElementById('tx-recurring');
 const modalTitleElement = document.querySelector('#modal-content h3');
 const modalSubmitButton = document.querySelector('#transaction-form button[type="submit"]');
+const emojiBtn = document.getElementById('tx-emoji-btn');
+const emojiDisplay = document.getElementById('tx-emoji-display');
+const emojiPicker = document.getElementById('emoji-picker');
+const emojiList = document.getElementById('emoji-list');
+const categorySelect = document.getElementById('tx-category');
+const customCategoryContainer = document.getElementById('tx-custom-category-container');
+const customCategoryInput = document.getElementById('tx-custom-category');
+const savingsEmojiPicker = document.getElementById('savings-emoji-picker');
+const savingsEmojiList = document.getElementById('savings-emoji-list');
 
 const transactionListElements = {
   balanceEl,
@@ -635,97 +645,6 @@ document.getElementById('dismiss-patrimonio-reminder').addEventListener('click',
 });
 
 
-// --- Emoji & Category Logic ---
-const emojiBtn = document.getElementById('tx-emoji-btn');
-const emojiDisplay = document.getElementById('tx-emoji-display');
-const emojiPicker = document.getElementById('emoji-picker');
-const emojiList = document.getElementById('emoji-list');
-const categorySelect = document.getElementById('tx-category');
-const customCategoryContainer = document.getElementById('tx-custom-category-container');
-const customCategoryInput = document.getElementById('tx-custom-category');
-
-const defaultEmojis = [
-  '🍔', '🍕', '🍣', '🛒', '🛍️', '🎁', '🚌', '🚗', '✈️', '🏠', '🏢', '💡', '💧', '🔥',
-  '🏥', '💊', '🦷', '🎮', '🎬', '🎵', '⚽', '🏋️', '👕', '👗', '📚', '✏️', '💼', '💻',
-  '💸', '💰', '💳', '📈', '🏷️', '🐶', '🐱', '🛠️', '❓'
-];
-const categoryToEmoji = {
-  'General': '🏷️',
-  'Food': '🍔',
-  'Transport': '🚌',
-  'Home': '🏠',
-  'Salary': '💰'
-};
-
-// Populate picker
-defaultEmojis.forEach(emoji => {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'hover:bg-slate-700 rounded p-1 transition';
-  btn.textContent = emoji;
-  btn.addEventListener('click', () => {
-    emojiDisplay.textContent = emoji;
-    emojiPicker.classList.add('hidden');
-  });
-  emojiList.appendChild(btn);
-});
-
-emojiBtn.addEventListener('click', () => {
-  emojiPicker.classList.toggle('hidden');
-});
-
-// --- Savings Emoji Picker Logic ---
-const savingsIconInput = document.getElementById('savings-icon');
-const savingsEmojiPicker = document.getElementById('savings-emoji-picker');
-const savingsEmojiList = document.getElementById('savings-emoji-list');
-
-if (savingsEmojiList) {
-  defaultEmojis.forEach(emoji => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'hover:bg-slate-700 rounded p-1 transition';
-    btn.textContent = emoji;
-    btn.addEventListener('click', () => {
-      savingsIconInput.value = emoji;
-      savingsEmojiPicker.classList.add('hidden');
-    });
-    savingsEmojiList.appendChild(btn);
-  });
-}
-
-if (savingsIconInput) {
-  savingsIconInput.addEventListener('click', () => {
-    savingsEmojiPicker.classList.toggle('hidden');
-  });
-}
-
-// Close picker on outside click
-document.addEventListener('click', (e) => {
-  if (emojiBtn && emojiPicker && !emojiBtn.contains(e.target) && !emojiPicker.contains(e.target)) {
-    emojiPicker.classList.add('hidden');
-  }
-  if (savingsIconInput && savingsEmojiPicker && !savingsIconInput.contains(e.target) && !savingsEmojiPicker.contains(e.target)) {
-    savingsEmojiPicker.classList.add('hidden');
-  }
-});
-
-categorySelect.addEventListener('change', (e) => {
-  const val = e.target.value;
-  if (val === 'New') {
-    customCategoryContainer.classList.remove('hidden');
-    customCategoryInput.required = true;
-    emojiDisplay.textContent = '❓'; // Empty/Question mark for new
-  } else {
-    customCategoryContainer.classList.add('hidden');
-    customCategoryInput.required = false;
-    customCategoryInput.value = '';
-    if (categoryToEmoji[val]) {
-      emojiDisplay.textContent = categoryToEmoji[val];
-    }
-  }
-});
-
-
 // --- Business Logic ---
 async function loadData() {
   listEl.innerHTML = '<div class="text-center text-slate-400 py-8">Carregando...</div>';
@@ -849,6 +768,21 @@ const contextMenuManager = initContextMenuManager({
     recurringInput: txRecurringInput,
     modalTitleElement,
     modalSubmitButton,
+  },
+});
+
+initEmojiCategoryManager({
+  elements: {
+    emojiBtn,
+    emojiDisplay,
+    emojiPicker,
+    emojiList,
+    categorySelect,
+    customCategoryContainer,
+    customCategoryInput,
+    savingsIconInput: savingsIcon,
+    savingsEmojiPicker,
+    savingsEmojiList,
   },
 });
 
