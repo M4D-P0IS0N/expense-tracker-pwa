@@ -185,6 +185,15 @@ const typeRadios = document.querySelectorAll('input[name="type"]');
 const toggleAdvancedBtn = document.getElementById('toggle-advanced-btn');
 const advancedFields = document.getElementById('advanced-fields');
 
+const transactionListElements = {
+  balanceEl,
+  incomeEl,
+  expenseEl,
+  listEl,
+  emptyEl,
+  filterCardEl,
+};
+
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -1214,7 +1223,7 @@ async function renderDashboard() {
 
 function updateUI() {
   renderTransactionList({
-    appElements,
+    appElements: transactionListElements,
     transactions,
     currentTab,
     currentCardFilter,
