@@ -8,6 +8,7 @@ import { SavingsService } from './services/SavingsService.js';
 import { AuthService } from './services/AuthService.js';
 import { initNeuralBorder } from './modules/NeuralBorderAnimation.js';
 import { initPullToRefresh } from './modules/PullToRefresh.js';
+import { renderDashboardSection } from './modules/DashboardRenderer.js';
 import { initExportManager } from './modules/ExportManager.js';
 import { renderTransactionList } from './modules/TransactionListRenderer.js';
 import { selectGroupedTransactionsForDeletion } from './utils/installmentDeletion.js';
@@ -1190,264 +1191,25 @@ async function loadData() {
 }
 
 async function renderDashboard() {
-  const formatCurrency = (num) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Math.abs(num));
-
-  // 1. Calculate Expenses by Category
-  const expenses = transactions.filter(t => t.type === 'Expense');
-  const totalExpense = expenses.reduce((acc, t) => acc + Number(t.amount), 0);
-  const income = transactions.filter(t => t.type === 'Income').reduce((acc, t) => acc + Number(t.amount), 0);
-
-  const catMap = {};
-  expenses.forEach(t => {
-    let cat = t.category || "General";
-    catMap[cat] = (catMap[cat] || 0) + Number(t.amount);
+  await renderDashboardSection({
+    transactions,
+    budgetService: BudgetService,
+    transactionService: TransactionService,
+    parseBrazilianCurrency,
+    markPatrimonioCalibrated,
+    patrimonioReminder,
+    renderDashboard,
+    renderSavingsGoals,
+    dashCategories,
+    dashCreditCards,
+    dashForecast,
+    dashInsights,
+    dashNetworth,
+    dashNetworthTrend,
+    filterMonthEl,
+    filterYearEl,
+    getElementById: (elementId) => document.getElementById(elementId),
   });
-
-  const sortedCats = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
-
-  dashCategories.innerHTML = '';
-  if (sortedCats.length === 0) {
-    dashCategories.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">Nenhuma despesa no período.</div>';
-  } else {
-    sortedCats.forEach(([cat, amount]) => {
-      const pct = totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0;
-
-      let firstChar = cat.split(' ')[0] || "";
-      let isEmoji = /[\u1000-\uFFFF]/.test(firstChar);
-
-      const icon = isEmoji ? firstChar : '🏷️';
-      const name = isEmoji ? cat.substring(firstChar.length).trim() : cat;
-
-      // Budget Checks
-      const budget = BudgetService.getBudget(name);
-      let budgetWarning = '';
-      let barColor = 'bg-primary';
-
-      if (budget > 0) {
-        const pctBudget = amount / budget;
-        if (pctBudget >= 1.0) {
-          budgetWarning = `<span class="text-[10px] text-accent-red border border-accent-red/30 px-1 rounded-sm ml-2 font-bold uppercase hidden sm:inline-block">🚨 Estourou!</span>`;
-          barColor = 'bg-accent-red drop-shadow-[0_0_5px_rgba(250,101,56,0.6)]';
-        } else if (pctBudget >= 0.8) {
-          budgetWarning = `<span class="text-[10px] text-yellow-400 border border-yellow-400/30 px-1 rounded-sm ml-2 font-bold uppercase hidden sm:inline-block">⚠️ ${Math.round(pctBudget * 100)}%</span>`;
-          barColor = 'bg-yellow-500';
-        }
-      }
-
-      dashCategories.innerHTML += `
-             <div class="flex items-center justify-between mb-1">
-                <span class="text-xs font-bold text-slate-300 flex items-center">${icon} ${name} ${budgetWarning}</span>
-                <span class="text-xs font-bold text-white">R$ ${amount.toFixed(2)} <span class="text-slate-500 font-normal">(${pct}%)</span></span>
-             </div>
-             <div class="h-2 w-full bg-slate-800 rounded-full overflow-hidden mb-3">
-                <div class="h-full ${barColor} rounded-full transition-all duration-1000" style="width: ${pct}%"></div>
-             </div>
-          `;
-    });
-  }
-
-  // 1.5 Calculate Expenses by Credit Card
-  const cardMap = {};
-  expenses.forEach(t => {
-    if (t.credit_card_name) {
-      cardMap[t.credit_card_name] = (cardMap[t.credit_card_name] || 0) + Number(t.amount);
-    }
-  });
-
-  const sortedCards = Object.entries(cardMap).sort((a, b) => b[1] - a[1]);
-
-  dashCreditCards.innerHTML = '';
-  if (sortedCards.length === 0) {
-    dashCreditCards.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">Nenhuma despesa no crédito.</div>';
-  } else {
-    sortedCards.forEach(([cardName, amount]) => {
-      const pct = totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0;
-      dashCreditCards.innerHTML += `
-             <div class="flex items-center justify-between mb-1">
-                <span class="text-xs font-bold text-slate-300 flex items-center"><span class="material-symbols-outlined text-[14px] text-slate-400 mr-1">credit_card</span> ${cardName}</span>
-                <span class="text-xs font-bold text-white">R$ ${amount.toFixed(2)} <span class="text-slate-500 font-normal">(${pct}%)</span></span>
-             </div>
-             <div class="h-2 w-full bg-slate-800 rounded-full overflow-hidden mb-3">
-                <div class="h-full bg-orange-500 rounded-full transition-all duration-1000" style="width: ${pct}%"></div>
-             </div>
-          `;
-    });
-  }
-
-  // 1.6 Future Expenses Projection (Installments)
-  const dashFutureExpenses = document.getElementById('dash-future-expenses');
-  const monthNames = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
-  const futureMonthsMap = {};
-
-  // Gather all installment-based expenses
-  const installmentExpenses = expenses.filter(t => t.total_installments > 1 && t.installment_number < t.total_installments);
-
-  installmentExpenses.forEach(t => {
-    const remainingParcels = t.total_installments - t.installment_number;
-    const txDate = new Date(t.date);
-
-    for (let i = 1; i <= remainingParcels; i++) {
-      const futureMonth = txDate.getMonth() + i; // 0-indexed months offset
-      const futureYear = txDate.getFullYear() + Math.floor(futureMonth / 12);
-      const normalizedMonth = futureMonth % 12;
-      const key = `${futureYear}-${String(normalizedMonth).padStart(2, '0')}`;
-
-      if (!futureMonthsMap[key]) {
-        futureMonthsMap[key] = { year: futureYear, month: normalizedMonth, total: 0 };
-      }
-      futureMonthsMap[key].total += Number(t.amount);
-    }
-  });
-
-  // Also add recurring expenses to every future month (if any exist)
-  const recurringExpenses = expenses.filter(t => t.is_recurring);
-  const recurringTotal = recurringExpenses.reduce((sum, t) => sum + Number(t.amount), 0);
-
-  // Sort by date and render
-  const sortedFutureMonths = Object.values(futureMonthsMap).sort((a, b) => {
-    return a.year === b.year ? a.month - b.month : a.year - b.year;
-  });
-
-  // Add recurring to each projected month
-  sortedFutureMonths.forEach(m => { m.total += recurringTotal; });
-
-  dashFutureExpenses.innerHTML = '';
-
-  if (sortedFutureMonths.length === 0) {
-    dashFutureExpenses.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">Nenhuma parcela ativa encontrada.</div>';
-  } else {
-    const maxFutureExpense = Math.max(...sortedFutureMonths.map(m => m.total));
-
-    sortedFutureMonths.forEach(m => {
-      const pct = maxFutureExpense > 0 ? Math.round((m.total / maxFutureExpense) * 100) : 0;
-      const label = `${monthNames[m.month]}/${m.year}`;
-      const formattedValue = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(m.total);
-
-      // Color coding: green for low, yellow for medium, red for high relative to current expenses
-      let barColor = 'bg-blue-500';
-      if (m.total >= totalExpense * 0.8) barColor = 'bg-accent-red';
-      else if (m.total >= totalExpense * 0.5) barColor = 'bg-yellow-500';
-      else if (m.total >= totalExpense * 0.3) barColor = 'bg-blue-400';
-      else barColor = 'bg-accent-green';
-
-      dashFutureExpenses.innerHTML += `
-        <div class="flex items-center gap-3">
-          <span class="text-[10px] font-bold text-slate-400 w-16 shrink-0 text-right">${label}</span>
-          <div class="flex-1 h-5 bg-slate-800 rounded-full overflow-hidden relative">
-            <div class="h-full ${barColor} rounded-full transition-all duration-1000 flex items-center justify-end pr-2" style="width: ${Math.max(pct, 8)}%">
-              <span class="text-[9px] font-bold text-white drop-shadow-sm whitespace-nowrap">${formattedValue}</span>
-            </div>
-          </div>
-        </div>
-      `;
-    });
-  }
-
-  // 2. Forecast
-  const today = new Date();
-  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  const currentDay = today.getDate();
-
-  const selectedMonth = parseInt(filterMonthEl.value);
-  const selectedYear = parseInt(filterYearEl.value);
-  let forecast = totalExpense;
-
-  const dashDailyExpense = document.getElementById('dash-daily-expense');
-  dashDailyExpense.classList.add('hidden');
-
-  if (selectedMonth === (today.getMonth() + 1) && selectedYear === today.getFullYear()) {
-    forecast = (totalExpense / currentDay) * daysInMonth;
-    const dailyAvg = totalExpense / currentDay;
-    if (dailyAvg > 0) {
-      dashDailyExpense.textContent = `Gasto diário de ${formatCurrency(dailyAvg)}`;
-      dashDailyExpense.classList.remove('hidden');
-    }
-  }
-
-  dashForecast.textContent = '- ' + formatCurrency(forecast);
-  if (forecast > income && income > 0) {
-    dashForecast.classList.replace('text-white', 'text-accent-red');
-  } else {
-    dashForecast.classList.replace('text-accent-red', 'text-white');
-  }
-
-  // 3. Smart Insights
-  let insights = "";
-  if (income === 0 && totalExpense === 0) {
-    insights = "Nenhuma movimentação neste mês. Que tal registrar ou planejar suas despesas?";
-  } else if (income === 0) {
-    insights = "Atenção: Você tem despesas registradas, mas nenhuma receita neste mês. Acompanhe de perto as suas reservas financeiras.";
-  } else {
-    const spentPct = (totalExpense / income) * 100;
-    if (spentPct < 50) {
-      insights = `Excelente! Você gastou apenas ${spentPct.toFixed(1)}% da sua receita. Uma ótima janela para poupar, investir, ou focar em projetos de longo prazo.`;
-    } else if (spentPct < 80) {
-      insights = `Tudo caminhando. O grau de consumo está em ${spentPct.toFixed(1)}%. Mantenha esse ritmo seguro até a virada do mês.`;
-    } else if (spentPct <= 100) {
-      insights = `⚠️ Risco Amarelo. Você já consumiu ${spentPct.toFixed(1)}% do orçamento. Trave saídas desnecessárias para não fechar no déficit.`;
-    } else {
-      insights = `🚨 Cuidado! O volume gasto excedeu sua receita em ${Math.abs(100 - spentPct).toFixed(1)}%. Repense as parcelas e os passivos de lazer rapidamente.`;
-    }
-  }
-  dashInsights.textContent = insights;
-
-  // 4. Net Worth (Patrimônio Global)
-  dashNetworth.textContent = "Calculando...";
-
-  const netWorth = await TransactionService.getNetWorth(selectedYear, selectedMonth);
-
-  // Make the Net Worth card interactive to set the base line
-  dashNetworth.parentElement.classList.add('cursor-pointer', 'hover:bg-slate-700/50', 'transition-colors');
-  dashNetworth.parentElement.setAttribute('title', 'Ajustar Saldo Real');
-  dashNetworth.parentElement.onclick = async () => {
-    dashNetworth.parentElement.style.pointerEvents = 'none'; // Prevent double clicking
-    const currentBase = await TransactionService.getBaseNetWorth();
-    const sumOfTransactions = netWorth - currentBase;
-
-    const newTargetStr = prompt("Ajuste Mágico de Saldo\n\nDigite quanto de dinheiro você tem na conta bancária hoje (Ex: 2248,23):\nO aplicativo fará o cálculo retroativo para calibrar seu saldo dinamicamente na nuvem.", netWorth.toFixed(2).replace('.', ','));
-
-    if (newTargetStr !== null) {
-      const targetNetWorth = parseBrazilianCurrency(newTargetStr);
-      if (!isNaN(targetNetWorth)) {
-        const newBase = targetNetWorth - sumOfTransactions;
-
-        // Visual loading state
-        dashNetworthTrend.textContent = '☁️ Sincronizando...';
-        dashNetworthTrend.classList.replace('text-accent-green', 'text-yellow-400');
-        dashNetworthTrend.classList.replace('text-accent-red', 'text-yellow-400');
-
-        try {
-          await TransactionService.updateBaseNetWorth(newBase);
-          // Mark patrimônio as calibrated (one-time onboarding)
-          markPatrimonioCalibrated();
-          patrimonioReminder.classList.add('hidden');
-        } catch (e) {
-          console.error("Failed to sync new base net worth", e);
-          alert("Erro ao sincronizar saldo com a nuvem. Valor atualizado apenas localmente.");
-        }
-
-        renderDashboard(); // Re-render to show updated totals
-      }
-    }
-    dashNetworth.parentElement.style.pointerEvents = 'auto';
-  };  // User requested: Caixinhas should NOT be subtracted from the Net Worth.
-  // Net Worth is now the absolute total up to the selected month, including savings.
-  const freeNetWorth = netWorth;
-
-  dashNetworth.textContent = (freeNetWorth >= 0 ? '+' : '-') + ' ' + formatCurrency(Math.abs(freeNetWorth));
-
-  if (freeNetWorth >= 0) {
-    dashNetworth.classList.replace('text-accent-red', 'text-white');
-    dashNetworthTrend.textContent = '📈 Saldos Positivos';
-    dashNetworthTrend.classList.replace('text-accent-red', 'text-accent-green');
-  } else {
-    dashNetworth.classList.add('text-accent-red');
-    dashNetworthTrend.textContent = '📉 Saldos Negativos';
-    dashNetworthTrend.classList.replace('text-accent-green', 'text-accent-red');
-  }
-
-  // 5. Render Savings Goals
-  renderSavingsGoals();
 }
 
 function updateUI() {
