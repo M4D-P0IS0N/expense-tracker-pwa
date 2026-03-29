@@ -9,6 +9,7 @@ import { AuthService } from './services/AuthService.js';
 import { initNeuralBorder } from './modules/NeuralBorderAnimation.js';
 import { initPullToRefresh } from './modules/PullToRefresh.js';
 import { renderDashboardSection } from './modules/DashboardRenderer.js';
+import { initBudgetNotebookManager } from './modules/BudgetNotebookManager.js';
 import { initExportManager } from './modules/ExportManager.js';
 import { initNavigationFilters } from './modules/NavigationFiltersManager.js';
 import { initSavingsFlow } from './modules/SavingsFlowManager.js';
@@ -163,6 +164,9 @@ const notesOverlay = document.getElementById('notes-overlay');
 const closeNotesBtn = document.getElementById('close-notes-btn');
 const saveNotesBtn = document.getElementById('save-notes-btn');
 const notesTextarea = document.getElementById('notes-textarea');
+const notesMetaContainer = document.getElementById('notes-meta-container');
+const notesDate = document.getElementById('notes-date');
+const notesDiffBox = document.getElementById('notes-diff-box');
 
 // Export Elements
 const exportCsvBtn = document.getElementById('export-csv-btn');
@@ -288,118 +292,31 @@ const { closeModal } = initTransactionModal({
   },
 });
 
-// --- UI Logic: Budgets Modal ---
-configBudgetsBtn.addEventListener('click', () => {
-  openBudgetsModal();
-});
-
-closeBudgetBtn.addEventListener('click', closeBudgetsModal);
-budgetOverlay.addEventListener('click', closeBudgetsModal);
-
-function closeBudgetsModal() {
-  budgetModal.classList.add('hidden');
-}
-
-function openBudgetsModal() {
-  budgetListEl.innerHTML = '';
-
-  // Extract all categories historically known
-  const catNames = new Set();
-  transactions.filter(t => t.type === 'Expense').forEach(t => {
-    let cat = t.category || "General";
-    catNames.add(cat.replace(/[\u1000-\uFFFF]/, '').trim() || cat);
-  });
-
-  const currentBudgets = BudgetService.getBudgets();
-  const sortedCats = Array.from(catNames).sort();
-
-  // Also add explicitly existing budgets that might not have transactions this month
-  Object.keys(currentBudgets).forEach(c => sortedCats.indexOf(c) === -1 ? sortedCats.push(c) : null);
-
-  if (sortedCats.length === 0) {
-    budgetListEl.innerHTML = '<p class="text-sm text-slate-400 text-center">Nenhuma categoria de despesa registrada ainda.</p>';
-  }
-
-  sortedCats.forEach(cat => {
-    const budgetAmount = currentBudgets[cat] || '';
-
-    const div = document.createElement('div');
-    div.className = "flex items-center justify-between p-2 rounded-lg bg-slate-700/30 border border-slate-700";
-    div.innerHTML = `
-        <span class="text-sm text-white font-medium">${cat}</span>
-        <div class="relative w-32">
-          <span class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500 text-xs">R$</span>
-          <input type="text" inputmode="decimal" value="${budgetAmount}" data-category="${cat}" placeholder="Ilimitado" class="budget-input w-full bg-slate-800 border border-slate-600 rounded-md text-white text-sm py-1.5 pl-7 pr-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-        </div>
-      `;
-    budgetListEl.appendChild(div);
-  });
-
-  budgetModal.classList.remove('hidden');
-}
-
-saveBudgetsBtn.addEventListener('click', () => {
-  const inputs = document.querySelectorAll('.budget-input');
-  inputs.forEach(input => {
-    const val = parseBrazilianCurrency(input.value);
-    const cat = input.getAttribute('data-category');
-    BudgetService.setBudget(cat, isNaN(val) ? 0 : val);
-  });
-
-  closeBudgetsModal();
-  if (currentTab === 'Dashboard') renderDashboard();
-  else updateUI();
-});
-
-// --- UI Logic: Notebook ---
-notesBtn.addEventListener('click', () => {
-  notesTextarea.value = NotebookService.getNotes();
-
-  const meta = NotebookService.getMeta();
-  const metaContainer = document.getElementById('notes-meta-container');
-  const dateEl = document.getElementById('notes-date');
-  const diffBox = document.getElementById('notes-diff-box');
-
-  if (meta) {
-    metaContainer.classList.remove('hidden');
-    const d = new Date(meta.lastEdited);
-    dateEl.textContent = d.toLocaleString('pt-BR');
-
-    diffBox.innerHTML = '';
-    if (meta.added.length === 0 && meta.removed.length === 0) {
-      diffBox.innerHTML = '<span class="text-slate-500 italic">Nenhuma alteração de linha significativa detectada na última edição.</span>';
-    } else {
-      meta.added.forEach(line => {
-        diffBox.innerHTML += `<div class="text-accent-green backdrop-blur-sm bg-accent-green/10 px-1.5 py-0.5 rounded truncate">+ ${line}</div>`;
-      });
-      meta.removed.forEach(line => {
-        diffBox.innerHTML += `<div class="text-accent-red backdrop-blur-sm bg-accent-red/10 px-1.5 py-0.5 rounded truncate line-through opacity-75">- ${line}</div>`;
-      });
-    }
-  } else {
-    metaContainer.classList.add('hidden');
-  }
-
-  notesModal.classList.remove('hidden');
-});
-
-const closeNotesModal = () => notesModal.classList.add('hidden');
-closeNotesBtn.addEventListener('click', closeNotesModal);
-notesOverlay.addEventListener('click', closeNotesModal);
-
-saveNotesBtn.addEventListener('click', () => {
-  NotebookService.saveNotes(notesTextarea.value);
-
-  const origHtml = saveNotesBtn.innerHTML;
-  saveNotesBtn.innerHTML = 'Salvo!';
-  saveNotesBtn.classList.add('bg-accent-green/20', 'text-accent-green', 'border-accent-green');
-  saveNotesBtn.classList.remove('bg-primary/20', 'text-primary', 'border-primary');
-
-  setTimeout(() => {
-    saveNotesBtn.innerHTML = origHtml;
-    saveNotesBtn.classList.remove('bg-accent-green/20', 'text-accent-green', 'border-accent-green');
-    saveNotesBtn.classList.add('bg-primary/20', 'text-primary', 'border-primary');
-  }, 2000);
+initBudgetNotebookManager({
+  budgetService: BudgetService,
+  notebookService: NotebookService,
+  parseBrazilianCurrency,
+  renderDashboard,
+  updateUI,
+  getTransactions: () => transactions,
+  getCurrentTab: () => currentTab,
+  elements: {
+    configBudgetsBtn,
+    budgetModal,
+    budgetOverlay,
+    closeBudgetBtn,
+    saveBudgetsBtn,
+    budgetListEl,
+    notesBtn,
+    notesModal,
+    notesOverlay,
+    closeNotesBtn,
+    saveNotesBtn,
+    notesTextarea,
+    notesMetaContainer,
+    notesDate,
+    notesDiffBox,
+  },
 });
 
 // --- UI Logic: Exports (delegated to ExportManager module) ---
