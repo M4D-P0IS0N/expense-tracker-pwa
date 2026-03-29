@@ -1025,6 +1025,8 @@
                   </ul>
                 </li>
                 <li>Toque no mesmo chip novamente para <strong class="text-white">desativar</strong> o filtro.</li>
+                <li>Se o app for atualizado e você notar algo estranho, feche e abra novamente para forçar a versão
+                  mais nova do PWA.</li>
               </ul>
             </div>
           </details>
@@ -1446,7 +1448,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(reg => {
+          navigator.serviceWorker.register('./sw.js').then(reg => {
             console.log('SW registered!', reg);
           }).catch(err => console.log('SW fallback', err));
         });

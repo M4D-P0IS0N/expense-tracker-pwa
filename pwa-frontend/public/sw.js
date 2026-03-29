@@ -1,10 +1,10 @@
-const CACHE_NAME = 'app-de-custos-v9';
+const CACHE_NAME = 'app-de-custos-v10';
 
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/src/main.js',
-    '/src/style.css',
+    './',
+    './index.html',
+    './login.html',
+    './manifest.json',
 ];
 
 self.addEventListener('install', event => {
@@ -28,6 +28,10 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+    if (event.request.method !== 'GET') {
+        return;
+    }
+
     const requestUrl = event.request.url;
 
     // SECURITY: Never cache API calls to Supabase (auth tokens, user data)
@@ -36,7 +40,7 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // For development, use Network-First strategy
+    // Network-first keeps published builds fresh while still allowing offline fallback.
     event.respondWith(
         fetch(event.request)
             .then(response => {
