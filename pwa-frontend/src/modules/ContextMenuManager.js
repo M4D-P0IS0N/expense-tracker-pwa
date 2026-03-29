@@ -1,74 +1,116 @@
-export function initContextMenu({
-  appElements,
-  getElementById,
-  loadData,
-  showNotification,
+export function initContextMenuManager({
   transactionService,
-  trashService,
   selectGroupedTransactionsForDeletion,
+  showNotification,
+  loadData,
   setEditTransactionId,
+  openTransactionModal,
+  elements,
 }) {
+  const {
+    contextMenuModal,
+    contextOverlay,
+    contextSheet,
+    ctxIcon,
+    ctxTitle,
+    ctxAmount,
+    ctxEditBtn,
+    ctxDeleteBtn,
+    ctxCancelBtn,
+    typeRadios,
+    amountInput,
+    descriptionInput,
+    dateInput,
+    categorySelect,
+    emojiDisplay,
+    customCategoryContainer,
+    cardInput,
+    installmentTotalInput,
+    recurringInput,
+    modalTitleElement,
+    modalSubmitButton,
+  } = elements;
+
   let selectedTransaction = null;
 
+  function openContextMenu(transaction) {
+    selectedTransaction = transaction;
+    ctxTitle.textContent = transaction.description;
+
+    const isIncomeTransaction = transaction.type === 'Income';
+    const amountSign = isIncomeTransaction ? '+' : '-';
+    const formattedAmount = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(Math.abs(transaction.amount));
+
+    ctxAmount.textContent = `${amountSign}${formattedAmount}`;
+    ctxAmount.className = `text-sm font-medium ${isIncomeTransaction ? 'text-accent-green' : 'text-accent-red'}`;
+
+    const firstCategoryToken = (transaction.category || '').split(' ')[0] || '';
+    const hasEmojiCategory = /[\u1000-\uFFFF]/.test(firstCategoryToken);
+    ctxIcon.innerHTML = hasEmojiCategory
+      ? `<span style="font-size: 24px;">${firstCategoryToken}</span>`
+      : '<span class="material-symbols-outlined text-slate-400">receipt_long</span>';
+
+    contextMenuModal.classList.remove('hidden');
+    setTimeout(() => contextSheet.classList.remove('translate-y-full'), 10);
+  }
+
   function closeContextMenu() {
-    appElements.contextSheet.classList.add('translate-y-full');
+    contextSheet.classList.add('translate-y-full');
     setTimeout(() => {
-      appElements.contextMenuModal.classList.add('hidden');
+      contextMenuModal.classList.add('hidden');
       selectedTransaction = null;
     }, 300);
   }
 
-  function upsertCategoryOption(transactionCategoryName) {
-    const transactionCategorySelect = getElementById('tx-category');
-    const hasExistingCategoryOption = Array.from(transactionCategorySelect.options).some((option) => option.value === transactionCategoryName);
+  function populateCategoryFields(transaction) {
+    document.querySelectorAll('.custom-injected-option').forEach((optionElement) => optionElement.remove());
 
-    if (hasExistingCategoryOption) {
-      transactionCategorySelect.value = transactionCategoryName;
-      getElementById('tx-custom-category-container').classList.add('hidden');
+    const fullCategory = transaction.category || 'General';
+    const firstCategoryToken = fullCategory.split(' ')[0] || '';
+    const hasEmojiCategory = /[\u1000-\uFFFF]/.test(firstCategoryToken);
+
+    if (hasEmojiCategory) {
+      emojiDisplay.textContent = firstCategoryToken;
+      const plainCategoryName = fullCategory.substring(firstCategoryToken.length).trim();
+      const optionFound = Array.from(categorySelect.options).some((optionElement) => optionElement.value === plainCategoryName);
+
+      if (!optionFound) {
+        const injectedOptionElement = document.createElement('option');
+        injectedOptionElement.value = plainCategoryName;
+        injectedOptionElement.textContent = plainCategoryName;
+        injectedOptionElement.className = 'custom-injected-option';
+        categorySelect.insertBefore(injectedOptionElement, categorySelect.querySelector('option[value="New"]'));
+      }
+
+      categorySelect.value = plainCategoryName;
+      customCategoryContainer.classList.add('hidden');
       return;
     }
 
-    const injectedCategoryOption = document.createElement('option');
-    injectedCategoryOption.value = transactionCategoryName;
-    injectedCategoryOption.textContent = transactionCategoryName;
-    injectedCategoryOption.className = 'custom-injected-option';
+    emojiDisplay.textContent = '🏷️';
+    const optionFound = Array.from(categorySelect.options).some((optionElement) => optionElement.value === fullCategory);
 
-    const newOptionAnchor = transactionCategorySelect.querySelector('option[value="New"]');
-    transactionCategorySelect.insertBefore(injectedCategoryOption, newOptionAnchor);
-    transactionCategorySelect.value = transactionCategoryName;
-    getElementById('tx-custom-category-container').classList.add('hidden');
+    if (!optionFound) {
+      const injectedOptionElement = document.createElement('option');
+      injectedOptionElement.value = fullCategory;
+      injectedOptionElement.textContent = fullCategory;
+      injectedOptionElement.className = 'custom-injected-option';
+      categorySelect.insertBefore(injectedOptionElement, categorySelect.querySelector('option[value="New"]'));
+    }
+
+    categorySelect.value = fullCategory;
+    customCategoryContainer.classList.add('hidden');
   }
 
-  function openContextMenu(transactionToInspect) {
-    selectedTransaction = transactionToInspect;
-
-    appElements.ctxTitle.textContent = transactionToInspect.description;
-
-    const isIncomeTransaction = transactionToInspect.type === 'Income';
-    const transactionSignal = isIncomeTransaction ? '+' : '-';
-    const formattedAmount = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Math.abs(transactionToInspect.amount));
-    appElements.ctxAmount.textContent = `${transactionSignal}${formattedAmount}`;
-    appElements.ctxAmount.className = `text-sm font-medium ${isIncomeTransaction ? 'text-accent-green' : 'text-accent-red'}`;
-
-    const firstCategoryToken = (transactionToInspect.category || '').split(' ')[0] || '';
-    const hasEmojiCategory = /[\u1000-\uFFFF]/.test(firstCategoryToken);
-    appElements.ctxIcon.innerHTML = hasEmojiCategory
-      ? `<span style="font-size: 24px;">${firstCategoryToken}</span>`
-      : '<span class="material-symbols-outlined text-slate-400">receipt_long</span>';
-
-    appElements.contextMenuModal.classList.remove('hidden');
-    setTimeout(() => appElements.contextSheet.classList.remove('translate-y-full'), 10);
-  }
-
-  appElements.ctxCancelBtn.addEventListener('click', closeContextMenu);
-  appElements.contextOverlay.addEventListener('click', closeContextMenu);
-
-  appElements.ctxDeleteBtn.addEventListener('click', async () => {
+  async function handleDeleteTransaction() {
     if (!selectedTransaction) return;
 
-    const originalDeleteButtonText = appElements.ctxDeleteBtn.textContent;
-    appElements.ctxDeleteBtn.textContent = 'Apagando...';
-    appElements.ctxDeleteBtn.disabled = true;
+    const originalDeleteButtonText = ctxDeleteBtn.textContent;
+    ctxDeleteBtn.textContent = 'Apagando...';
+    ctxDeleteBtn.disabled = true;
 
     try {
       if (selectedTransaction.installment_group_id) {
@@ -84,15 +126,15 @@ export function initContextMenu({
               installmentGroupId: selectedTransaction.installment_group_id,
               selectedTransactionId: selectedTransaction.id,
             });
-            trashService.moveToTrash(selectedTransaction.id);
+            await transactionService.deleteTransaction(selectedTransaction.id);
           } else {
-            groupedTransactionsToDelete.forEach((groupedTransaction) => trashService.moveToTrash(groupedTransaction.id));
+            await transactionService.deleteTransactions(groupedTransactionsToDelete.map((transaction) => transaction.id));
           }
         } else {
-          trashService.moveToTrash(selectedTransaction.id);
+          await transactionService.deleteTransaction(selectedTransaction.id);
         }
       } else {
-        trashService.moveToTrash(selectedTransaction.id);
+        await transactionService.deleteTransaction(selectedTransaction.id);
       }
 
       closeContextMenu();
@@ -102,55 +144,47 @@ export function initContextMenu({
       console.error('Falha ao apagar a transação parcelada/recorrente:', error);
       showNotification('Não foi possível apagar a despesa. Verifique sua conexão e tente novamente.', 'error');
     } finally {
-      appElements.ctxDeleteBtn.textContent = originalDeleteButtonText;
-      appElements.ctxDeleteBtn.disabled = false;
+      ctxDeleteBtn.textContent = originalDeleteButtonText;
+      ctxDeleteBtn.disabled = false;
     }
-  });
+  }
 
-  appElements.ctxEditBtn.addEventListener('click', () => {
+  function handleEditTransaction() {
     if (!selectedTransaction) return;
 
     setEditTransactionId(selectedTransaction.id);
 
     const typeValue = selectedTransaction.type === 'Income' ? 'Income' : 'Expense';
-    const typeRadio = document.querySelector(`input[name="type"][value="${typeValue}"]`);
+    const typeRadio = Array.from(typeRadios).find((radioElement) => radioElement.value === typeValue);
     typeRadio.checked = true;
     typeRadio.dispatchEvent(new Event('change'));
 
-    getElementById('tx-amount').value = selectedTransaction.amount;
-    getElementById('tx-description').value = selectedTransaction.description;
+    amountInput.value = selectedTransaction.amount;
+    descriptionInput.value = selectedTransaction.description;
 
-    const originalTransactionDate = new Date(selectedTransaction.date);
-    originalTransactionDate.setMinutes(originalTransactionDate.getMinutes() - originalTransactionDate.getTimezoneOffset());
-    getElementById('tx-date').valueAsDate = originalTransactionDate;
+    const originalDate = new Date(selectedTransaction.date);
+    originalDate.setMinutes(originalDate.getMinutes() - originalDate.getTimezoneOffset());
+    dateInput.valueAsDate = originalDate;
 
-    document.querySelectorAll('.custom-injected-option').forEach((element) => element.remove());
+    populateCategoryFields(selectedTransaction);
+    cardInput.value = selectedTransaction.credit_card_name || '';
+    installmentTotalInput.value = selectedTransaction.total_installments || 1;
+    recurringInput.checked = selectedTransaction.is_recurring || false;
 
-    const fullCategoryName = selectedTransaction.category || 'General';
-    const firstCategoryToken = fullCategoryName.split(' ')[0] || '';
-    const hasEmojiCategory = /[\u1000-\uFFFF]/.test(firstCategoryToken);
-
-    if (hasEmojiCategory) {
-      getElementById('tx-emoji-display').textContent = firstCategoryToken;
-      upsertCategoryOption(fullCategoryName.substring(firstCategoryToken.length).trim());
-    } else {
-      getElementById('tx-emoji-display').textContent = '🏷️';
-      upsertCategoryOption(fullCategoryName);
-    }
-
-    getElementById('tx-card').value = selectedTransaction.credit_card_name || '';
-    getElementById('tx-install-total').value = selectedTransaction.total_installments || 1;
-    getElementById('tx-recurring').checked = selectedTransaction.is_recurring || false;
-
-    document.querySelector('#modal-content h3').textContent = 'Editar Transação';
-    document.querySelector('#transaction-form button[type="submit"]').textContent = 'Salvar Alterações';
+    modalTitleElement.textContent = 'Editar Transação';
+    modalSubmitButton.textContent = 'Salvar Alterações';
 
     closeContextMenu();
-    appElements.modal.classList.remove('hidden');
-    setTimeout(() => {
-      appElements.modalContent.classList.remove('translate-y-full');
-    }, 10);
-  });
+    openTransactionModal();
+  }
 
-  return { openContextMenu, closeContextMenu };
+  ctxCancelBtn.addEventListener('click', closeContextMenu);
+  contextOverlay.addEventListener('click', closeContextMenu);
+  ctxDeleteBtn.addEventListener('click', handleDeleteTransaction);
+  ctxEditBtn.addEventListener('click', handleEditTransaction);
+
+  return {
+    openContextMenu,
+    closeContextMenu,
+  };
 }
