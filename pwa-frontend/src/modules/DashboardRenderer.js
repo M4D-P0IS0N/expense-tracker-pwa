@@ -25,7 +25,7 @@ function buildCategoryTooltipMarkup(categoryTransactions) {
     .map((transaction) => {
       const descriptionLabel = transaction.description?.trim() || 'Sem descrição';
       const installmentLabel = transaction.total_installments > 1
-        ? ` <span class="text-[9px] font-bold text-slate-400">#${transaction.installment_number}/${transaction.total_installments}</span>`
+        ? ` <span class="text-[9px] font-bold text-amber-300">#${transaction.installment_number}/${transaction.total_installments}</span>`
         : '';
 
       return `
