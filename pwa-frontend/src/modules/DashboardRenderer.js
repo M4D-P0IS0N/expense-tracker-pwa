@@ -56,7 +56,7 @@ function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, budge
     return;
   }
 
-  sortedCategories.forEach(([categoryName, amount]) => {
+  sortedCategories.forEach(([categoryName, amount], categoryIndex) => {
     const categoryTransactions = expenses
       .filter((transaction) => (transaction.category || 'General') === categoryName)
       .sort((transactionA, transactionB) => Number(transactionB.amount) - Number(transactionA.amount));
@@ -83,6 +83,10 @@ function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, budge
 
     const categoryTooltipMarkup = buildCategoryTooltipMarkup(categoryTransactions);
     const accessibilityLabel = escapeHtml(`Ver detalhes da categoria ${normalizedCategoryName}`);
+    const shouldRenderTooltipAbove = categoryIndex >= Math.max(sortedCategories.length - 2, 1);
+    const tooltipPositionClass = shouldRenderTooltipAbove
+      ? 'bottom-full mb-2 origin-bottom'
+      : 'top-full mt-2 origin-top';
 
     dashCategories.innerHTML += `
       <div class="group relative mb-3">
@@ -90,12 +94,12 @@ function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, budge
           <span class="text-xs font-bold text-slate-300 flex items-center">${iconLabel} ${normalizedCategoryName} ${budgetWarning}</span>
           <span class="text-xs font-bold text-white">R$ ${amount.toFixed(2)} <span class="text-slate-500 font-normal">(${progressPercent}%)</span></span>
         </div>
-        <button type="button" tabindex="0" aria-label="${accessibilityLabel}" class="block w-full cursor-help rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/70">
+        <button type="button" tabindex="0" aria-label="${accessibilityLabel}" class="relative z-10 block w-full cursor-help rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/70">
           <div class="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
             <div class="h-full ${barColor} rounded-full transition-all duration-1000" style="width: ${progressPercent}%"></div>
           </div>
         </button>
-        <div class="pointer-events-none invisible absolute left-0 top-full z-20 mt-2 w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900/95 p-3 opacity-0 shadow-2xl transition-all duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+        <div class="invisible absolute left-0 ${tooltipPositionClass} z-30 w-[min(22rem,calc(100vw-3rem))] max-w-sm rounded-2xl border border-slate-700 bg-slate-900/95 p-3 opacity-0 shadow-2xl transition-all duration-150 group-hover:visible group-hover:scale-100 group-hover:opacity-100 group-focus-within:visible group-focus-within:scale-100 group-focus-within:opacity-100 pointer-events-auto scale-95">
           <div class="mb-2 flex items-center justify-between gap-3">
             <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Composição da categoria</p>
             <p class="text-[11px] font-bold text-white">${formatAbsoluteCurrency(amount)}</p>
