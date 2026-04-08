@@ -2,6 +2,45 @@ function formatAbsoluteCurrency(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Math.abs(value));
 }
 
+function escapeHtml(unsafeText) {
+  return String(unsafeText)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function formatTooltipDate(dateString) {
+  if (!dateString) return '--/--/----';
+
+  const transactionDate = new Date(`${dateString}T00:00:00`);
+  if (Number.isNaN(transactionDate.getTime())) return '--/--/----';
+
+  return transactionDate.toLocaleDateString('pt-BR');
+}
+
+function buildCategoryTooltipMarkup(categoryTransactions) {
+  return categoryTransactions
+    .map((transaction) => {
+      const descriptionLabel = transaction.description?.trim() || 'Sem descrição';
+      const installmentLabel = transaction.total_installments > 1
+        ? ` <span class="text-[9px] font-bold text-slate-400">#${transaction.installment_number}/${transaction.total_installments}</span>`
+        : '';
+
+      return `
+        <div class="flex items-start justify-between gap-3 border-b border-slate-700/70 pb-2 last:border-b-0 last:pb-0">
+          <div class="min-w-0">
+            <p class="truncate text-[11px] font-semibold text-white">${escapeHtml(descriptionLabel)}${installmentLabel}</p>
+            <p class="text-[10px] text-slate-400">${formatTooltipDate(transaction.date)}</p>
+          </div>
+          <p class="shrink-0 text-[11px] font-bold text-accent-red">${formatAbsoluteCurrency(Number(transaction.amount))}</p>
+        </div>
+      `;
+    })
+    .join('');
+}
+
 function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, budgetService }) {
   const categoryTotals = {};
   expenses.forEach((transaction) => {
@@ -18,6 +57,9 @@ function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, budge
   }
 
   sortedCategories.forEach(([categoryName, amount]) => {
+    const categoryTransactions = expenses
+      .filter((transaction) => (transaction.category || 'General') === categoryName)
+      .sort((transactionA, transactionB) => Number(transactionB.amount) - Number(transactionA.amount));
     const progressPercent = totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0;
     const firstCategoryToken = categoryName.split(' ')[0] || '';
     const hasEmojiCategory = /[\u1000-\uFFFF]/.test(firstCategoryToken);
@@ -39,13 +81,33 @@ function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, budge
       }
     }
 
+    const categoryTooltipMarkup = buildCategoryTooltipMarkup(categoryTransactions);
+    const accessibilityLabel = escapeHtml(`Ver detalhes da categoria ${normalizedCategoryName}`);
+
     dashCategories.innerHTML += `
-      <div class="flex items-center justify-between mb-1">
-        <span class="text-xs font-bold text-slate-300 flex items-center">${iconLabel} ${normalizedCategoryName} ${budgetWarning}</span>
-        <span class="text-xs font-bold text-white">R$ ${amount.toFixed(2)} <span class="text-slate-500 font-normal">(${progressPercent}%)</span></span>
-      </div>
-      <div class="h-2 w-full bg-slate-800 rounded-full overflow-hidden mb-3">
-        <div class="h-full ${barColor} rounded-full transition-all duration-1000" style="width: ${progressPercent}%"></div>
+      <div class="group relative mb-3">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-bold text-slate-300 flex items-center">${iconLabel} ${normalizedCategoryName} ${budgetWarning}</span>
+          <span class="text-xs font-bold text-white">R$ ${amount.toFixed(2)} <span class="text-slate-500 font-normal">(${progressPercent}%)</span></span>
+        </div>
+        <button type="button" tabindex="0" aria-label="${accessibilityLabel}" class="block w-full cursor-help rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/70">
+          <div class="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-full ${barColor} rounded-full transition-all duration-1000" style="width: ${progressPercent}%"></div>
+          </div>
+        </button>
+        <div class="pointer-events-none invisible absolute left-0 top-full z-20 mt-2 w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900/95 p-3 opacity-0 shadow-2xl transition-all duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+          <div class="mb-2 flex items-center justify-between gap-3">
+            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Composição da categoria</p>
+            <p class="text-[11px] font-bold text-white">${formatAbsoluteCurrency(amount)}</p>
+          </div>
+          <div class="mb-2 flex items-center justify-between gap-3">
+            <p class="truncate text-xs font-semibold text-slate-200">${iconLabel} ${normalizedCategoryName}</p>
+            <p class="text-[10px] text-slate-400">${categoryTransactions.length} item(ns)</p>
+          </div>
+          <div class="max-h-52 space-y-2 overflow-y-auto pr-1">
+            ${categoryTooltipMarkup}
+          </div>
+        </div>
       </div>
     `;
   });
