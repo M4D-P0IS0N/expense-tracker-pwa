@@ -1,0 +1,2 @@
+ALTER TABLE public.transactions
+ADD COLUMN IF NOT EXISTS is_third_party BOOLEAN DEFAULT FALSE;

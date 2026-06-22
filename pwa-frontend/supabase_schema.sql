@@ -1,4 +1,4 @@
--- Tabela de Perfil de UsuÃ¡rio
+-- Tabela de Perfil de Usuário
 CREATE TABLE user_profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     level INT NOT NULL DEFAULT 1,
@@ -31,7 +31,7 @@ CREATE TABLE savings_goals (
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
--- Tabela de TransaÃ§Ãµes (Income/Expense)
+-- Tabela de Transações (Income/Expense)
 CREATE TABLE transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     description TEXT NOT NULL,
@@ -45,6 +45,7 @@ CREATE TABLE transactions (
     installment_group_id UUID,
     is_recurring BOOLEAN DEFAULT FALSE,
     is_split_by_2 BOOLEAN DEFAULT FALSE,
+    is_third_party BOOLEAN DEFAULT FALSE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE
 );
 

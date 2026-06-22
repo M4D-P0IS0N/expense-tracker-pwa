@@ -28,6 +28,7 @@ export function initContextMenuManager({
     installmentTotalInput,
     recurringInput,
     splitByTwoInput,
+    thirdPartyInput,
     modalTitleElement,
     modalSubmitButton,
   } = elements;
@@ -174,6 +175,9 @@ export function initContextMenuManager({
     if (splitByTwoInput) {
       splitByTwoInput.checked = selectedTransaction.type === 'Expense' && Boolean(selectedTransaction.is_split_by_2);
     }
+    if (thirdPartyInput) {
+      thirdPartyInput.checked = selectedTransaction.type === 'Expense' && Boolean(selectedTransaction.is_third_party);
+    }
 
     modalTitleElement.textContent = 'Editar Transação';
     modalSubmitButton.textContent = 'Salvar Alterações';
@@ -192,3 +196,4 @@ export function initContextMenuManager({
     closeContextMenu,
   };
 }
+

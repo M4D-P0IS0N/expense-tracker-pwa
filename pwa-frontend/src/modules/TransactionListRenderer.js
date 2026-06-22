@@ -1,4 +1,4 @@
-import { getEffectiveTransactionAmount, shouldApplySplitByTwo } from '../utils/splitTransactionAmount.js';
+import { getEffectiveTransactionAmount, shouldApplySplitByTwo, shouldIgnoreThirdParty } from '../utils/splitTransactionAmount.js';
 
 function formatBrazilianCurrency(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -206,6 +206,12 @@ export function renderTransactionList({
   });
 
   filteredTransactions.sort((transactionA, transactionB) => {
+    const aIgnored = shouldIgnoreThirdParty(transactionA, isSplitByTwoEnabled);
+    const bIgnored = shouldIgnoreThirdParty(transactionB, isSplitByTwoEnabled);
+    
+    if (aIgnored && !bIgnored) return 1;
+    if (!aIgnored && bIgnored) return -1;
+
     if (currentSort === 'date-desc') return new Date(transactionB.date) - new Date(transactionA.date);
     if (currentSort === 'date-asc') return new Date(transactionA.date) - new Date(transactionB.date);
     if (currentSort === 'value-desc') return getEffectiveTransactionAmount(transactionB, isSplitByTwoEnabled) - getEffectiveTransactionAmount(transactionA, isSplitByTwoEnabled);
@@ -278,3 +284,4 @@ export function renderTransactionList({
     filteredTransactions.forEach(appendTransactionCard);
   }
 }
+

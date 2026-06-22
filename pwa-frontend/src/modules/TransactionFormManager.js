@@ -41,6 +41,7 @@ export function initTransactionForm({
         installment_number: parseInt(getElementById('tx-install-number').value, 10) || 1,
         is_recurring: getElementById('tx-recurring').checked,
         is_split_by_2: transactionType === 'Expense' && getElementById('tx-split-by-two').checked,
+        is_third_party: transactionType === 'Expense' && getElementById('tx-third-party').checked,
       };
 
       const editingTransactionId = getEditTransactionId();
@@ -61,3 +62,4 @@ export function initTransactionForm({
     }
   });
 }
+

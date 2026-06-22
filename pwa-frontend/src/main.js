@@ -170,6 +170,7 @@ const txCardInput = document.getElementById('tx-card');
 const txInstallTotalInput = document.getElementById('tx-install-total');
 const txRecurringInput = document.getElementById('tx-recurring');
 const txSplitByTwoInput = document.getElementById('tx-split-by-two');
+const txThirdPartyInput = document.getElementById('tx-third-party');
 const modalTitleElement = document.querySelector('#modal-content h3');
 const modalSubmitButton = document.querySelector('#transaction-form button[type="submit"]');
 const emojiBtn = document.getElementById('tx-emoji-btn');
@@ -430,6 +431,7 @@ const contextMenuManager = initContextMenuManager({
     installmentTotalInput: txInstallTotalInput,
     recurringInput: txRecurringInput,
     splitByTwoInput: txSplitByTwoInput,
+    thirdPartyInput: txThirdPartyInput,
     modalTitleElement,
     modalSubmitButton,
   },
@@ -530,3 +532,4 @@ renderSavingsGoals = savingsFlow.renderSavingsGoals;
 
 // Pull-to-Refresh -> ./modules/PullToRefresh.js
 initPullToRefresh();
+

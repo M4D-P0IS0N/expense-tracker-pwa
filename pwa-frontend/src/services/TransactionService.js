@@ -131,7 +131,7 @@ export class TransactionService {
         // Fetch transactions for calculation
         let query = supabase
             .from('transactions')
-            .select('amount, type, is_split_by_2')
+            .select('amount, type, is_split_by_2, is_third_party, date')
             .eq('user_id', userId);
 
         if (year && month) {
@@ -301,7 +301,9 @@ export class TransactionService {
                 date: txDate.toISOString(),
                 is_recurring: isRecurring,
                 credit_card_name: transaction.credit_card_name || null,
-                is_split_by_2: transaction.type === 'Expense' ? Boolean(transaction.is_split_by_2) : false
+                is_split_by_2: transaction.type === 'Expense' ? Boolean(transaction.is_split_by_2) : false,
+            is_third_party: transaction.type === 'Expense' ? Boolean(transaction.is_third_party) : false,
+                is_third_party: transaction.type === 'Expense' ? Boolean(transaction.is_third_party) : false
             };
 
             if (totalInstallments > 1) {
@@ -345,7 +347,9 @@ export class TransactionService {
             date: baseDateStr ? new Date(baseDateStr).toISOString() : undefined,
             credit_card_name: transaction.credit_card_name || null,
             is_recurring: transaction.is_recurring !== undefined ? transaction.is_recurring : false,
-            is_split_by_2: transaction.type === 'Expense' ? Boolean(transaction.is_split_by_2) : false
+            is_split_by_2: transaction.type === 'Expense' ? Boolean(transaction.is_split_by_2) : false,
+            is_third_party: transaction.type === 'Expense' ? Boolean(transaction.is_third_party) : false,
+                is_third_party: transaction.type === 'Expense' ? Boolean(transaction.is_third_party) : false
         };
 
         const { data, error } = await supabase
@@ -418,3 +422,4 @@ export class TransactionService {
         return true;
     }
 }
+
