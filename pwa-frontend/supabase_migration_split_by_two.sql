@@ -1,0 +1,2 @@
+ALTER TABLE public.transactions
+ADD COLUMN IF NOT EXISTS is_split_by_2 BOOLEAN DEFAULT FALSE;

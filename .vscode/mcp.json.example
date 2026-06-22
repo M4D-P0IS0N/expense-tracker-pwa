@@ -1,0 +1,16 @@
+{
+  "servers": {
+    "supabase": {
+      "type": "stdio",
+      "command": "C:\\Program Files\\nodejs\\npx.cmd",
+      "args": [
+        "-y",
+        "NOME_DO_PACOTE_MCP_SUPABASE"
+      ],
+      "env": {
+        "SUPABASE_URL": "https://zzgdpdfnnfpxhrlvgjyb.supabase.co",
+        "SUPABASE_SERVICE_ROLE_KEY": "COLE_A_SERVICE_ROLE_KEY_AQUI"
+      }
+    }
+  }
+}

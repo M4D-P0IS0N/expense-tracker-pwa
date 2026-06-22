@@ -27,6 +27,7 @@ export function initContextMenuManager({
     cardInput,
     installmentTotalInput,
     recurringInput,
+    splitByTwoInput,
     modalTitleElement,
     modalSubmitButton,
   } = elements;
@@ -170,6 +171,9 @@ export function initContextMenuManager({
     cardInput.value = selectedTransaction.credit_card_name || '';
     installmentTotalInput.value = selectedTransaction.total_installments || 1;
     recurringInput.checked = selectedTransaction.is_recurring || false;
+    if (splitByTwoInput) {
+      splitByTwoInput.checked = selectedTransaction.type === 'Expense' && Boolean(selectedTransaction.is_split_by_2);
+    }
 
     modalTitleElement.textContent = 'Editar Transação';
     modalSubmitButton.textContent = 'Salvar Alterações';

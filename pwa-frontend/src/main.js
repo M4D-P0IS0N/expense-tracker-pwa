@@ -30,6 +30,7 @@ let currentQuickFilter = null;
 let currentCardFilter = 'All';
 let currentSort = 'date-desc';
 let currentTab = 'All';
+let isSplitByTwoEnabled = false;
 
 // --- DOM Elements ---
 const balanceEl = document.getElementById('total-balance');
@@ -77,6 +78,7 @@ const savingsModalTitle = document.getElementById('savings-modal-title');
 const searchInput = document.getElementById('search-input');
 const filterCardEl = document.getElementById('filter-card');
 const sortTransactionsEl = document.getElementById('sort-transactions');
+const filterSplitByTwoEl = document.getElementById('filter-split-by-two');
 const filterChips = document.querySelectorAll('.filter-chip');
 
 // Budget Tools
@@ -167,6 +169,7 @@ const txCustomCategoryContainer = document.getElementById('tx-custom-category-co
 const txCardInput = document.getElementById('tx-card');
 const txInstallTotalInput = document.getElementById('tx-install-total');
 const txRecurringInput = document.getElementById('tx-recurring');
+const txSplitByTwoInput = document.getElementById('tx-split-by-two');
 const modalTitleElement = document.querySelector('#modal-content h3');
 const modalSubmitButton = document.querySelector('#transaction-form button[type="submit"]');
 const emojiBtn = document.getElementById('tx-emoji-btn');
@@ -228,6 +231,7 @@ const { initTemporalNav, initFilters } = initNavigationFilters({
     searchInput,
     filterCardEl,
     sortTransactionsEl,
+    filterSplitByTwoEl,
     filterChips,
     tabAll,
     tabIncome,
@@ -247,6 +251,7 @@ const { initTemporalNav, initFilters } = initNavigationFilters({
   setCurrentSort: (value) => { currentSort = value; },
   getCurrentTab: () => currentTab,
   setCurrentTab: (value) => { currentTab = value; },
+  setSplitByTwoEnabled: (value) => { isSplitByTwoEnabled = value; },
 });
 
 let editTransactionId = null;
@@ -352,6 +357,7 @@ async function renderDashboard() {
     dashNetworthTrend,
     filterMonthEl,
     filterYearEl,
+    isSplitByTwoEnabled,
     getElementById: (elementId) => document.getElementById(elementId),
   });
 }
@@ -365,6 +371,7 @@ function updateUI() {
     currentQuickFilter,
     currentSort,
     currentSearchQuery,
+    isSplitByTwoEnabled,
     budgetService: BudgetService,
     openContextMenu: contextMenuManager.openContextMenu,
   });
@@ -422,6 +429,7 @@ const contextMenuManager = initContextMenuManager({
     cardInput: txCardInput,
     installmentTotalInput: txInstallTotalInput,
     recurringInput: txRecurringInput,
+    splitByTwoInput: txSplitByTwoInput,
     modalTitleElement,
     modalSubmitButton,
   },

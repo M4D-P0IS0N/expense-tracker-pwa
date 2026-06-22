@@ -1,3 +1,5 @@
+import { getEffectiveTransactionAmount } from '../utils/splitTransactionAmount.js';
+
 function formatAbsoluteCurrency(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Math.abs(value));
 }
@@ -20,7 +22,7 @@ function formatTooltipDate(dateString) {
   return transactionDate.toLocaleDateString('pt-BR');
 }
 
-function buildCategoryTooltipMarkup(categoryTransactions) {
+function buildCategoryTooltipMarkup(categoryTransactions, isSplitByTwoEnabled) {
   return categoryTransactions
     .map((transaction) => {
       const descriptionLabel = transaction.description?.trim() || 'Sem descrição';
@@ -34,18 +36,18 @@ function buildCategoryTooltipMarkup(categoryTransactions) {
             <p class="truncate text-[11px] font-semibold text-white">${escapeHtml(descriptionLabel)}${installmentLabel}</p>
             <p class="text-[10px] text-slate-400">${formatTooltipDate(transaction.date)}</p>
           </div>
-          <p class="shrink-0 text-[11px] font-bold text-accent-red">${formatAbsoluteCurrency(Number(transaction.amount))}</p>
+          <p class="shrink-0 text-[11px] font-bold text-accent-red">${formatAbsoluteCurrency(getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled))}</p>
         </div>
       `;
     })
     .join('');
 }
 
-function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, budgetService }) {
+function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, isSplitByTwoEnabled, budgetService }) {
   const categoryTotals = {};
   expenses.forEach((transaction) => {
     const categoryName = transaction.category || 'General';
-    categoryTotals[categoryName] = (categoryTotals[categoryName] || 0) + Number(transaction.amount);
+    categoryTotals[categoryName] = (categoryTotals[categoryName] || 0) + getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled);
   });
 
   const sortedCategories = Object.entries(categoryTotals).sort((categoryA, categoryB) => categoryB[1] - categoryA[1]);
@@ -59,7 +61,7 @@ function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, budge
   sortedCategories.forEach(([categoryName, amount], categoryIndex) => {
     const categoryTransactions = expenses
       .filter((transaction) => (transaction.category || 'General') === categoryName)
-      .sort((transactionA, transactionB) => Number(transactionB.amount) - Number(transactionA.amount));
+      .sort((transactionA, transactionB) => getEffectiveTransactionAmount(transactionB, isSplitByTwoEnabled) - getEffectiveTransactionAmount(transactionA, isSplitByTwoEnabled));
     const progressPercent = totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0;
     const firstCategoryToken = categoryName.split(' ')[0] || '';
     const hasEmojiCategory = /[\u1000-\uFFFF]/.test(firstCategoryToken);
@@ -81,7 +83,7 @@ function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, budge
       }
     }
 
-    const categoryTooltipMarkup = buildCategoryTooltipMarkup(categoryTransactions);
+    const categoryTooltipMarkup = buildCategoryTooltipMarkup(categoryTransactions, isSplitByTwoEnabled);
     const accessibilityLabel = escapeHtml(`Ver detalhes da categoria ${normalizedCategoryName}`);
     const shouldRenderTooltipAbove = categoryIndex >= Math.max(sortedCategories.length - 2, 1);
     const tooltipPositionClass = shouldRenderTooltipAbove
@@ -117,11 +119,11 @@ function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, budge
   });
 }
 
-function renderCreditCardBreakdown({ dashCreditCards, expenses, totalExpense }) {
+function renderCreditCardBreakdown({ dashCreditCards, expenses, totalExpense, isSplitByTwoEnabled }) {
   const cardTotals = {};
   expenses.forEach((transaction) => {
     if (transaction.credit_card_name) {
-      cardTotals[transaction.credit_card_name] = (cardTotals[transaction.credit_card_name] || 0) + Number(transaction.amount);
+      cardTotals[transaction.credit_card_name] = (cardTotals[transaction.credit_card_name] || 0) + getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled);
     }
   });
 
@@ -147,7 +149,7 @@ function renderCreditCardBreakdown({ dashCreditCards, expenses, totalExpense }) 
   });
 }
 
-function renderFutureExpenses({ dashFutureExpenses, expenses, totalExpense }) {
+function renderFutureExpenses({ dashFutureExpenses, expenses, totalExpense, isSplitByTwoEnabled }) {
   const monthNames = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
   const futureMonthsMap = {};
 
@@ -166,13 +168,13 @@ function renderFutureExpenses({ dashFutureExpenses, expenses, totalExpense }) {
         if (!futureMonthsMap[lookupKey]) {
           futureMonthsMap[lookupKey] = { year: futureYear, month: normalizedMonth, total: 0 };
         }
-        futureMonthsMap[lookupKey].total += Number(transaction.amount);
+        futureMonthsMap[lookupKey].total += getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled);
       }
     });
 
   const recurringTotal = expenses
     .filter((transaction) => transaction.is_recurring)
-    .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+    .reduce((sum, transaction) => sum + getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled), 0);
 
   const sortedFutureMonths = Object.values(futureMonthsMap).sort((monthA, monthB) => (
     monthA.year === monthB.year ? monthA.month - monthB.month : monthA.year - monthB.year
@@ -276,20 +278,22 @@ export async function renderDashboardSection({
   dashNetworthTrend,
   filterMonthEl,
   filterYearEl,
+  isSplitByTwoEnabled,
   getElementById,
 }) {
   const expenses = transactions.filter((transaction) => transaction.type === 'Expense');
-  const totalExpense = expenses.reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+  const totalExpense = expenses.reduce((sum, transaction) => sum + getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled), 0);
   const income = transactions
     .filter((transaction) => transaction.type === 'Income')
-    .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+    .reduce((sum, transaction) => sum + getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled), 0);
 
-  renderCategoryBreakdown({ dashCategories, expenses, totalExpense, budgetService });
-  renderCreditCardBreakdown({ dashCreditCards, expenses, totalExpense });
+  renderCategoryBreakdown({ dashCategories, expenses, totalExpense, isSplitByTwoEnabled, budgetService });
+  renderCreditCardBreakdown({ dashCreditCards, expenses, totalExpense, isSplitByTwoEnabled });
   renderFutureExpenses({
     dashFutureExpenses: getElementById('dash-future-expenses'),
     expenses,
     totalExpense,
+    isSplitByTwoEnabled,
   });
 
   const selectedMonth = parseInt(filterMonthEl.value, 10);
@@ -307,7 +311,7 @@ export async function renderDashboardSection({
   renderInsights({ dashInsights, totalExpense, income });
 
   dashNetworth.textContent = 'Calculando...';
-  const netWorth = await transactionService.getNetWorth(selectedYear, selectedMonth);
+  const netWorth = await transactionService.getNetWorth(selectedYear, selectedMonth, isSplitByTwoEnabled);
 
   dashNetworth.parentElement.classList.add('cursor-pointer', 'hover:bg-slate-700/50', 'transition-colors');
   dashNetworth.parentElement.setAttribute('title', 'Ajustar Saldo Real');

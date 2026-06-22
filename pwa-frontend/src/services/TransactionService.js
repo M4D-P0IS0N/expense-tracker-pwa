@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient.js';
 import { AuthService } from './AuthService.js';
+import { getEffectiveTransactionAmount } from '../utils/splitTransactionAmount.js';
 
 async function getCurrentUserId() {
     const session = await AuthService.getSession();
@@ -123,14 +124,14 @@ export class TransactionService {
     /**
      * Fast global sum for Net Worth (Receitas - Despesas) up to the specified month/year
      */
-    static async getNetWorth(year, month) {
+    static async getNetWorth(year, month, isSplitByTwoEnabled = false) {
         const userId = await getCurrentUserId();
         if (!userId) return 0;
 
         // Fetch transactions for calculation
         let query = supabase
             .from('transactions')
-            .select('amount, type')
+            .select('amount, type, is_split_by_2')
             .eq('user_id', userId);
 
         if (year && month) {
@@ -162,7 +163,8 @@ export class TransactionService {
         }
 
         return txData.reduce((acc, tx) => {
-            return tx.type === 'Income' ? acc + Number(tx.amount) : acc - Number(tx.amount);
+            const effectiveTransactionAmount = getEffectiveTransactionAmount(tx, isSplitByTwoEnabled);
+            return tx.type === 'Income' ? acc + effectiveTransactionAmount : acc - effectiveTransactionAmount;
         }, baseNetWorth);
     }
 
@@ -298,7 +300,8 @@ export class TransactionService {
                 category: transaction.category || 'General',
                 date: txDate.toISOString(),
                 is_recurring: isRecurring,
-                credit_card_name: transaction.credit_card_name || null
+                credit_card_name: transaction.credit_card_name || null,
+                is_split_by_2: transaction.type === 'Expense' ? Boolean(transaction.is_split_by_2) : false
             };
 
             if (totalInstallments > 1) {
@@ -341,7 +344,8 @@ export class TransactionService {
             category: transaction.category || 'General',
             date: baseDateStr ? new Date(baseDateStr).toISOString() : undefined,
             credit_card_name: transaction.credit_card_name || null,
-            is_recurring: transaction.is_recurring !== undefined ? transaction.is_recurring : false
+            is_recurring: transaction.is_recurring !== undefined ? transaction.is_recurring : false,
+            is_split_by_2: transaction.type === 'Expense' ? Boolean(transaction.is_split_by_2) : false
         };
 
         const { data, error } = await supabase

@@ -16,6 +16,7 @@ export function initNavigationFilters({
   setCurrentSort,
   getCurrentTab,
   setCurrentTab,
+  setSplitByTwoEnabled,
 }) {
   async function initTemporalNav() {
     const currentDate = new Date();
@@ -37,8 +38,18 @@ export function initNavigationFilters({
     elements.filterMonthEl.value = (currentDate.getMonth() + 1).toString();
     elements.filterYearEl.value = currentDate.getFullYear().toString();
 
-    elements.filterMonthEl.addEventListener('change', loadData);
+    elements.filterMonthEl.addEventListener('change', () => {
+      if (elements.filterSplitByTwoEl) {
+        elements.filterSplitByTwoEl.checked = false;
+        setSplitByTwoEnabled(false);
+      }
+      loadData();
+    });
     elements.filterYearEl.addEventListener('change', () => {
+      if (elements.filterSplitByTwoEl) {
+        elements.filterSplitByTwoEl.checked = false;
+        setSplitByTwoEnabled(false);
+      }
       if (elements.filterYearEl.value === '__add_year__') {
         const newYearString = prompt('Digite o ano que deseja adicionar (ex: 2030):');
         if (newYearString) {
@@ -97,6 +108,17 @@ export function initNavigationFilters({
       elements.sortTransactionsEl.addEventListener('change', (event) => {
         setCurrentSort(event.target.value);
         updateUI();
+      });
+    }
+
+    if (elements.filterSplitByTwoEl) {
+      elements.filterSplitByTwoEl.checked = false;
+      elements.filterSplitByTwoEl.addEventListener('change', (event) => {
+        setSplitByTwoEnabled(event.target.checked);
+        updateUI();
+        if (getCurrentTab() === 'Dashboard') {
+          renderDashboard();
+        }
       });
     }
 

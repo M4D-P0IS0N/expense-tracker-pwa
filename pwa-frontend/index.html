@@ -377,6 +377,12 @@
             <button id="filter-installments"
               class="filter-chip shrink-0 px-3 py-1.5 rounded-full border border-slate-700 bg-slate-800/50 text-slate-400 text-xs font-medium hover:text-white hover:border-slate-500 transition"
               data-filter="Install">Parceladas</button>
+            <label
+              class="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-700 bg-slate-800/50 text-slate-400 text-xs font-medium hover:text-white hover:border-slate-500 transition cursor-pointer">
+              <input type="checkbox" id="filter-split-by-two"
+                class="w-4 h-4 bg-slate-800 border-slate-600 text-primary rounded focus:ring-primary">
+              <span>Dividir por 2</span>
+            </label>
           </div>
         </div>
 
@@ -644,6 +650,11 @@
                 <input type="checkbox" id="tx-recurring"
                   class="w-5 h-5 bg-slate-800 border-slate-600 text-primary rounded focus:ring-primary">
                 <span class="text-sm text-slate-300">Despesa/Receita Recorrente (Mensal)</span>
+              </label>
+              <label class="flex items-center gap-2 mt-2 cursor-pointer">
+                <input type="checkbox" id="tx-split-by-two"
+                  class="w-5 h-5 bg-slate-800 border-slate-600 text-primary rounded focus:ring-primary">
+                <span class="text-sm text-slate-300">Dividir por 2</span>
               </label>
             </div>
           </div>

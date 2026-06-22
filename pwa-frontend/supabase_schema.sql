@@ -44,6 +44,7 @@ CREATE TABLE transactions (
     credit_card_name TEXT,
     installment_group_id UUID,
     is_recurring BOOLEAN DEFAULT FALSE,
+    is_split_by_2 BOOLEAN DEFAULT FALSE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE
 );
 

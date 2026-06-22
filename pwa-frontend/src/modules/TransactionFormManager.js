@@ -40,6 +40,7 @@ export function initTransactionForm({
         total_installments: parseInt(getElementById('tx-install-total').value, 10) || 1,
         installment_number: parseInt(getElementById('tx-install-number').value, 10) || 1,
         is_recurring: getElementById('tx-recurring').checked,
+        is_split_by_2: transactionType === 'Expense' && getElementById('tx-split-by-two').checked,
       };
 
       const editingTransactionId = getEditTransactionId();

@@ -1,3 +1,5 @@
+import { getEffectiveTransactionAmount, shouldApplySplitByTwo } from '../utils/splitTransactionAmount.js';
+
 function formatBrazilianCurrency(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
@@ -12,11 +14,13 @@ function createListDivider(label) {
 function createTransactionCard({
   transaction,
   categoryTotalsByMonth,
+  isSplitByTwoEnabled,
   budgetService,
   openContextMenu,
 }) {
   const isIncomeTransaction = transaction.type === 'Income';
   const transactionSignal = isIncomeTransaction ? '+' : '-';
+  const effectiveTransactionAmount = getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled);
   const transactionDateLabel = new Date(transaction.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
   const amountColorClass = isIncomeTransaction
     ? 'text-accent-green'
@@ -63,6 +67,13 @@ function createTransactionCard({
     tagsHtml += '<span title="Despesa Recorrente" class="text-[12px] cursor-help font-extrabold px-2 py-0 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/40 transition inline-block shadow-[0_0_8px_rgba(250,204,21,0.5)]">∞</span>';
   }
 
+  if (!isIncomeTransaction && transaction.is_split_by_2) {
+    const splitByTwoTitle = shouldApplySplitByTwo(transaction, isSplitByTwoEnabled)
+      ? 'Valor exibido dividido por 2'
+      : 'Despesa marcada como divisível por 2';
+    tagsHtml += `<span title="${splitByTwoTitle}" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/20 inline-block ml-1">÷2</span>`;
+  }
+
   const transactionCard = document.createElement('div');
   transactionCard.className = 'glass-card glass-card-hover rounded-xl p-3 flex items-center gap-4 transition-all duration-200 select-none';
   transactionCard.innerHTML = `
@@ -72,7 +83,7 @@ function createTransactionCard({
     <div class="flex-1 min-w-0">
       <div class="flex justify-between items-center mb-0.5">
         <h4 class="text-white font-semibold truncate">${transaction.description}</h4>
-        <span class="${amountColorClass} font-bold whitespace-nowrap">${transactionSignal}${formatBrazilianCurrency(Math.abs(transaction.amount))}</span>
+        <span class="${amountColorClass} font-bold whitespace-nowrap">${transactionSignal}${formatBrazilianCurrency(Math.abs(effectiveTransactionAmount))}</span>
       </div>
       <div class="flex justify-between items-center mt-1">
         <p class="text-xs text-slate-400">${subCategoryLabel} • ${transactionDateLabel}</p>
@@ -131,11 +142,14 @@ export function renderTransactionList({
   currentQuickFilter,
   currentSort,
   currentSearchQuery,
+  isSplitByTwoEnabled,
   budgetService,
   openContextMenu,
 }) {
   const normalizedAmounts = transactions.map((transaction) => (
-    transaction.type === 'Income' ? Number(transaction.amount) : -Number(transaction.amount)
+    transaction.type === 'Income'
+      ? getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled)
+      : -getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled)
   ));
   const totalBalance = normalizedAmounts.reduce((sum, amount) => sum + amount, 0).toFixed(2);
   const totalIncome = normalizedAmounts.filter((amount) => amount > 0).reduce((sum, amount) => sum + amount, 0).toFixed(2);
@@ -194,8 +208,8 @@ export function renderTransactionList({
   filteredTransactions.sort((transactionA, transactionB) => {
     if (currentSort === 'date-desc') return new Date(transactionB.date) - new Date(transactionA.date);
     if (currentSort === 'date-asc') return new Date(transactionA.date) - new Date(transactionB.date);
-    if (currentSort === 'value-desc') return transactionB.amount - transactionA.amount;
-    if (currentSort === 'value-asc') return transactionA.amount - transactionB.amount;
+    if (currentSort === 'value-desc') return getEffectiveTransactionAmount(transactionB, isSplitByTwoEnabled) - getEffectiveTransactionAmount(transactionA, isSplitByTwoEnabled);
+    if (currentSort === 'value-asc') return getEffectiveTransactionAmount(transactionA, isSplitByTwoEnabled) - getEffectiveTransactionAmount(transactionB, isSplitByTwoEnabled);
     if (currentSort === 'alpha-asc') return (transactionA.description || '').localeCompare(transactionB.description || '');
     if (currentSort === 'alpha-desc') return (transactionB.description || '').localeCompare(transactionA.description || '');
     return 0;
@@ -215,13 +229,14 @@ export function renderTransactionList({
     .forEach((transaction) => {
       const categoryName = transaction.category || 'General';
       const normalizedCategoryName = categoryName.replace(/[\u1000-\uFFFF]/, '').trim() || categoryName;
-      categoryTotalsByMonth[normalizedCategoryName] = (categoryTotalsByMonth[normalizedCategoryName] || 0) + Number(transaction.amount);
+      categoryTotalsByMonth[normalizedCategoryName] = (categoryTotalsByMonth[normalizedCategoryName] || 0) + getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled);
     });
 
   const appendTransactionCard = (transaction) => {
     appElements.listEl.appendChild(createTransactionCard({
       transaction,
       categoryTotalsByMonth,
+      isSplitByTwoEnabled,
       budgetService,
       openContextMenu,
     }));

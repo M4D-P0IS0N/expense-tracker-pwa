@@ -20,6 +20,8 @@ supabase_migration_user_id.sql
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/mcp.json.example
+!.vscode/README.md
 .idea
 .DS_Store
 *.suo
