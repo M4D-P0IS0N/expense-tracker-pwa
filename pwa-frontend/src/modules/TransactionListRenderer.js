@@ -187,6 +187,10 @@ export function renderTransactionList({
     if (currentTab !== 'All' && transaction.type !== currentTab) return false;
     if (currentCardFilter !== 'All' && transaction.credit_card_name !== currentCardFilter) return false;
 
+    if (currentSort === 'shared') {
+      if (transaction.type !== 'Expense' || !transaction.is_split_by_2) return false;
+    }
+
     if (currentQuickFilter) {
       const transactionDate = new Date(transaction.date);
       transactionDate.setHours(0, 0, 0, 0);
@@ -217,7 +221,7 @@ export function renderTransactionList({
     if (aIgnored && !bIgnored) return 1;
     if (!aIgnored && bIgnored) return -1;
 
-    if (currentSort === 'date-desc') return new Date(transactionB.date) - new Date(transactionA.date);
+    if (currentSort === 'date-desc' || currentSort === 'shared') return new Date(transactionB.date) - new Date(transactionA.date);
     if (currentSort === 'date-asc') return new Date(transactionA.date) - new Date(transactionB.date);
     if (currentSort === 'value-desc') return getEffectiveTransactionAmount(transactionB, isSplitByTwoEnabled) - getEffectiveTransactionAmount(transactionA, isSplitByTwoEnabled);
     if (currentSort === 'value-asc') return getEffectiveTransactionAmount(transactionA, isSplitByTwoEnabled) - getEffectiveTransactionAmount(transactionB, isSplitByTwoEnabled);
