@@ -18,6 +18,16 @@ export function initNavigationFilters({
   setCurrentTab,
   setSplitByTwoEnabled,
 }) {
+  function syncSplitByTwoState() {
+    if (!elements.filterSplitByTwoEl) return;
+    const year = elements.filterYearEl.value;
+    const month = elements.filterMonthEl.value;
+    const storageKey = `split_by_two_${year}_${month}`;
+    const isEnabled = localStorage.getItem(storageKey) === 'true';
+    elements.filterSplitByTwoEl.checked = isEnabled;
+    setSplitByTwoEnabled(isEnabled);
+  }
+
   async function initTemporalNav() {
     const currentDate = new Date();
     const years = await transactionService.getAvailableYears();
@@ -37,19 +47,13 @@ export function initNavigationFilters({
 
     elements.filterMonthEl.value = (currentDate.getMonth() + 1).toString();
     elements.filterYearEl.value = currentDate.getFullYear().toString();
+    syncSplitByTwoState();
 
     elements.filterMonthEl.addEventListener('change', () => {
-      if (elements.filterSplitByTwoEl) {
-        elements.filterSplitByTwoEl.checked = false;
-        setSplitByTwoEnabled(false);
-      }
+      syncSplitByTwoState();
       loadData();
     });
     elements.filterYearEl.addEventListener('change', () => {
-      if (elements.filterSplitByTwoEl) {
-        elements.filterSplitByTwoEl.checked = false;
-        setSplitByTwoEnabled(false);
-      }
       if (elements.filterYearEl.value === '__add_year__') {
         const newYearString = prompt('Digite o ano que deseja adicionar (ex: 2030):');
         if (newYearString) {
@@ -63,15 +67,17 @@ export function initNavigationFilters({
               elements.filterYearEl.insertBefore(newOptionElement, addYearOption);
             }
             elements.filterYearEl.value = String(newYear);
+            syncSplitByTwoState();
             loadData();
           } else {
-            showNotification('Ano invÃ¡lido. Use entre 2020 e 2050.', 'error');
+            showNotification('Ano inválido. Use entre 2020 e 2050.', 'error');
             elements.filterYearEl.value = currentDate.getFullYear().toString();
           }
         } else {
           elements.filterYearEl.value = currentDate.getFullYear().toString();
         }
       } else {
+        syncSplitByTwoState();
         loadData();
       }
     });
@@ -112,9 +118,20 @@ export function initNavigationFilters({
     }
 
     if (elements.filterSplitByTwoEl) {
-      elements.filterSplitByTwoEl.checked = false;
+      syncSplitByTwoState();
       elements.filterSplitByTwoEl.addEventListener('change', (event) => {
-        setSplitByTwoEnabled(event.target.checked);
+        const year = elements.filterYearEl.value;
+        const month = elements.filterMonthEl.value;
+        const storageKey = `split_by_two_${year}_${month}`;
+        const isChecked = event.target.checked;
+
+        if (isChecked) {
+          localStorage.setItem(storageKey, 'true');
+        } else {
+          localStorage.removeItem(storageKey);
+        }
+
+        setSplitByTwoEnabled(isChecked);
         updateUI();
         if (getCurrentTab() === 'Dashboard') {
           renderDashboard();
