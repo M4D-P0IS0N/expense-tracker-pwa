@@ -348,8 +348,7 @@ export class TransactionService {
             credit_card_name: transaction.credit_card_name || null,
             is_recurring: transaction.is_recurring !== undefined ? transaction.is_recurring : false,
             is_split_by_2: transaction.type === 'Expense' ? Boolean(transaction.is_split_by_2) : false,
-            is_third_party: transaction.type === 'Expense' ? Boolean(transaction.is_third_party) : false,
-                is_third_party: transaction.type === 'Expense' ? Boolean(transaction.is_third_party) : false
+            is_third_party: transaction.type === 'Expense' ? Boolean(transaction.is_third_party) : false
         };
 
         const { data, error } = await supabase
@@ -362,6 +361,37 @@ export class TransactionService {
             console.error("Error updating transaction:", error);
             throw error;
         }
+
+        if (data && data.length > 0) {
+            const updatedTx = data[0];
+            const isGrouped = updatedTx.installment_group_id || updatedTx.total_installments > 1 || updatedTx.is_recurring;
+            
+            if (updatedTx.type === 'Expense' && isGrouped) {
+                const updatePayload = {
+                    amount: updatedTx.amount,
+                    is_split_by_2: updatedTx.is_split_by_2,
+                    is_third_party: updatedTx.is_third_party,
+                    category: updatedTx.category,
+                    credit_card_name: updatedTx.credit_card_name
+                };
+
+                if (updatedTx.installment_group_id) {
+                    await supabase
+                        .from('transactions')
+                        .update(updatePayload)
+                        .eq('installment_group_id', updatedTx.installment_group_id)
+                        .gt('date', updatedTx.date);
+                } else {
+                    await supabase
+                        .from('transactions')
+                        .update(updatePayload)
+                        .eq('user_id', updatedTx.user_id)
+                        .eq('description', updatedTx.description)
+                        .gt('date', updatedTx.date);
+                }
+            }
+        }
+
         return data[0];
     }
 
@@ -422,4 +452,7 @@ export class TransactionService {
         return true;
     }
 }
+
+
+
 
