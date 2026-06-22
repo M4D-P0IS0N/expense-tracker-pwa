@@ -1,4 +1,4 @@
-import { getEffectiveTransactionAmount, shouldApplySplitByTwo, shouldIgnoreThirdParty } from '../utils/splitTransactionAmount.js';
+﻿import { getEffectiveTransactionAmount, shouldApplySplitByTwo, shouldIgnoreThirdParty } from '../utils/splitTransactionAmount.js';
 
 function formatBrazilianCurrency(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -64,29 +64,34 @@ function createTransactionCard({
   }
 
   if (!isIncomeTransaction && transaction.is_recurring) {
-    tagsHtml += '<span title="Despesa Recorrente" class="text-[12px] cursor-help font-extrabold px-2 py-0 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/40 transition inline-block shadow-[0_0_8px_rgba(250,204,21,0.5)]">∞</span>';
+    tagsHtml += '<span title="Despesa Recorrente" class="text-[12px] cursor-help font-extrabold px-2 py-0 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/40 transition inline-block shadow-[0_0_8px_rgba(250,204,21,0.5)]">🔄</span>';
   }
 
   if (!isIncomeTransaction && transaction.is_split_by_2) {
     const splitByTwoTitle = shouldApplySplitByTwo(transaction, isSplitByTwoEnabled)
       ? 'Valor exibido dividido por 2'
       : 'Despesa marcada como divisível por 2';
-    tagsHtml += `<span title="${splitByTwoTitle}" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/20 inline-block ml-1">÷2</span>`;
+    tagsHtml += `<span title="${splitByTwoTitle}" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/20 inline-block ml-1">½</span>`;
   }
 
+  if (!isIncomeTransaction && transaction.is_third_party) {
+    tagsHtml += `<span title="Despesa de Terceiros" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/20 inline-block ml-1">👤 Terceiros</span>`;
+  }
+
+  const isThirdPartyIgnored = shouldIgnoreThirdParty(transaction, isSplitByTwoEnabled);
   const transactionCard = document.createElement('div');
-  transactionCard.className = 'glass-card glass-card-hover rounded-xl p-3 flex items-center gap-4 transition-all duration-200 select-none';
+  transactionCard.className = `glass-card glass-card-hover rounded-xl p-3 flex items-center gap-4 transition-all duration-200 select-none ${isThirdPartyIgnored ? 'opacity-40' : ''}`;
   transactionCard.innerHTML = `
-    <div class="h-12 w-12 rounded-xl border flex items-center justify-center shrink-0 ${iconBackgroundClass}">
+    <div class="h-12 w-12 rounded-xl border flex items-center justify-center shrink-0 ${iconBackgroundClass} ${isThirdPartyIgnored ? 'opacity-50' : ''}">
       ${iconHtml}
     </div>
     <div class="flex-1 min-w-0">
       <div class="flex justify-between items-center mb-0.5">
-        <h4 class="text-white font-semibold truncate">${transaction.description}</h4>
-        <span class="${amountColorClass} font-bold whitespace-nowrap">${transactionSignal}${formatBrazilianCurrency(Math.abs(effectiveTransactionAmount))}</span>
+        <h4 class="text-white font-semibold truncate ${isThirdPartyIgnored ? 'line-through text-slate-500' : ''}">${transaction.description}</h4>
+        <span class="${amountColorClass} font-bold whitespace-nowrap ${isThirdPartyIgnored ? 'line-through text-slate-500' : ''}">${transactionSignal}${formatBrazilianCurrency(Math.abs(effectiveTransactionAmount))}</span>
       </div>
       <div class="flex justify-between items-center mt-1">
-        <p class="text-xs text-slate-400">${subCategoryLabel} • ${transactionDateLabel}</p>
+        <p class="text-xs text-slate-400 ${isThirdPartyIgnored ? 'line-through text-slate-600' : ''}">${subCategoryLabel} • ${transactionDateLabel}</p>
         <div class="flex items-center justify-end flex-wrap">${tagsHtml}</div>
       </div>
     </div>
@@ -284,4 +289,3 @@ export function renderTransactionList({
     filteredTransactions.forEach(appendTransactionCard);
   }
 }
-
