@@ -290,7 +290,13 @@ export class TransactionService {
         // Insert from current to total (generating multiple rows for DB)
         for (let i = 0; i < iterations; i++) {
             const txDate = new Date(baseDate);
+            const expectedMonth = (baseDate.getMonth() + i) % 12;
+            const normalizedExpectedMonth = expectedMonth < 0 ? expectedMonth + 12 : expectedMonth;
+
             txDate.setMonth(txDate.getMonth() + i);
+            if (txDate.getMonth() !== normalizedExpectedMonth) {
+                txDate.setDate(0);
+            }
 
             const txToInsert = {
                 user_id: userId,
@@ -302,7 +308,6 @@ export class TransactionService {
                 is_recurring: isRecurring,
                 credit_card_name: transaction.credit_card_name || null,
                 is_split_by_2: transaction.type === 'Expense' ? Boolean(transaction.is_split_by_2) : false,
-            is_third_party: transaction.type === 'Expense' ? Boolean(transaction.is_third_party) : false,
                 is_third_party: transaction.type === 'Expense' ? Boolean(transaction.is_third_party) : false
             };
 
