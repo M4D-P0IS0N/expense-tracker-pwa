@@ -4,6 +4,8 @@ export function initTransactionForm({
   parseBrazilianCurrency,
   showNotification,
   transactionService,
+  gamificationService,
+  updateAvatarUI,
   loadData,
   closeModal,
   getEditTransactionId,
@@ -49,6 +51,12 @@ export function initTransactionForm({
         await transactionService.updateTransaction(editingTransactionId, transactionPayload);
       } else {
         await transactionService.addTransaction(transactionPayload);
+        if (gamificationService) {
+          gamificationService.onTransactionLogged(transactionPayload);
+        }
+        if (updateAvatarUI && typeof updateAvatarUI === 'function') {
+          updateAvatarUI();
+        }
       }
 
       await loadData();

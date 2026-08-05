@@ -130,6 +130,12 @@ export function initSavingsFlow({
       });
     } else {
       savingsService.addGoal(goalName, goalTargetAmount, goalIcon);
+      if (gamificationService && typeof gamificationService.onSavingsGoalCreated === 'function') {
+        gamificationService.onSavingsGoalCreated();
+      }
+      if (updateAvatarUI && typeof updateAvatarUI === 'function') {
+        updateAvatarUI();
+      }
     }
 
     closeSavingsModal();
@@ -147,10 +153,17 @@ export function initSavingsFlow({
       return;
     }
 
-    savingsService.addFunds(currentSavingsId, fundAmount);
+    const updatedGoal = savingsService.addFunds(currentSavingsId, fundAmount);
     savingsFundAmount.value = '';
-    gamificationService.onTransactionLogged();
-    updateAvatarUI();
+    if (gamificationService) {
+      gamificationService.onTransactionLogged();
+      if (updatedGoal && updatedGoal.targetAmount > 0 && updatedGoal.currentAmount >= updatedGoal.targetAmount) {
+        gamificationService.onSavingsGoalCompleted();
+      }
+    }
+    if (updateAvatarUI && typeof updateAvatarUI === 'function') {
+      updateAvatarUI();
+    }
     renderDashboard();
     closeSavingsModal();
   });

@@ -14,6 +14,8 @@ export function initExportManager(options) {
         importFileInput,
         getTransactions,
         TransactionService,
+        gamificationService,
+        updateAvatarUI,
         supabase,
         showNotification,
         reloadData,
@@ -21,10 +23,20 @@ export function initExportManager(options) {
         isSplitByTwoEnabled
     } = options;
 
+    const notifyExportSuccess = () => {
+        if (gamificationService && typeof gamificationService.onDataExported === "function") {
+            gamificationService.onDataExported();
+        }
+        if (updateAvatarUI && typeof updateAvatarUI === "function") {
+            updateAvatarUI();
+        }
+    };
+
     if (exportRetrospectiveBtn) {
         exportRetrospectiveBtn.addEventListener("click", () => {
             const isSplitByTwo = typeof getIsSplitByTwoEnabled === "function" ? getIsSplitByTwoEnabled() : Boolean(isSplitByTwoEnabled);
             exportRetrospectivePdfReport({ TransactionService, getTransactions, showNotification, isSplitByTwoEnabled: isSplitByTwo });
+            notifyExportSuccess();
         });
     }
 
@@ -193,6 +205,7 @@ export function initExportManager(options) {
             const blob = new Blob([html], { type: "text/html;charset=utf-8" });
             const url = URL.createObjectURL(blob);
             window.open(url, "_blank");
+            notifyExportSuccess();
         });
     }
 
@@ -230,18 +243,21 @@ export function initExportManager(options) {
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
+            notifyExportSuccess();
         });
     }
 
     if (exportJsonBtn) {
         exportJsonBtn.addEventListener("click", async () => {
             await exportFullJsonBackup({ TransactionService, supabase, showNotification });
+            notifyExportSuccess();
         });
     }
 
     if (exportFullCsvBtn) {
         exportFullCsvBtn.addEventListener("click", async () => {
             await exportFullCsv({ TransactionService, showNotification });
+            notifyExportSuccess();
         });
     }
 

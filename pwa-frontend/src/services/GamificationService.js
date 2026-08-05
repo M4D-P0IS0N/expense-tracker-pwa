@@ -39,6 +39,7 @@ export class GamificationService {
     static DEFAULT_PROFILE = {
         Level: 1,
         CurrentXP: 0,
+        TotalXP: 0,
         XPToNextLevel: 1000,
         UnlockedAchievements: [],
         EvolutionStage: 'stage1',
@@ -50,6 +51,11 @@ export class GamificationService {
         firstLoginDate: null,
         surplusMonths: 0,
         budgetWeeks: 0,
+        totalSavingsGoals: 0,
+        dataExportsCount: 0,
+        earlyBirdCount: 0,
+        categoryCount: 0,
+        usedCategories: [],
     };
 
     static XP_PER_TRANSACTION = 10;
@@ -66,15 +72,20 @@ export class GamificationService {
         { Id: "tx_1000", Name: "Mestre das Planilhas", Description: "Registre 1.000 transações.", Icon: "monitoring", IconColor: "text-emerald-400", MaxProgress: 1000, TrackKey: "totalTransactions" },
         { Id: "tx_2000", Name: "Lenda da Contabilidade", Description: "Registre 2.000 transações.", Icon: "crown", IconColor: "text-yellow-400", MaxProgress: 2000, TrackKey: "totalTransactions" },
         // --- Milestone: Level ---
-        { Id: "level_10", Name: "Estrela Ascendente", Description: "Alcance o Nível 10.", Icon: "star", IconColor: "text-yellow-300", MaxProgress: 10, TrackKey: "level" },
-        { Id: "level_25", Name: "Meia-Nobreza", Description: "Alcance o Nível 25.", Icon: "military_tech", IconColor: "text-orange-400", MaxProgress: 25, TrackKey: "level" },
-        { Id: "level_50", Name: "Renascimento", Description: "Complete seu primeiro ciclo de evolução.", Icon: "local_fire_department", IconColor: "text-red-400", MaxProgress: 50, TrackKey: "level" },
+        { Id: "level_10", Name: "Estrela Ascendente", Description: "Alcance o Nível 10.", Icon: "star", IconColor: "text-yellow-300", MaxProgress: 10, TrackKey: "Level" },
+        { Id: "level_25", Name: "Meia-Nobreza", Description: "Alcance o Nível 25.", Icon: "military_tech", IconColor: "text-orange-400", MaxProgress: 25, TrackKey: "Level" },
+        { Id: "level_50", Name: "Renascimento", Description: "Complete seu primeiro ciclo de evolução.", Icon: "local_fire_department", IconColor: "text-red-400", MaxProgress: 50, TrackKey: "Level" },
         // --- Streak & Discipline ---
         { Id: "streak_7", Name: "Guerreiro Semanal", Description: "Abra o app 7 dias seguidos.", Icon: "swords", IconColor: "text-slate-300", MaxProgress: 7, TrackKey: "loginStreak" },
         { Id: "streak_30", Name: "Disciplina de Ferro", Description: "Abra o app 30 dias seguidos.", Icon: "shield", IconColor: "text-blue-300", MaxProgress: 30, TrackKey: "loginStreak" },
+        { Id: "streak_100", Name: "Centenário de Elite", Description: "Mantenha o foco e abra o app por 100 dias seguidos.", Icon: "workspace_premium", IconColor: "text-amber-400", MaxProgress: 100, TrackKey: "loginStreak" },
         { Id: "budget_master", Name: "Mestre do Orçamento", Description: "Fique dentro do orçamento por 4 semanas.", Icon: "savings", IconColor: "text-green-400", MaxProgress: 4, TrackKey: "budgetWeeks" },
-        // --- Savings ---
+        // --- Savings & Tools ---
+        { Id: "savings_first", Name: "Primeiro Cofre", Description: "Crie sua primeira caixinha de economia.", Icon: "savings", IconColor: "text-emerald-400", MaxProgress: 1, TrackKey: "totalSavingsGoals" },
         { Id: "savings_champion", Name: "Campeão da Poupança", Description: "Complete uma meta de caixinha.", Icon: "emoji_events", IconColor: "text-amber-500", MaxProgress: 1, TrackKey: null },
+        { Id: "exporter_pro", Name: "Guardião dos Dados", Description: "Realize um backup ou exportação dos seus dados.", Icon: "cloud_download", IconColor: "text-blue-400", MaxProgress: 1, TrackKey: "dataExportsCount" },
+        { Id: "early_bird", Name: "Madrugador Financeiro", Description: "Registre uma transação logo cedo (antes das 08h).", Icon: "wb_sunny", IconColor: "text-amber-300", MaxProgress: 1, TrackKey: "earlyBirdCount" },
+        { Id: "category_explorer", Name: "Mestre da Organização", Description: "Categorize lançamentos em pelo menos 5 categorias diferentes.", Icon: "category", IconColor: "text-purple-400", MaxProgress: 5, TrackKey: "categoryCount" },
         // --- Anniversary ---
         { Id: "anniversary_1m", Name: "1 Mês Juntos", Description: "Use o app por 1 mês.", Icon: "event_available", IconColor: "text-teal-400", MaxProgress: 30, TrackKey: "daysActive" },
         { Id: "anniversary_6m", Name: "Meio Ano de Jornada", Description: "Use o app por 6 meses.", Icon: "calendar_month", IconColor: "text-indigo-400", MaxProgress: 180, TrackKey: "daysActive" },
@@ -90,7 +101,7 @@ export class GamificationService {
         const data = localStorage.getItem(this.storageKey);
         if (!data) return { ...this.DEFAULT_PROFILE };
 
-        const profile = JSON.parse(data);
+        const profile = { ...this.DEFAULT_PROFILE, ...JSON.parse(data) };
 
         // Migration: convert old EvolutionStage values to new format
         if (['Apprentice', 'Adept', 'Master', 'Archmage'].includes(profile.EvolutionStage)) {
@@ -101,6 +112,10 @@ export class GamificationService {
         if (!profile.AvatarGender) {
             profile.AvatarGender = null;
         }
+
+        // Ensure TotalXP is calculated and consistent with Level & CurrentXP
+        const previousCalculatedXP = ((profile.Level || 1) - 1) * this.XP_PER_LEVEL + (profile.CurrentXP || 0);
+        profile.TotalXP = Math.max(profile.TotalXP || 0, previousCalculatedXP);
 
         return profile;
     }
@@ -138,24 +153,18 @@ export class GamificationService {
         return profile;
     }
 
-    static checkLevelUp(profile) {
-        let leveledUp = false;
-        while (profile.CurrentXP >= profile.XPToNextLevel) {
-            profile.CurrentXP -= profile.XPToNextLevel;
-            profile.Level++;
-            profile.XPToNextLevel = this.XP_PER_LEVEL;
-            leveledUp = true;
+    static addXP(profile, amount) {
+        profile.TotalXP = (profile.TotalXP || 0) + amount;
+        profile.Level = Math.floor(profile.TotalXP / this.XP_PER_LEVEL) + 1;
+        profile.CurrentXP = profile.TotalXP % this.XP_PER_LEVEL;
+        profile.XPToNextLevel = this.XP_PER_LEVEL;
 
-            if (profile.Level === 10) this.tryUnlockAchievement(profile, "level_10");
-            if (profile.Level === 50) this.tryUnlockAchievement(profile, "level_50");
-        }
+        if (profile.Level >= 10) this.tryUnlockAchievement(profile, "level_10");
+        if (profile.Level >= 25) this.tryUnlockAchievement(profile, "level_25");
+        if (profile.Level >= 50) this.tryUnlockAchievement(profile, "level_50");
 
-        const newStage = this.getEvolutionStage(profile.Level);
-        if (newStage !== profile.EvolutionStage) {
-            profile.EvolutionStage = newStage;
-        }
-
-        return { leveledUp, profile };
+        profile.EvolutionStage = this.getEvolutionStage(profile.Level);
+        return profile;
     }
 
     static tryUnlockAchievement(profile, achievementId) {
@@ -172,10 +181,29 @@ export class GamificationService {
         });
     }
 
-    static onTransactionLogged() {
+    static onTransactionLogged(transactionData = null) {
         let profile = this.getProfile();
-        profile.CurrentXP += this.XP_PER_TRANSACTION;
         profile.totalTransactions = (profile.totalTransactions || 0) + 1;
+        this.addXP(profile, this.XP_PER_TRANSACTION);
+
+        if (transactionData) {
+            if (transactionData.category) {
+                if (!Array.isArray(profile.usedCategories)) profile.usedCategories = [];
+                if (!profile.usedCategories.includes(transactionData.category)) {
+                    profile.usedCategories.push(transactionData.category);
+                }
+                profile.categoryCount = profile.usedCategories.length;
+                if (profile.categoryCount >= 5) this.tryUnlockAchievement(profile, "category_explorer");
+            }
+
+            if (transactionData.date) {
+                const txDate = new Date(transactionData.date);
+                if (!isNaN(txDate.getTime()) && txDate.getHours() < 8) {
+                    profile.earlyBirdCount = (profile.earlyBirdCount || 0) + 1;
+                    this.tryUnlockAchievement(profile, "early_bird");
+                }
+            }
+        }
 
         this.tryUnlockAchievement(profile, "first_transaction");
         if (profile.totalTransactions >= 50) this.tryUnlockAchievement(profile, "tx_50");
@@ -184,11 +212,34 @@ export class GamificationService {
         if (profile.totalTransactions >= 1000) this.tryUnlockAchievement(profile, "tx_1000");
         if (profile.totalTransactions >= 2000) this.tryUnlockAchievement(profile, "tx_2000");
 
-        const result = this.checkLevelUp(profile);
-        if (result.profile.Level >= 25) this.tryUnlockAchievement(result.profile, "level_25");
+        this.saveProfile(profile);
+        return profile;
+    }
 
-        this.saveProfile(result.profile);
-        return { xpGained: this.XP_PER_TRANSACTION, ...result };
+    static onSavingsGoalCreated() {
+        let profile = this.getProfile();
+        profile.totalSavingsGoals = (profile.totalSavingsGoals || 0) + 1;
+        this.tryUnlockAchievement(profile, "savings_first");
+        this.addXP(profile, 100);
+        this.saveProfile(profile);
+        return profile;
+    }
+
+    static onSavingsGoalCompleted() {
+        let profile = this.getProfile();
+        this.tryUnlockAchievement(profile, "savings_champion");
+        this.addXP(profile, 200);
+        this.saveProfile(profile);
+        return profile;
+    }
+
+    static onDataExported() {
+        let profile = this.getProfile();
+        profile.dataExportsCount = (profile.dataExportsCount || 0) + 1;
+        this.tryUnlockAchievement(profile, "exporter_pro");
+        this.addXP(profile, 50);
+        this.saveProfile(profile);
+        return profile;
     }
 
     static trackDailyLogin() {
@@ -219,6 +270,7 @@ export class GamificationService {
 
         if (profile.loginStreak >= 7) this.tryUnlockAchievement(profile, "streak_7");
         if (profile.loginStreak >= 30) this.tryUnlockAchievement(profile, "streak_30");
+        if (profile.loginStreak >= 100) this.tryUnlockAchievement(profile, "streak_100");
 
         if (profile.daysActive >= 30) this.tryUnlockAchievement(profile, "anniversary_1m");
         if (profile.daysActive >= 180) this.tryUnlockAchievement(profile, "anniversary_6m");
@@ -249,24 +301,18 @@ export class GamificationService {
 
     /**
      * Sincroniza o perfil com dados históricos do banco. 
-     * Executado uma vez no boot para usuários existentes que ganharam as conquistas recentemente.
      */
     static async syncWithDatabase(TransactionService) {
         let profile = this.getProfile();
-        // Evitar syncs duplicados se o usuário já tem transações contabilizadas acima do mínimo
-        // e um firstLoginDate já estabelecido.
-        if (profile.totalTransactions > 0 && profile.firstLoginDate) {
-            return profile;
-        }
+        if (!TransactionService) return profile;
 
         const totalCount = await TransactionService.getTotalTransactionCount();
         const firstDateStr = await TransactionService.getFirstTransactionDate();
 
         let updated = false;
 
-        if (totalCount > profile.totalTransactions) {
+        if (totalCount > (profile.totalTransactions || 0)) {
             profile.totalTransactions = totalCount;
-            // Unlock retroactive transaction achievements
             if (profile.totalTransactions >= 1) this.tryUnlockAchievement(profile, "first_transaction");
             if (profile.totalTransactions >= 50) this.tryUnlockAchievement(profile, "tx_50");
             if (profile.totalTransactions >= 200) this.tryUnlockAchievement(profile, "tx_200");
@@ -276,14 +322,19 @@ export class GamificationService {
             updated = true;
         }
 
+        const minimumExpectedXP = (profile.totalTransactions || 0) * this.XP_PER_TRANSACTION;
+        if ((profile.TotalXP || 0) < minimumExpectedXP) {
+            this.addXP(profile, minimumExpectedXP - (profile.TotalXP || 0));
+            updated = true;
+        }
+
         if (firstDateStr && !profile.firstLoginDate) {
-            // Retroactive daysActive calculation based on first transaction
             const firstDate = new Date(firstDateStr.split('T')[0]);
             const todayDate = new Date(new Date().toISOString().split('T')[0]);
             const daysActive = Math.floor((todayDate - firstDate) / (1000 * 60 * 60 * 24));
 
             profile.firstLoginDate = firstDateStr.split('T')[0];
-            profile.daysActive = Math.max(profile.daysActive, daysActive);
+            profile.daysActive = Math.max(profile.daysActive || 0, daysActive);
 
             if (profile.daysActive >= 30) this.tryUnlockAchievement(profile, "anniversary_1m");
             if (profile.daysActive >= 180) this.tryUnlockAchievement(profile, "anniversary_6m");
@@ -297,3 +348,4 @@ export class GamificationService {
         return profile;
     }
 }
+

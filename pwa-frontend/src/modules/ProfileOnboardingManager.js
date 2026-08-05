@@ -182,7 +182,8 @@ export function initProfileOnboardingManager({
 
     rpgStageTitle.textContent = stageLabel;
     rpgLevelText.textContent = profile.Level;
-    rpgXpText.textContent = `${profile.CurrentXP} / ${profile.XPToNextLevel}`;
+    const formattedTotalXp = (profile.TotalXP || 0).toLocaleString('pt-BR');
+    rpgXpText.textContent = `${profile.CurrentXP} / ${profile.XPToNextLevel} (${formattedTotalXp} XP total)`;
 
     const progressPercentage = Math.min(100, Math.round((profile.CurrentXP / profile.XPToNextLevel) * 100));
     rpgXpBar.style.width = '0%';
