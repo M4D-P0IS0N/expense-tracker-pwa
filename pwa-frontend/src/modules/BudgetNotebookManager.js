@@ -1,3 +1,8 @@
+const MONTH_NAMES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
 export function initBudgetNotebookManager({
   budgetService,
   notebookService,
@@ -21,9 +26,11 @@ export function initBudgetNotebookManager({
     closeNotesBtn,
     saveNotesBtn,
     notesTextarea,
-    notesMetaContainer,
-    notesDate,
-    notesDiffBox,
+    filterMonthEl,
+    filterYearEl,
+    notesMonthBadge,
+    notesHistoryList,
+    notesHistoryCount,
   } = elements;
 
   function closeBudgetsModal() {
@@ -71,28 +78,80 @@ export function initBudgetNotebookManager({
     budgetModal.classList.remove('hidden');
   }
 
-  function openNotesModal() {
-    notesTextarea.value = notebookService.getNotes();
+  function getSelectedMonthAndYear() {
+    const selectedMonth = filterMonthEl ? parseInt(filterMonthEl.value, 10) : (new Date().getMonth() + 1);
+    const selectedYear = filterYearEl ? parseInt(filterYearEl.value, 10) : new Date().getFullYear();
+    return { month: selectedMonth, year: selectedYear };
+  }
 
-    const notesMeta = notebookService.getMeta();
-    if (notesMeta) {
-      notesMetaContainer.classList.remove('hidden');
-      notesDate.textContent = new Date(notesMeta.lastEdited).toLocaleString('pt-BR');
-      notesDiffBox.innerHTML = '';
+  function renderHistoryList(history) {
+    if (!notesHistoryList) return;
+    notesHistoryList.innerHTML = '';
 
-      if (notesMeta.added.length === 0 && notesMeta.removed.length === 0) {
-        notesDiffBox.innerHTML = '<span class="text-slate-500 italic">Nenhuma alteração de linha significativa detectada na última edição.</span>';
-      } else {
-        notesMeta.added.forEach((lineContent) => {
-          notesDiffBox.innerHTML += `<div class="text-accent-green backdrop-blur-sm bg-accent-green/10 px-1.5 py-0.5 rounded truncate">+ ${lineContent}</div>`;
-        });
-        notesMeta.removed.forEach((lineContent) => {
-          notesDiffBox.innerHTML += `<div class="text-accent-red backdrop-blur-sm bg-accent-red/10 px-1.5 py-0.5 rounded truncate line-through opacity-75">- ${lineContent}</div>`;
-        });
-      }
-    } else {
-      notesMetaContainer.classList.add('hidden');
+    if (notesHistoryCount) {
+      notesHistoryCount.textContent = `${history.length} edição${history.length === 1 ? '' : 'ões'}`;
     }
+
+    if (!history || history.length === 0) {
+      notesHistoryList.innerHTML = '<div class="text-slate-500 italic p-3 text-center">Nenhuma edição registrada neste mês.</div>';
+      return;
+    }
+
+    history.forEach((entry) => {
+      const formattedTimestamp = new Date(entry.timestamp).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      const entryContainerElement = document.createElement('div');
+      entryContainerElement.className = 'bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60 space-y-1.5';
+
+      let diffMarkup = '';
+      if ((!entry.added || entry.added.length === 0) && (!entry.removed || entry.removed.length === 0)) {
+        diffMarkup = '<div class="text-slate-400 text-[11px] italic">Sem alterações de texto significativas</div>';
+      } else {
+        if (entry.added && entry.added.length > 0) {
+          entry.added.forEach(lineContent => {
+            diffMarkup += `<div class="text-accent-green bg-accent-green/10 px-2 py-0.5 rounded truncate text-[11px] font-mono">+ ${lineContent}</div>`;
+          });
+        }
+        if (entry.removed && entry.removed.length > 0) {
+          entry.removed.forEach(lineContent => {
+            diffMarkup += `<div class="text-accent-red bg-accent-red/10 px-2 py-0.5 rounded truncate line-through opacity-80 text-[11px] font-mono">- ${lineContent}</div>`;
+          });
+        }
+      }
+
+      entryContainerElement.innerHTML = `
+        <div class="flex items-center justify-between text-[11px] text-slate-400 pb-1 border-b border-slate-700/40">
+          <span class="font-bold text-slate-300 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[13px] text-primary">schedule</span>
+            ${formattedTimestamp}
+          </span>
+        </div>
+        <div class="space-y-1 pt-0.5">
+          ${diffMarkup}
+        </div>
+      `;
+      notesHistoryList.appendChild(entryContainerElement);
+    });
+  }
+
+  function openNotesModal() {
+    const { month, year } = getSelectedMonthAndYear();
+    const monthName = MONTH_NAMES[month - 1] || 'Mês';
+
+    if (notesMonthBadge) {
+      notesMonthBadge.textContent = `${monthName} / ${year}`;
+    }
+
+    notesTextarea.value = notebookService.getNotes(year, month);
+    const history = notebookService.getHistory(year, month);
+    renderHistoryList(history);
 
     notesModal.classList.remove('hidden');
   }
@@ -126,7 +185,11 @@ export function initBudgetNotebookManager({
   notesOverlay.addEventListener('click', closeNotesModal);
 
   saveNotesBtn.addEventListener('click', () => {
-    notebookService.saveNotes(notesTextarea.value);
+    const { month, year } = getSelectedMonthAndYear();
+    notebookService.saveNotes(notesTextarea.value, year, month);
+
+    const history = notebookService.getHistory(year, month);
+    renderHistoryList(history);
 
     const originalButtonMarkup = saveNotesBtn.innerHTML;
     saveNotesBtn.innerHTML = 'Salvo!';

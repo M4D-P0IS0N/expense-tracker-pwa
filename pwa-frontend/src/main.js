@@ -107,9 +107,9 @@ const notesOverlay = document.getElementById('notes-overlay');
 const closeNotesBtn = document.getElementById('close-notes-btn');
 const saveNotesBtn = document.getElementById('save-notes-btn');
 const notesTextarea = document.getElementById('notes-textarea');
-const notesMetaContainer = document.getElementById('notes-meta-container');
-const notesDate = document.getElementById('notes-date');
-const notesDiffBox = document.getElementById('notes-diff-box');
+const notesMonthBadge = document.getElementById('notes-month-badge');
+const notesHistoryList = document.getElementById('notes-history-list');
+const notesHistoryCount = document.getElementById('notes-history-count');
 
 // Export Elements
 const exportCsvBtn = document.getElementById('export-csv-btn');
@@ -297,9 +297,11 @@ initBudgetNotebookManager({
     closeNotesBtn,
     saveNotesBtn,
     notesTextarea,
-    notesMetaContainer,
-    notesDate,
-    notesDiffBox,
+    filterMonthEl,
+    filterYearEl,
+    notesMonthBadge,
+    notesHistoryList,
+    notesHistoryCount,
   },
 });
 
