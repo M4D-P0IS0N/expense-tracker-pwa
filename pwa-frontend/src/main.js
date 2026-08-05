@@ -115,8 +115,11 @@ const notesHistoryCount = document.getElementById('notes-history-count');
 // Export Elements
 const exportCsvBtn = document.getElementById('export-csv-btn');
 const exportPdfBtn = document.getElementById('export-pdf-btn');
+const exportJsonBtn = document.getElementById('export-json-btn');
+const exportFullCsvBtn = document.getElementById('export-full-csv-btn');
+const importBackupBtn = document.getElementById('import-backup-btn');
+const importFileInput = document.getElementById('import-backup-file-input');
 
-// RPG Elements
 const avatarControl = document.getElementById('avatar-control');
 const avatarImg = document.getElementById('avatar-img');
 const avatarLevelBadge = document.getElementById('avatar-level-badge');
