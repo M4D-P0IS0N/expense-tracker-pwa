@@ -16,12 +16,15 @@ export function initExportManager(options) {
         TransactionService,
         supabase,
         showNotification,
-        reloadData
+        reloadData,
+        getIsSplitByTwoEnabled,
+        isSplitByTwoEnabled
     } = options;
 
     if (exportRetrospectiveBtn) {
         exportRetrospectiveBtn.addEventListener("click", () => {
-            exportRetrospectivePdfReport({ TransactionService, getTransactions, showNotification });
+            const isSplitByTwo = typeof getIsSplitByTwoEnabled === "function" ? getIsSplitByTwoEnabled() : Boolean(isSplitByTwoEnabled);
+            exportRetrospectivePdfReport({ TransactionService, getTransactions, showNotification, isSplitByTwoEnabled: isSplitByTwo });
         });
     }
 

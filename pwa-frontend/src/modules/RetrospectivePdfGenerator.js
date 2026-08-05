@@ -1,5 +1,8 @@
 // --- Retrospective PDF Generator Module ---
-// Generates a year-to-date comparative analysis PDF report from January up to the current month.
+// Generates a year-to-date comparative analysis PDF report from January up to the current month,
+// taking into account whether split-by-two (dividir por 2) was active in each respective month.
+
+import { getEffectiveTransactionAmount } from "../utils/splitTransactionAmount.js";
 
 function formatCurrency(val) {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val || 0);
@@ -36,7 +39,6 @@ function renderMonthlyBarChart(monthlyStats) {
         if (s.expense > maxVal) maxVal = s.expense;
     });
     if (maxVal <= 0) maxVal = 1000;
-    // Add 10% headroom
     maxVal = maxVal * 1.1;
 
     // Gridlines
@@ -64,7 +66,6 @@ function renderMonthlyBarChart(monthlyStats) {
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
 
-    // Income legend dot
     ctx.fillStyle = "#10b981";
     ctx.beginPath();
     ctx.arc(paddingLeft + 10, 15, 5, 0, 2 * Math.PI);
@@ -73,7 +74,6 @@ function renderMonthlyBarChart(monthlyStats) {
     ctx.font = "11px Segoe UI, system-ui, sans-serif";
     ctx.fillText("Receitas", paddingLeft + 20, 15);
 
-    // Expense legend dot
     ctx.fillStyle = "#ef4444";
     ctx.beginPath();
     ctx.arc(paddingLeft + 90, 15, 5, 0, 2 * Math.PI);
@@ -95,19 +95,16 @@ function renderMonthlyBarChart(monthlyStats) {
         const incomeHeight = (stat.income / maxVal) * plotHeight;
         const expenseHeight = (stat.expense / maxVal) * plotHeight;
 
-        // Income Bar (Green)
         if (incomeHeight > 0) {
             ctx.fillStyle = "#10b981";
             ctx.fillRect(incomeBarX, paddingTop + plotHeight - incomeHeight, barWidth, incomeHeight);
         }
 
-        // Expense Bar (Red)
         if (expenseHeight > 0) {
             ctx.fillStyle = "#ef4444";
             ctx.fillRect(expenseBarX, paddingTop + plotHeight - expenseHeight, barWidth, expenseHeight);
         }
 
-        // Month Label
         ctx.fillStyle = "#444444";
         ctx.font = "11px Segoe UI, system-ui, sans-serif";
         ctx.textAlign = "center";
@@ -188,7 +185,7 @@ function renderDoughnutChart(categoryData) {
     return canvas.toDataURL("image/png");
 }
 
-export async function exportRetrospectivePdfReport({ TransactionService, getTransactions, showNotification }) {
+export async function exportRetrospectivePdfReport({ TransactionService, getTransactions, showNotification, isSplitByTwoEnabled = false }) {
     try {
         if (showNotification) showNotification("Gerando Retrospectiva Anual...", "info");
 
@@ -251,7 +248,7 @@ export async function exportRetrospectivePdfReport({ TransactionService, getTran
         const expenseItems = [];
 
         yearTransactions.forEach(t => {
-            const amount = Number(t.amount) || 0;
+            const amount = getEffectiveTransactionAmount(t, isSplitByTwoEnabled);
             const d = new Date(t.date);
             d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
             const mIdx = d.getMonth();
@@ -293,8 +290,8 @@ export async function exportRetrospectivePdfReport({ TransactionService, getTran
             if (s.expense > highestExpenseMonth.expense) highestExpenseMonth = s;
         });
 
-        // Top 5 expenses
-        expenseItems.sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0));
+        // Top 5 expenses (using effective amount)
+        expenseItems.sort((a, b) => getEffectiveTransactionAmount(b, isSplitByTwoEnabled) - getEffectiveTransactionAmount(a, isSplitByTwoEnabled));
         const topExpenses = expenseItems.slice(0, 5);
 
         // Generate Charts
@@ -319,11 +316,12 @@ export async function exportRetrospectivePdfReport({ TransactionService, getTran
             const d = new Date(t.date);
             d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
             const dateStr = d.toLocaleDateString("pt-BR");
+            const effectiveAmt = getEffectiveTransactionAmount(t, isSplitByTwoEnabled);
             return `<tr>
                 <td>${dateStr}</td>
                 <td style="font-weight:600;">${t.description || "Sem descrição"}</td>
                 <td>${t.category || "Outros"}</td>
-                <td style="color:#dc2626; font-weight:700;">${formatCurrency(t.amount)}</td>
+                <td style="color:#dc2626; font-weight:700;">${formatCurrency(effectiveAmt)}</td>
             </tr>`;
         }).join("");
 
@@ -375,7 +373,7 @@ export async function exportRetrospectivePdfReport({ TransactionService, getTran
     <div class="container">
         <div class="header">
             <div class="header-title">
-                <h1> Retrospectiva Financeira ${currentYear}</h1>
+                <h1>📊 Retrospectiva Financeira ${currentYear}</h1>
                 <p>Análise acumulada: Janeiro a ${endMonthName} de ${currentYear}</p>
             </div>
             <button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>

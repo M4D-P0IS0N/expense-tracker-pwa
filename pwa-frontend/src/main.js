@@ -323,6 +323,7 @@ initExportManager({
   TransactionService,
   supabase,
   showNotification,
+  getIsSplitByTwoEnabled: () => isSplitByTwoEnabled,
   reloadData: loadData
 });
 
