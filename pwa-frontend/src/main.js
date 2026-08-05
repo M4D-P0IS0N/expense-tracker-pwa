@@ -116,6 +116,7 @@ const notesHistoryCount = document.getElementById('notes-history-count');
 const exportCsvBtn = document.getElementById('export-csv-btn');
 const exportPdfBtn = document.getElementById('export-pdf-btn');
 const exportJsonBtn = document.getElementById('export-json-btn');
+const exportRetrospectiveBtn = document.getElementById('export-retrospective-btn');
 const exportFullCsvBtn = document.getElementById('export-full-csv-btn');
 const importBackupBtn = document.getElementById('import-backup-btn');
 const importFileInput = document.getElementById('import-backup-file-input');
@@ -314,6 +315,7 @@ initExportManager({
   exportPdfBtn,
   exportCsvBtn,
   exportJsonBtn,
+  exportRetrospectiveBtn,
   exportFullCsvBtn,
   importBackupBtn,
   importFileInput,

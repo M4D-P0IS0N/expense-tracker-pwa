@@ -1,11 +1,14 @@
 // --- Export & Backup Manager ---
-// Handles CSV, PDF, JSON Export, and Full Backup Restoration.
+// Handles CSV, PDF, JSON Export, Retrospective Report, and Full Backup Restoration.
+
+import { exportRetrospectivePdfReport } from "./RetrospectivePdfGenerator.js";
 
 export function initExportManager(options) {
     const {
         exportPdfBtn,
         exportCsvBtn,
         exportJsonBtn,
+        exportRetrospectiveBtn,
         exportFullCsvBtn,
         importBackupBtn,
         importFileInput,
@@ -15,6 +18,12 @@ export function initExportManager(options) {
         showNotification,
         reloadData
     } = options;
+
+    if (exportRetrospectiveBtn) {
+        exportRetrospectiveBtn.addEventListener("click", () => {
+            exportRetrospectivePdfReport({ TransactionService, getTransactions, showNotification });
+        });
+    }
 
     if (exportPdfBtn) {
         exportPdfBtn.addEventListener("click", () => {
