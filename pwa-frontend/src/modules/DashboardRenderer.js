@@ -238,27 +238,209 @@ function renderForecastSection({ dashForecast, dashDailyExpense, totalExpense, i
   }
 }
 
-function renderInsights({ dashInsights, totalExpense, income }) {
-  let insightsText = '';
+const monthNamesList = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+];
 
+async function renderInsights({
+  dashInsights,
+  transactions,
+  totalExpense,
+  income,
+  selectedMonth,
+  selectedYear,
+  isSplitByTwoEnabled,
+  transactionService,
+}) {
+  if (!dashInsights) return;
+
+  // 1. Visão geral do comportamento financeiro
+  let generalInsight = "";
   if (income === 0 && totalExpense === 0) {
-    insightsText = 'Nenhuma movimentação neste mês. Que tal registrar ou planejar suas despesas?';
+    generalInsight = "Nenhuma movimentação neste mês. Que tal registrar ou planejar suas despesas?";
   } else if (income === 0) {
-    insightsText = 'Atenção: Você tem despesas registradas, mas nenhuma receita neste mês. Acompanhe de perto as suas reservas financeiras.';
+    generalInsight = "Atenção: Você tem despesas registradas, mas nenhuma receita neste mês. Acompanhe de perto as suas reservas financeiras.";
   } else {
     const spentPercent = (totalExpense / income) * 100;
     if (spentPercent < 50) {
-      insightsText = `Excelente! Você gastou apenas ${spentPercent.toFixed(1)}% da sua receita. Uma ótima janela para poupar, investir, ou focar em projetos de longo prazo.`;
+      generalInsight = `Excelente! Você gastou apenas ${spentPercent.toFixed(1)}% da sua receita. Uma ótima janela para poupar ou investir.`;
     } else if (spentPercent < 80) {
-      insightsText = `Tudo caminhando. O grau de consumo está em ${spentPercent.toFixed(1)}%. Mantenha esse ritmo seguro até a virada do mês.`;
+      generalInsight = `Tudo caminhando. O grau de consumo está em ${spentPercent.toFixed(1)}%. Mantenha esse ritmo seguro até a virada do mês.`;
     } else if (spentPercent <= 100) {
-      insightsText = `⚠️ Risco Amarelo. Você já consumiu ${spentPercent.toFixed(1)}% do orçamento. Trave saídas desnecessárias para não fechar no déficit.`;
+      generalInsight = `⚠️ Risco Amarelo. Você já consumiu ${spentPercent.toFixed(1)}% do orçamento. Trave saídas desnecessárias para não fechar no déficit.`;
     } else {
-      insightsText = `🚨 Cuidado! O volume gasto excedeu sua receita em ${Math.abs(100 - spentPercent).toFixed(1)}%. Repense as parcelas e os passivos de lazer rapidamente.`;
+      generalInsight = `🚨 Cuidado! O volume gasto excedeu sua receita em ${Math.abs(100 - spentPercent).toFixed(1)}%. Repense passivos e despesas não essenciais.`;
     }
   }
 
-  dashInsights.textContent = insightsText;
+  // Buscar transações do mês anterior
+  const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
+  const prevYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
+  const prevMonthName = monthNamesList[prevMonth - 1];
+
+  let prevTransactions = [];
+  try {
+    if (transactionService && typeof transactionService.getTransactions === "function") {
+      prevTransactions = await transactionService.getTransactions(prevYear, prevMonth);
+    }
+  } catch (err) {
+    console.error("Error fetching previous month transactions for insights:", err);
+  }
+
+  // 2. Comparativo de Saldo / Sobra do Mês
+  const currentNet = income - totalExpense;
+
+  const prevExpenses = prevTransactions.filter((tx) => tx.type === "Expense");
+  const prevTotalExpense = prevExpenses.reduce((sum, tx) => sum + getEffectiveTransactionAmount(tx, isSplitByTwoEnabled), 0);
+  const prevIncome = prevTransactions
+    .filter((tx) => tx.type === "Income")
+    .reduce((sum, tx) => sum + getEffectiveTransactionAmount(tx, isSplitByTwoEnabled), 0);
+  const prevNet = prevIncome - prevTotalExpense;
+
+  let balanceInsightHtml = "";
+  if (!prevTransactions || prevTransactions.length === 0) {
+    balanceInsightHtml = `<div class="text-xs text-slate-400">Sem dados registrados em ${prevMonthName} para comparação de saldo.</div>`;
+  } else {
+    const diffNet = currentNet - prevNet;
+    const absDiff = Math.abs(diffNet);
+    const formattedDiff = formatAbsoluteCurrency(absDiff);
+    const formattedCurrentNet = formatAbsoluteCurrency(Math.abs(currentNet));
+    const formattedPrevNet = formatAbsoluteCurrency(Math.abs(prevNet));
+
+    let netMessage = "";
+    let netIcon = "";
+    let badgeClass = "";
+
+    if (currentNet >= 0) {
+      netMessage = `Sobrou <strong>${formattedCurrentNet}</strong> neste mês. `;
+    } else {
+      netMessage = `Você fechou com um déficit de <strong>${formattedCurrentNet}</strong> neste mês. `;
+    }
+
+    if (diffNet > 0) {
+      netMessage += `Seu resultado é <strong>${formattedDiff} melhor</strong> do que em ${prevMonthName} (quando ${prevNet >= 0 ? "sobrou" : "ficou no déficit de"} ${formattedPrevNet}).`;
+      netIcon = "trending_up";
+      badgeClass = "bg-emerald-500/10 text-emerald-300 border-emerald-500/30";
+    } else if (diffNet < 0) {
+      netMessage += `Seu resultado ficou <strong>${formattedDiff} menor</strong> em comparação a ${prevMonthName} (quando ${prevNet >= 0 ? "sobrou" : "ficou no déficit de"} ${formattedPrevNet}).`;
+      netIcon = "trending_down";
+      badgeClass = "bg-rose-500/10 text-rose-300 border-rose-500/30";
+    } else {
+      netMessage += `Seu saldo final é idêntico ao de ${prevMonthName}.`;
+      netIcon = "horizontal_rule";
+      badgeClass = "bg-blue-500/10 text-blue-300 border-blue-500/30";
+    }
+
+    balanceInsightHtml = `
+      <div class="flex items-start gap-2 p-2.5 rounded-xl border ${badgeClass} text-xs leading-relaxed">
+        <span class="material-symbols-outlined shrink-0 text-base mt-0.5">${netIcon}</span>
+        <div>${netMessage}</div>
+      </div>
+    `;
+  }
+
+  // 3. Variações percentuais por Categoria (% MoM)
+  const currentCatTotals = {};
+  transactions
+    .filter((tx) => tx.type === "Expense")
+    .forEach((tx) => {
+      const cat = tx.category || "Geral";
+      currentCatTotals[cat] = (currentCatTotals[cat] || 0) + getEffectiveTransactionAmount(tx, isSplitByTwoEnabled);
+    });
+
+  const prevCatTotals = {};
+  prevExpenses.forEach((tx) => {
+    const cat = tx.category || "Geral";
+    prevCatTotals[cat] = (prevCatTotals[cat] || 0) + getEffectiveTransactionAmount(tx, isSplitByTwoEnabled);
+  });
+
+  const allCategories = Array.from(new Set([...Object.keys(currentCatTotals), ...Object.keys(prevCatTotals)]));
+
+  const categoryVariations = [];
+  allCategories.forEach((cat) => {
+    const curr = currentCatTotals[cat] || 0;
+    const prev = prevCatTotals[cat] || 0;
+
+    if (prev === 0 && curr > 0) {
+      categoryVariations.push({
+        category: cat,
+        curr,
+        prev,
+        pctChange: 100,
+        label: "+100% (nova)",
+        type: "increased",
+      });
+    } else if (prev > 0 && curr === 0) {
+      categoryVariations.push({
+        category: cat,
+        curr,
+        prev,
+        pctChange: -100,
+        label: "-100%",
+        type: "decreased",
+      });
+    } else if (prev > 0 && curr > 0) {
+      const pct = ((curr - prev) / prev) * 100;
+      categoryVariations.push({
+        category: cat,
+        curr,
+        prev,
+        pctChange: pct,
+        label: `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`,
+        type: pct > 0 ? "increased" : pct < 0 ? "decreased" : "equal",
+      });
+    }
+  });
+
+  categoryVariations.sort((a, b) => Math.abs(b.pctChange) - Math.abs(a.pctChange));
+
+  let categoriesHtml = "";
+  if (!prevTransactions || prevTransactions.length === 0) {
+    categoriesHtml = "";
+  } else if (categoryVariations.length === 0) {
+    categoriesHtml = `<div class="text-xs text-slate-400">Nenhuma despesa registrada no período para comparar por categoria.</div>`;
+  } else {
+    const chipsHtml = categoryVariations
+      .slice(0, 6)
+      .map((item) => {
+        let colorClass = "bg-slate-800 text-slate-300 border-slate-700";
+        let arrow = "•";
+
+        if (item.type === "increased") {
+          colorClass = "bg-rose-500/10 text-rose-300 border-rose-500/30";
+          arrow = "↑";
+        } else if (item.type === "decreased") {
+          colorClass = "bg-emerald-500/10 text-emerald-300 border-emerald-500/30";
+          arrow = "↓";
+        }
+
+        return `
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-medium ${colorClass}">
+            <span>${item.category}</span>
+            <span class="font-bold">${arrow} ${item.label}</span>
+          </span>
+        `;
+      })
+      .join("");
+
+    categoriesHtml = `
+      <div class="space-y-1.5 pt-1">
+        <span class="text-[11px] font-bold text-slate-400 block">Variação por Categoria (em relação a ${prevMonthName}):</span>
+        <div class="flex flex-wrap gap-1.5">
+          ${chipsHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  dashInsights.innerHTML = `
+    <div class="space-y-3">
+      <p class="text-slate-200 text-sm leading-relaxed">${generalInsight}</p>
+      ${balanceInsightHtml}
+      ${categoriesHtml}
+    </div>
+  `;
 }
 
 export async function renderDashboardSection({
@@ -308,7 +490,7 @@ export async function renderDashboardSection({
     selectedYear,
   });
 
-  renderInsights({ dashInsights, totalExpense, income });
+  await renderInsights({ dashInsights, transactions, totalExpense, income, selectedMonth, selectedYear, isSplitByTwoEnabled, transactionService });
 
   dashNetworth.textContent = 'Calculando...';
   const netWorth = await transactionService.getNetWorth(selectedYear, selectedMonth, isSplitByTwoEnabled);
