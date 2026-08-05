@@ -1,3 +1,4 @@
+import { supabase } from './services/supabaseClient.js';
 import './style.css';
 import { TransactionService } from './services/TransactionService.js';
 import { BudgetService } from './services/BudgetService.js';
@@ -306,7 +307,19 @@ initBudgetNotebookManager({
 });
 
 // --- UI Logic: Exports (delegated to ExportManager module) ---
-initExportManager(exportPdfBtn, exportCsvBtn, () => transactions);
+initExportManager({
+  exportPdfBtn,
+  exportCsvBtn,
+  exportJsonBtn,
+  exportFullCsvBtn,
+  importBackupBtn,
+  importFileInput,
+  getTransactions: () => transactions,
+  TransactionService,
+  supabase,
+  showNotification,
+  reloadData: loadData
+});
 
 
 // --- Business Logic ---

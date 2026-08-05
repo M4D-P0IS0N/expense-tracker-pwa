@@ -456,8 +456,67 @@ export class TransactionService {
         }
         return true;
     }
+
+    /**
+     * Get all transactions for the current user across all time
+     */
+    static async getAllTransactions() {
+        const userId = await getCurrentUserId();
+        if (!userId) return [];
+
+        const { data, error } = await supabase
+            .from("transactions")
+            .select("*")
+            .eq("user_id", userId)
+            .order("date", { ascending: false });
+
+        if (error) {
+            console.error("Error fetching all transactions for backup:", error);
+            throw error;
+        }
+        return data || [];
+    }
+
+    /**
+     * Bulk upsert transactions into Supabase for the current user
+     * Breaks operations into chunks of 100 to prevent payload limits
+     */
+    static async bulkUpsertTransactions(rawTransactionsList) {
+        const userId = await getCurrentUserId();
+        if (!userId) throw new Error("Usuário não autenticado no Supabase");
+
+        if (!Array.isArray(rawTransactionsList) || rawTransactionsList.length === 0) {
+            return 0;
+        }
+
+        // Sanitize and attach current user_id
+        const sanitizedTransactions = rawTransactionsList.map(t => {
+            const copy = { ...t };
+            copy.user_id = userId;
+            if (!copy.description) copy.description = "Sem descrição";
+            if (typeof copy.amount !== "number") copy.amount = parseFloat(copy.amount) || 0;
+            return copy;
+        });
+
+        const chunkSize = 100;
+        let totalUpserted = 0;
+
+        for (let i = 0; i < sanitizedTransactions.length; i += chunkSize) {
+            const chunk = sanitizedTransactions.slice(i, i + chunkSize);
+            const { data, error } = await supabase
+                .from("transactions")
+                .upsert(chunk, { onConflict: "id" })
+                .select("id");
+
+            if (error) {
+                console.error("Error bulk upserting transaction chunk:", error);
+                throw error;
+            }
+
+            totalUpserted += (data ? data.length : chunk.length);
+        }
+
+        return totalUpserted;
+    }
+
 }
-
-
-
-

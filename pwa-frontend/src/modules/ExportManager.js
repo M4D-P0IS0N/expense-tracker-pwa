@@ -1,296 +1,436 @@
-// --- Export Manager ---
-// Handles CSV and PDF export of transactions.
-// Receives DOM button references and a getter function for the current transactions array.
+// --- Export & Backup Manager ---
+// Handles CSV, PDF, JSON Export, and Full Backup Restoration.
 
-export function initExportManager(exportPdfBtn, exportCsvBtn, getTransactions) {
+export function initExportManager(options) {
+    const {
+        exportPdfBtn,
+        exportCsvBtn,
+        exportJsonBtn,
+        exportFullCsvBtn,
+        importBackupBtn,
+        importFileInput,
+        getTransactions,
+        TransactionService,
+        supabase,
+        showNotification,
+        reloadData
+    } = options;
 
-    exportPdfBtn.addEventListener('click', () => {
-        const transactions = getTransactions();
-        if (!transactions || transactions.length === 0) return alert("Nenhuma transação carregada para exportar.");
-
-        const month = document.getElementById('filter-month').value;
-        const year = document.getElementById('filter-year').value;
-
-        let totalIncome = 0;
-        let totalExpense = 0;
-
-        // Aggregate expenses by category and by card
-        const expensesByCategory = {};
-        const expensesByCard = {};
-
-        const rowsHtml = transactions.map(t => {
-            if (t.type === 'Income') totalIncome += Number(t.amount);
-            if (t.type === 'Expense') {
-                totalExpense += Number(t.amount);
-
-                const categoryName = t.category || 'Sem Categoria';
-                expensesByCategory[categoryName] = (expensesByCategory[categoryName] || 0) + Number(t.amount);
-
-                const cardName = t.credit_card_name || 'Sem Cartão';
-                expensesByCard[cardName] = (expensesByCard[cardName] || 0) + Number(t.amount);
+    if (exportPdfBtn) {
+        exportPdfBtn.addEventListener("click", () => {
+            const transactions = getTransactions ? getTransactions() : [];
+            if (!transactions || transactions.length === 0) {
+                if (showNotification) showNotification("Nenhuma transação carregada para exportar.", "warning");
+                else alert("Nenhuma transação carregada para exportar.");
+                return;
             }
 
-            const isIncome = t.type === 'Income';
-            const color = isIncome ? 'green' : 'red';
+            const month = document.getElementById("filter-month") ? document.getElementById("filter-month").value : "01";
+            const year = document.getElementById("filter-year") ? document.getElementById("filter-year").value : new Date().getFullYear();
 
-            // Correct timezone issues for date rendering in the report
-            const dateObj = new Date(t.date);
-            dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
-            const dateStr = dateObj.toLocaleDateString('pt-BR');
+            let totalIncome = 0;
+            let totalExpense = 0;
 
-            let details = '';
-            if (t.total_installments > 1) details += `Parc: ${t.installment_number}/${t.total_installments} `;
-            if (t.credit_card_name) details += `Cartão: ${t.credit_card_name}`;
+            const expensesByCategory = {};
+            const expensesByCard = {};
 
-            const amountStr = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount);
+            const rowsHtml = transactions.map(t => {
+                if (t.type === "Income") totalIncome += Number(t.amount);
+                if (t.type === "Expense") {
+                    totalExpense += Number(t.amount);
 
-            return `<tr>
-      <td>${dateStr}</td>
-      <td style="color:${color}; font-weight:bold;">${isIncome ? 'Receita' : 'Despesa'}</td>
-      <td>${t.description || ''}</td>
-      <td>${t.category || ''}</td>
-      <td>${amountStr}</td>
-      <td>${details}</td>
-    </tr>`;
-        }).join('');
+                    const categoryName = t.category || "Sem Categoria";
+                    expensesByCategory[categoryName] = (expensesByCategory[categoryName] || 0) + Number(t.amount);
 
-        const balance = totalIncome - totalExpense;
-        const formatCur = (num) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num);
+                    const cardName = t.credit_card_name || "Sem Cartão";
+                    expensesByCard[cardName] = (expensesByCard[cardName] || 0) + Number(t.amount);
+                }
 
-        const hasExpenses = totalExpense > 0;
+                const isIncome = t.type === "Income";
+                const color = isIncome ? "green" : "red";
 
-        // --- Render doughnut charts as base64 images using native Canvas 2D ---
-        const chartColorPalette = [
-            '#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6',
-            '#8b5cf6', '#ec4899', '#14b8a6', '#ef4444', '#06b6d4',
-            '#84cc16', '#a855f7', '#f97316', '#22d3ee', '#e11d48',
-            '#059669', '#7c3aed', '#d946ef', '#0ea5e9', '#ca8a04'
-        ];
+                const dateObj = new Date(t.date);
+                dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
+                const dateStr = dateObj.toLocaleDateString("pt-BR");
 
-        function renderDoughnutToDataUrl(labels, values) {
-            const total = values.reduce((sum, v) => sum + v, 0);
-            if (total === 0 || labels.length === 0) return '';
+                let details = "";
+                if (t.total_installments > 1) details += "Parc: " + t.installment_number + "/" + t.total_installments + " ";
+                if (t.credit_card_name) details += "Cartão: " + t.credit_card_name;
 
-            const devicePixelRatio = window.devicePixelRatio || 1;
-            const canvasLogicalWidth = 380;
-            const outerRadius = 90;
-            const innerRadius = 55;
-            const chartCenterX = canvasLogicalWidth / 2;
-            const chartTopPadding = 16;
-            const chartCenterY = chartTopPadding + outerRadius;
+                const amountStr = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(t.amount);
 
-            // Legend layout — single column for clarity
-            const legendTopPadding = 20;
-            const legendStartY = chartCenterY + outerRadius + legendTopPadding;
-            const legendItemHeight = 20;
-            const legendRows = labels.length;
-            const legendHeight = legendRows * legendItemHeight;
+                return '<tr>' +
+          '<td>' + dateStr + '</td>' +
+          '<td style="color:' + color + '; font-weight:bold;">' + (isIncome ? "Receita" : "Despesa") + '</td>' +
+          '<td>' + (t.description || "") + '</td>' +
+          '<td>' + (t.category || "") + '</td>' +
+          '<td style="color:' + color + '; font-weight:bold;">' + amountStr + '</td>' +
+          '<td>' + details + '</td>' +
+        '</tr>';
+            }).join("");
 
-            const canvasLogicalHeight = legendStartY + legendHeight + 12;
+            const balance = totalIncome - totalExpense;
+            const hasExpenses = totalExpense > 0;
+            const formatCur = (val) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 
-            const canvas = document.createElement('canvas');
-            canvas.width = canvasLogicalWidth * devicePixelRatio;
-            canvas.height = canvasLogicalHeight * devicePixelRatio;
-            const ctx = canvas.getContext('2d');
-            ctx.scale(devicePixelRatio, devicePixelRatio);
+            function renderDoughnutToDataUrl(labels, values) {
+                const canvas = document.createElement("canvas");
+                const legendItemHeight = 20;
+                const legendHeaderPadding = 16;
+                const legendHeight = labels.length * legendItemHeight + legendHeaderPadding;
 
-            // Transparent background
-            ctx.clearRect(0, 0, canvasLogicalWidth, canvasLogicalHeight);
+                const chartDiameter = 180;
+                const canvasWidth = 400;
+                const canvasHeight = chartDiameter + legendHeight;
 
-            // Draw doughnut segments
-            let currentAngle = -Math.PI / 2;
-            values.forEach((value, segmentIndex) => {
-                const sliceAngle = (value / total) * 2 * Math.PI;
-                ctx.beginPath();
-                ctx.arc(chartCenterX, chartCenterY, outerRadius, currentAngle, currentAngle + sliceAngle);
-                ctx.arc(chartCenterX, chartCenterY, innerRadius, currentAngle + sliceAngle, currentAngle, true);
-                ctx.closePath();
-                ctx.fillStyle = chartColorPalette[segmentIndex % chartColorPalette.length];
-                ctx.fill();
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                currentAngle += sliceAngle;
-            });
+                canvas.width = canvasWidth;
+                canvas.height = canvasHeight;
+                const ctx = canvas.getContext("2d");
 
-            // Draw legend items (single column, left-aligned)
-            ctx.textBaseline = 'middle';
-            const legendLeftPadding = 24;
+                const chartCenterX = canvasWidth / 2;
+                const chartCenterY = chartDiameter / 2 + 10;
+                const outerRadius = chartDiameter / 2 - 10;
+                const innerRadius = outerRadius * 0.55;
 
-            labels.forEach((label, legendIndex) => {
-                const itemY = legendStartY + legendIndex * legendItemHeight;
-                const percentage = ((values[legendIndex] / total) * 100).toFixed(1);
-                const segmentColor = chartColorPalette[legendIndex % chartColorPalette.length];
+                const total = values.reduce((sum, val) => sum + val, 0);
 
-                // Colored circle
-                ctx.beginPath();
-                ctx.arc(legendLeftPadding + 6, itemY + 9, 6, 0, 2 * Math.PI);
-                ctx.fillStyle = segmentColor;
-                ctx.fill();
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-                const formattedValue = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(values[legendIndex]);
+                if (total <= 0) return canvas.toDataURL("image/png");
 
-                // Label text
-                ctx.fillStyle = '#333333';
-                ctx.font = '12px Segoe UI, system-ui, sans-serif';
-                ctx.fillText(`${label} (${percentage}%) — ${formattedValue}`, legendLeftPadding + 18, itemY + 9);
-            });
+                const chartColorPalette = [
+                    "#6366f1", "#ec4899", "#8b5cf6", "#10b981", "#f59e0b",
+                    "#3b82f6", "#ef4444", "#14b8a6", "#84cc16", "#a855f7"
+                ];
 
-            return canvas.toDataURL('image/png');
-        }
+                let currentAngle = -0.5 * Math.PI;
 
-        let categoryChartDataUrl = '';
-        let cardChartDataUrl = '';
+                values.forEach((val, segmentIndex) => {
+                    const sliceAngle = (val / total) * 2 * Math.PI;
+                    ctx.beginPath();
+                    ctx.arc(chartCenterX, chartCenterY, outerRadius, currentAngle, currentAngle + sliceAngle);
+                    ctx.arc(chartCenterX, chartCenterY, innerRadius, currentAngle + sliceAngle, currentAngle, true);
+                    ctx.closePath();
+                    ctx.fillStyle = chartColorPalette[segmentIndex % chartColorPalette.length];
+                    ctx.fill();
+                    ctx.strokeStyle = "#ffffff";
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    currentAngle += sliceAngle;
+                });
 
-        // Sort entries from highest to lowest value
-        function sortedEntriesDescending(dataObject) {
-            const sortedPairs = Object.entries(dataObject).sort((a, b) => b[1] - a[1]);
-            return { labels: sortedPairs.map(p => p[0]), values: sortedPairs.map(p => p[1]) };
-        }
+                ctx.textBaseline = "middle";
+                const legendLeftPadding = 24;
+                const legendStartY = chartDiameter + legendHeaderPadding;
 
-        if (hasExpenses) {
-            const sortedCategoryData = sortedEntriesDescending(expensesByCategory);
-            categoryChartDataUrl = renderDoughnutToDataUrl(
-                sortedCategoryData.labels,
-                sortedCategoryData.values
-            );
+                labels.forEach((label, legendIndex) => {
+                    const itemY = legendStartY + legendIndex * legendItemHeight;
+                    const percentage = ((values[legendIndex] / total) * 100).toFixed(1);
+                    const segmentColor = chartColorPalette[legendIndex % chartColorPalette.length];
 
-            // Remove "Sem Cartão" — only show actual credit cards
-            delete expensesByCard['Sem Cartão'];
+                    ctx.beginPath();
+                    ctx.arc(legendLeftPadding + 6, itemY + 9, 6, 0, 2 * Math.PI);
+                    ctx.fillStyle = segmentColor;
+                    ctx.fill();
 
-            if (Object.keys(expensesByCard).length > 0) {
-                const sortedCardData = sortedEntriesDescending(expensesByCard);
-                cardChartDataUrl = renderDoughnutToDataUrl(
-                    sortedCardData.labels,
-                    sortedCardData.values
+                    const formattedValue = formatCur(values[legendIndex]);
+                    ctx.fillStyle = "#333333";
+                    ctx.font = "12px Segoe UI, system-ui, sans-serif";
+                    ctx.fillText(label + " (" + percentage + "%) - " + formattedValue, legendLeftPadding + 18, itemY + 9);
+                });
+
+                return canvas.toDataURL("image/png");
+            }
+
+            let categoryChartDataUrl = "";
+            let cardChartDataUrl = "";
+
+            function sortedEntriesDescending(dataObject) {
+                const sortedPairs = Object.entries(dataObject).sort((a, b) => b[1] - a[1]);
+                return { labels: sortedPairs.map(p => p[0]), values: sortedPairs.map(p => p[1]) };
+            }
+
+            if (hasExpenses) {
+                const sortedCategoryData = sortedEntriesDescending(expensesByCategory);
+                categoryChartDataUrl = renderDoughnutToDataUrl(
+                    sortedCategoryData.labels,
+                    sortedCategoryData.values
                 );
+
+                delete expensesByCard["Sem Cartão"];
+
+                if (Object.keys(expensesByCard).length > 0) {
+                    const sortedCardData = sortedEntriesDescending(expensesByCard);
+                    cardChartDataUrl = renderDoughnutToDataUrl(
+                        sortedCardData.labels,
+                        sortedCardData.values
+                    );
+                }
+            }
+
+            const hasCardChartData = cardChartDataUrl !== "";
+
+            const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Relatório - App de Custos</title>' +
+      '<style>body { font-family: "Segoe UI", system-ui, sans-serif; padding: 20px; color: #1a1a2e; } .container { max-width: 850px; margin: 0 auto; padding: 24px; } .summary-cards { display: flex; gap: 16px; margin-bottom: 24px; } .card { border: 1px solid #e0e0e0; padding: 16px; border-radius: 8px; flex: 1; text-align: center; background: #fafafa; } .card h3 { margin: 0 0 8px 0; color: #666; font-size: 14px; } .card p { margin: 0; font-weight: 700; font-size: 22px; } .charts-section { display: flex; gap: 24px; margin: 28px 0; page-break-inside: avoid; } .chart-box { flex: 1; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; background: #fafafa; text-align: center; } .chart-box h3 { margin: 0 0 12px 0; font-size: 15px; font-weight: 600; color: #333; } .chart-box img { width: 100%; height: auto; display: block; margin: 0 auto; } table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; } th, td { border: 1px solid #e0e0e0; padding: 8px 10px; text-align: left; } th { background-color: #f5f5f5; font-weight: 600; color: #444; } tr:nth-child(even) { background-color: #fafafa; } @media print { .no-print { display: none; } body { padding: 0; } } </style></head><body onload="window.print()"><div class="container">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;"><h1 style="margin:0; font-size: 24px; color: #1a1a2e;">Relatório: ' + String(month).padStart(2, "0") + '/' + year + '</h1><button class="no-print" onclick="window.print()" style="padding:10px 20px; font-size:14px; cursor:pointer; border:1px solid #ccc; border-radius:6px; background:#f5f5f5;">🖨️ Imprimir / Salvar PDF</button></div>' +
+      '<div class="summary-cards"><div class="card"><h3>Receitas</h3><p style="color:#16a34a;">' + formatCur(totalIncome) + '</p></div><div class="card"><h3>Despesas</h3><p style="color:#dc2626;">' + formatCur(totalExpense) + '</p></div><div class="card"><h3>Balanço</h3><p style="color:' + (balance >= 0 ? "#16a34a" : "#dc2626") + ';">' + formatCur(balance) + '</p></div></div>' +
+      (hasExpenses ? ('<div class="charts-section"><div class="chart-box"><h3>Despesas por Categoria</h3><img src="' + categoryChartDataUrl + '" alt="Gráfico de despesas por categoria"></div>' + (hasCardChartData ? ('<div class="chart-box"><h3>Despesas por Cartão</h3><img src="' + cardChartDataUrl + '" alt="Gráfico de despesas por cartão"></div>') : "") + '</div>') : "") +
+      '<h2 style="font-size: 18px; color: #333; margin-top: 28px;">Transações</h2><table><thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Detalhes</th></tr></thead><tbody>' + rowsHtml + '</tbody></table><p style="margin-top:40px; font-size:11px; color:#aaa;"><i>Gerado automaticamente por App de Custos PWA</i></p></div></body></html>';
+
+            const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            window.open(url, "_blank");
+        });
+    }
+
+    if (exportCsvBtn) {
+        exportCsvBtn.addEventListener("click", () => {
+            const transactions = getTransactions ? getTransactions() : [];
+            if (!transactions || transactions.length === 0) {
+                if (showNotification) showNotification("Nenhuma transação carregada para exportar.", "warning");
+                else alert("Nenhuma transação carregada para exportar.");
+                return;
+            }
+
+            const headers = ["Data", "Tipo", "Categoria", "Descrição", "Valor (R$)", "Cartão", "Parcelas"];
+            const rows = transactions.map(t => [
+                t.date,
+                t.type,
+                t.category || "",
+                t.description || "",
+                t.amount,
+                t.credit_card_name || "",
+                t.total_installments > 1 ? (t.installment_number + "/" + t.total_installments) : "1/1"
+            ]);
+
+            const csvContent = [
+                headers.join(","),
+                ...rows.map(r => r.map(field => '"' + String(field).replace(/"/g, '""') + '"').join(","))
+            ].join("\n");
+
+            const blob = new Blob(["﻿" + csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "extrato_app_custos_" + (new Date()).toISOString().slice(0, 10) + ".csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    if (exportJsonBtn) {
+        exportJsonBtn.addEventListener("click", async () => {
+            await exportFullJsonBackup({ TransactionService, supabase, showNotification });
+        });
+    }
+
+    if (exportFullCsvBtn) {
+        exportFullCsvBtn.addEventListener("click", async () => {
+            await exportFullCsv({ TransactionService, showNotification });
+        });
+    }
+
+    if (importBackupBtn && importFileInput) {
+        importBackupBtn.addEventListener("click", () => {
+            importFileInput.value = "";
+            importFileInput.click();
+        });
+
+        importFileInput.addEventListener("change", async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const confirmed = confirm("Deseja restaurar o backup? Os dados importados serão vinculados à sua conta atual.");
+                if (confirmed) {
+                    await importBackup(file, { TransactionService, supabase, showNotification, reloadData });
+                }
+            }
+        });
+    }
+}
+
+export async function exportFullJsonBackup({ TransactionService, supabase, showNotification }) {
+    try {
+        if (!TransactionService) throw new Error("TransactionService não configurado.");
+        const transactions = await TransactionService.getAllTransactions();
+
+        let userProfile = null;
+        let savingsGoals = [];
+        let achievements = [];
+
+        if (supabase) {
+            const sessionRes = await supabase.auth.getSession();
+            const userId = sessionRes?.data?.session?.user?.id;
+
+            if (userId) {
+                const { data: prof } = await supabase.from("user_profiles").select("*").eq("id", userId).single();
+                if (prof) userProfile = prof;
+
+                const { data: sg } = await supabase.from("savings_goals").select("*").eq("user_id", userId);
+                if (sg) savingsGoals = sg;
+
+                const { data: ach } = await supabase.from("achievements").select("*").eq("user_id", userId);
+                if (ach) achievements = ach;
             }
         }
 
-        const hasCardChartData = cardChartDataUrl !== '';
-
-        const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>Relatório - App de Custos</title>
-      <style>
-        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; padding: 20px; background: #fff; color: #1a1a2e; }
-        .container { max-width: 850px; margin: 0 auto; background: white; padding: 24px; }
-        .summary-cards { display: flex; gap: 16px; margin-bottom: 24px; }
-        .card { border: 1px solid #e0e0e0; padding: 16px; border-radius: 8px; flex: 1; text-align: center; background: #fafafa; }
-        .card h3 { margin: 0 0 8px 0; font-weight: 500; color: #666; font-size: 14px; }
-        .card p { margin: 0; font-weight: 700; font-size: 22px; }
-        .charts-section { display: flex; gap: 24px; margin: 28px 0; page-break-inside: avoid; }
-        .chart-box { flex: 1; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; background: #fafafa; text-align: center; }
-        .chart-box h3 { margin: 0 0 12px 0; font-size: 15px; font-weight: 600; color: #333; }
-        .chart-box img { width: 100%; height: auto; display: block; margin: 0 auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
-        th, td { border: 1px solid #e0e0e0; padding: 8px 10px; text-align: left; }
-        th { background-color: #f5f5f5; font-weight: 600; color: #444; }
-        tr:nth-child(even) { background-color: #fafafa; }
-        @media print {
-          .no-print { display: none; }
-          body { padding: 0; }
-          .charts-section { page-break-inside: avoid; }
+        const localStorageData = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (
+                key.startsWith("@appdecustos") ||
+                key.includes("onboarding") ||
+                key.includes("patrimonio") ||
+                key.includes("baseNetWorth") ||
+                key.includes("userDisplayName") ||
+                key.includes("splitByTwoEnabled")
+            )) {
+                localStorageData[key] = localStorage.getItem(key);
+            }
         }
-      </style>
-    </head>
-    <body onload="window.print()">
-      <div class="container">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-          <h1 style="margin:0; font-size: 24px; color: #1a1a2e;">Relatório: ${month.padStart(2, '0')}/${year}</h1>
-          <button class="no-print" onclick="window.print()" style="padding:10px 20px; font-size:14px; cursor:pointer; border:1px solid #ccc; border-radius:6px; background:#f5f5f5;">🖨️ Imprimir / Salvar PDF</button>
-        </div>
 
-        <div class="summary-cards">
-          <div class="card">
-            <h3>Receitas</h3>
-            <p style="color:#16a34a;">${formatCur(totalIncome)}</p>
-          </div>
-          <div class="card">
-            <h3>Despesas</h3>
-            <p style="color:#dc2626;">${formatCur(totalExpense)}</p>
-          </div>
-          <div class="card">
-            <h3>Balanço</h3>
-            <p style="color:${balance >= 0 ? '#16a34a' : '#dc2626'};">${formatCur(balance)}</p>
-          </div>
-        </div>
+        const backupPayload = {
+            version: "1.0",
+            exportedAt: new Date().toISOString(),
+            appName: "App de Custos PWA",
+            data: {
+                transactions,
+                userProfile,
+                savingsGoals,
+                achievements,
+                localStorageData
+            }
+        };
 
-        ${hasExpenses ? `
-        <div class="charts-section">
-          <div class="chart-box">
-            <h3>Despesas por Categoria</h3>
-            <img src="${categoryChartDataUrl}" alt="Gráfico de despesas por categoria">
-          </div>
-          ${hasCardChartData ? `
-          <div class="chart-box">
-            <h3>Despesas por Cartão</h3>
-            <img src="${cardChartDataUrl}" alt="Gráfico de despesas por cartão">
-          </div>
-          ` : ''}
-        </div>
-        ` : ''}
-
-        <h2 style="font-size: 18px; color: #333; margin-top: 28px;">Transações</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Tipo</th>
-              <th>Descrição</th>
-              <th>Categoria</th>
-              <th>Valor</th>
-              <th>Detalhes</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-
-        <p style="margin-top:40px; font-size:11px; color:#aaa;"><i>Gerado automaticamente por App de Custos PWA</i></p>
-      </div>
-    </body>
-    </html>
-  `;
-
-        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const blob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-    });
+        const a = document.createElement("a");
+        const dateStr = new Date().toISOString().split("T")[0];
+        a.href = url;
+        a.download = "backup_app_custos_" + dateStr + ".json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
-    exportCsvBtn.addEventListener('click', () => {
-        const transactions = getTransactions();
-        if (!transactions || transactions.length === 0) return alert("Nenhuma transação carregada para exportar.");
+        if (showNotification) showNotification("Backup completo exportado com sucesso (JSON)!", "success");
+    } catch (err) {
+        console.error("Erro ao exportar backup JSON:", err);
+        if (showNotification) showNotification("Erro ao exportar backup JSON.", "error");
+    }
+}
 
-        // Headers
-        const headers = ['Data', 'Tipo', 'Categoria', 'Descrição', 'Valor (R$)', 'Cartão', 'Parcelas'];
+export async function exportFullCsv({ TransactionService, showNotification }) {
+    try {
+        if (!TransactionService) throw new Error("TransactionService não configurado.");
+        const transactions = await TransactionService.getAllTransactions();
+        if (!transactions || transactions.length === 0) {
+            if (showNotification) showNotification("Nenhuma transação encontrada para exportar.", "warning");
+            return;
+        }
+
+        const headers = ["ID", "Data", "Tipo", "Categoria", "Descrição", "Valor (R$)", "Cartão", "Parcela", "Total Parcelas", "Recorrente", "DivididoPor2", "Terceiro", "GrupoID"];
         const rows = transactions.map(t => [
-            t.date,
-            t.type,
-            t.category || '',
-            t.description || '',
-            t.amount,
-            t.credit_card_name || '',
-            t.total_installments > 1 ? `${t.installment_number}/${t.total_installments}` : '1/1'
+            t.id || "",
+            t.date || "",
+            t.type || "",
+            t.category || "",
+            t.description || "",
+            t.amount || 0,
+            t.credit_card_name || "",
+            t.installment_number || 1,
+            t.total_installments || 1,
+            t.is_recurring ? "Sim" : "Não",
+            t.is_split_by_2 ? "Sim" : "Não",
+            t.is_third_party ? "Sim" : "Não",
+            t.installment_group_id || ""
         ]);
 
         const csvContent = [
-            headers.join(','),
-            ...rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
-        ].join('\n');
+            headers.join(","),
+            ...rows.map(r => r.map(field => '"' + String(field).replace(/"/g, '""') + '"').join(","))
+        ].join("\n");
 
-        // Prefix UTF-8 BOM so Excel opens with correct encoding
-        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob(["﻿" + csvContent], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
+        const dateStr = new Date().toISOString().split("T")[0];
         link.setAttribute("href", url);
-        link.setAttribute("download", `extrato_app_custos_${(new Date()).toISOString().slice(0, 10)}.csv`);
+        link.setAttribute("download", "extrato_completo_app_custos_" + dateStr + ".csv");
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    });
+        URL.revokeObjectURL(url);
+
+        if (showNotification) showNotification("CSV completo de todo o histórico exportado!", "success");
+    } catch (err) {
+        console.error("Erro ao exportar CSV completo:", err);
+        if (showNotification) showNotification("Erro ao exportar CSV completo.", "error");
+    }
+}
+
+export async function importBackup(file, { TransactionService, supabase, showNotification, reloadData }) {
+    if (!file) return;
+
+    try {
+        const text = await file.text();
+        let backupObj;
+        try {
+            backupObj = JSON.parse(text);
+        } catch (e) {
+            throw new Error("Arquivo inválido. Deve ser um arquivo JSON formatado.");
+        }
+
+        if (!backupObj || !backupObj.data) {
+            throw new Error("Formato de backup não reconhecido.");
+        }
+
+        const { transactions, userProfile, savingsGoals, achievements, localStorageData } = backupObj.data;
+
+        let userId = null;
+        if (supabase) {
+            const sessionRes = await supabase.auth.getSession();
+            userId = sessionRes?.data?.session?.user?.id;
+        }
+
+        let restoredTxCount = 0;
+
+        if (Array.isArray(transactions) && transactions.length > 0 && TransactionService) {
+            restoredTxCount = await TransactionService.bulkUpsertTransactions(transactions);
+        }
+
+        if (userProfile && userId && supabase) {
+            const profileToUpsert = { ...userProfile, id: userId, last_sync: new Date().toISOString() };
+            await supabase.from("user_profiles").upsert(profileToUpsert, { onConflict: "id" });
+        }
+
+        if (Array.isArray(savingsGoals) && savingsGoals.length > 0 && userId && supabase) {
+            const goalsToUpsert = savingsGoals.map(g => ({ ...g, user_id: userId }));
+            await supabase.from("savings_goals").upsert(goalsToUpsert, { onConflict: "id" });
+        }
+
+        if (Array.isArray(achievements) && achievements.length > 0 && userId && supabase) {
+            const achToUpsert = achievements.map(a => ({ ...a, user_id: userId }));
+            await supabase.from("achievements").upsert(achToUpsert, { onConflict: "id" });
+        }
+
+        if (localStorageData && typeof localStorageData === "object") {
+            Object.keys(localStorageData).forEach(key => {
+                if (localStorageData[key] !== null && localStorageData[key] !== undefined) {
+                    localStorage.setItem(key, localStorageData[key]);
+                }
+            });
+        }
+
+        if (showNotification) showNotification("Backup restaurado com sucesso! " + restoredTxCount + " transações importadas.", "success");
+
+        if (reloadData && typeof reloadData === "function") {
+            await reloadData();
+        }
+    } catch (err) {
+        console.error("Erro ao importar backup:", err);
+        if (showNotification) showNotification("Erro na restauração: " + err.message, "error");
+    }
 }
