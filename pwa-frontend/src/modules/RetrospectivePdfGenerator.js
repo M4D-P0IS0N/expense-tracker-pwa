@@ -2,7 +2,7 @@
 // Generates a year-to-date comparative analysis PDF report from January up to the current month,
 // taking into account whether split-by-two (dividir por 2) was active in each respective month.
 
-import { getEffectiveTransactionAmount } from "../utils/splitTransactionAmount.js";
+import { getEffectiveTransactionAmount, shouldApplySplitByTwo, shouldIgnoreThirdParty } from "../utils/splitTransactionAmount.js";
 
 function formatCurrency(val) {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val || 0);
@@ -317,11 +317,31 @@ export async function exportRetrospectivePdfReport({ TransactionService, getTran
             d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
             const dateStr = d.toLocaleDateString("pt-BR");
             const effectiveAmt = getEffectiveTransactionAmount(t, isSplitByTwoEnabled);
+            const isHalved = shouldApplySplitByTwo(t, isSplitByTwoEnabled);
+            const isIgnoredThirdParty = shouldIgnoreThirdParty(t, isSplitByTwoEnabled);
+
+            const detailsList = [];
+            if (t.total_installments > 1) detailsList.push("Parc: " + t.installment_number + "/" + t.total_installments);
+            if (t.credit_card_name) detailsList.push("Cartão: " + t.credit_card_name);
+
+            if (isHalved) {
+                const origStr = formatCurrency(t.amount);
+                detailsList.push(`½ Div. por 2 (Orig: ${origStr})`);
+            }
+
+            if (isIgnoredThirdParty) {
+                const origStr = formatCurrency(t.amount);
+                detailsList.push(`👤 Terceiro desconsiderado (Orig: ${origStr})`);
+            } else if (t.is_third_party) {
+                detailsList.push("👤 Terceiros");
+            }
+
             return `<tr>
                 <td>${dateStr}</td>
                 <td style="font-weight:600;">${t.description || "Sem descrição"}</td>
                 <td>${t.category || "Outros"}</td>
                 <td style="color:#dc2626; font-weight:700;">${formatCurrency(effectiveAmt)}</td>
+                <td>${detailsList.join(" | ") || "-"}</td>
             </tr>`;
         }).join("");
 
@@ -439,6 +459,7 @@ export async function exportRetrospectivePdfReport({ TransactionService, getTran
                     <th>Descrição</th>
                     <th>Categoria</th>
                     <th>Valor</th>
+                    <th>Detalhes</th>
                 </tr>
             </thead>
             <tbody>

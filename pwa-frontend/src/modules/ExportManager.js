@@ -2,6 +2,7 @@
 // Handles CSV, PDF, JSON Export, Retrospective Report, and Full Backup Restoration.
 
 import { exportRetrospectivePdfReport } from "./RetrospectivePdfGenerator.js";
+import { getEffectiveTransactionAmount, shouldApplySplitByTwo, shouldIgnoreThirdParty } from "../utils/splitTransactionAmount.js";
 
 export function initExportManager(options) {
     const {
@@ -49,6 +50,8 @@ export function initExportManager(options) {
                 return;
             }
 
+            const isSplitByTwo = typeof getIsSplitByTwoEnabled === "function" ? getIsSplitByTwoEnabled() : Boolean(isSplitByTwoEnabled);
+
             const month = document.getElementById("filter-month") ? document.getElementById("filter-month").value : "01";
             const year = document.getElementById("filter-year") ? document.getElementById("filter-year").value : new Date().getFullYear();
 
@@ -59,37 +62,55 @@ export function initExportManager(options) {
             const expensesByCard = {};
 
             const rowsHtml = transactions.map(t => {
-                if (t.type === "Income") totalIncome += Number(t.amount);
-                if (t.type === "Expense") {
-                    totalExpense += Number(t.amount);
+                const effectiveAmount = getEffectiveTransactionAmount(t, isSplitByTwo);
+                const isHalved = shouldApplySplitByTwo(t, isSplitByTwo);
+                const isIgnoredThirdParty = shouldIgnoreThirdParty(t, isSplitByTwo);
+
+                if (t.type === "Income") {
+                    totalIncome += effectiveAmount;
+                } else if (t.type === "Expense") {
+                    totalExpense += effectiveAmount;
 
                     const categoryName = t.category || "Sem Categoria";
-                    expensesByCategory[categoryName] = (expensesByCategory[categoryName] || 0) + Number(t.amount);
+                    expensesByCategory[categoryName] = (expensesByCategory[categoryName] || 0) + effectiveAmount;
 
                     const cardName = t.credit_card_name || "Sem Cartão";
-                    expensesByCard[cardName] = (expensesByCard[cardName] || 0) + Number(t.amount);
+                    expensesByCard[cardName] = (expensesByCard[cardName] || 0) + effectiveAmount;
                 }
 
                 const isIncome = t.type === "Income";
-                const color = isIncome ? "green" : "red";
+                const color = isIncome ? "green" : (isIgnoredThirdParty ? "#64748b" : "red");
 
                 const dateObj = new Date(t.date);
                 dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
                 const dateStr = dateObj.toLocaleDateString("pt-BR");
 
-                let details = "";
-                if (t.total_installments > 1) details += "Parc: " + t.installment_number + "/" + t.total_installments + " ";
-                if (t.credit_card_name) details += "Cartão: " + t.credit_card_name;
+                const detailsList = [];
+                if (t.total_installments > 1) detailsList.push("Parc: " + t.installment_number + "/" + t.total_installments);
+                if (t.credit_card_name) detailsList.push("Cartão: " + t.credit_card_name);
+                
+                if (isHalved) {
+                    const origStr = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(t.amount);
+                    detailsList.push(`½ Div. por 2 (Orig: ${origStr})`);
+                }
 
-                const amountStr = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(t.amount);
+                if (isIgnoredThirdParty) {
+                    const origStr = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(t.amount);
+                    detailsList.push(`👤 Terceiro desconsiderado (Orig: ${origStr})`);
+                } else if (t.is_third_party) {
+                    detailsList.push("👤 Terceiros");
+                }
 
-                return '<tr>' +
+                const amountStr = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(effectiveAmount);
+                const textStyle = isIgnoredThirdParty ? "text-decoration: line-through; color: #64748b;" : "";
+
+                return '<tr style="' + (isIgnoredThirdParty ? 'opacity: 0.65; background-color: #f8fafc;' : '') + '">' +
           '<td>' + dateStr + '</td>' +
-          '<td style="color:' + color + '; font-weight:bold;">' + (isIncome ? "Receita" : "Despesa") + '</td>' +
-          '<td>' + (t.description || "") + '</td>' +
-          '<td>' + (t.category || "") + '</td>' +
-          '<td style="color:' + color + '; font-weight:bold;">' + amountStr + '</td>' +
-          '<td>' + details + '</td>' +
+          '<td style="color:' + color + '; font-weight:bold;' + textStyle + '">' + (isIncome ? "Receita" : "Despesa") + '</td>' +
+          '<td style="' + textStyle + '">' + (t.description || "") + '</td>' +
+          '<td style="' + textStyle + '">' + (t.category || "") + '</td>' +
+          '<td style="color:' + color + '; font-weight:bold;' + textStyle + '">' + amountStr + '</td>' +
+          '<td>' + detailsList.join(" | ") + '</td>' +
         '</tr>';
             }).join("");
 
