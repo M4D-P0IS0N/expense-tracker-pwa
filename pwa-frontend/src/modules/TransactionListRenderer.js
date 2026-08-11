@@ -1,4 +1,4 @@
-﻿import { getEffectiveTransactionAmount, shouldApplySplitByTwo, shouldIgnoreThirdParty } from '../utils/splitTransactionAmount.js';
+import { getEffectiveTransactionAmount, shouldApplySplitByTwo, shouldIgnoreThirdParty } from '../utils/splitTransactionAmount.js';
 
 function formatBrazilianCurrency(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -86,13 +86,13 @@ function createTransactionCard({
       ${iconHtml}
     </div>
     <div class="flex-1 min-w-0">
-      <div class="flex justify-between items-center mb-0.5">
+      <div class="flex justify-between items-center gap-3 mb-0.5">
         <h4 class="text-white font-semibold truncate ${isThirdPartyIgnored ? 'line-through text-slate-500' : ''}">${transaction.description}</h4>
         <span class="${amountColorClass} font-bold whitespace-nowrap ${isThirdPartyIgnored ? 'line-through text-slate-500' : ''}">${transactionSignal}${formatBrazilianCurrency(Math.abs(effectiveTransactionAmount))}</span>
       </div>
-      <div class="flex justify-between items-center mt-1">
-        <p class="text-xs text-slate-400 ${isThirdPartyIgnored ? 'line-through text-slate-600' : ''}">${subCategoryLabel} • ${transactionDateLabel}</p>
-        <div class="flex items-center justify-end flex-wrap">${tagsHtml}</div>
+      <div class="flex justify-between items-center gap-2 mt-1">
+        <p class="text-xs text-slate-400 shrink-0 ${isThirdPartyIgnored ? 'line-through text-slate-600' : ''}">${subCategoryLabel} • ${transactionDateLabel}</p>
+        <div class="flex items-center justify-end flex-wrap gap-1">${tagsHtml}</div>
       </div>
     </div>
   `;

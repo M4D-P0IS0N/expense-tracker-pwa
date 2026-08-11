@@ -199,71 +199,73 @@
 
     <!-- Header -->
     <header
-      class="sticky top-0 z-20 px-6 pt-12 pb-4 flex flex-col gap-4 glass-card border-b-0 border-x-0 rounded-b-2xl mb-4">
-      <div class="flex items-center justify-between w-full">
-        <!-- User Avatar & Gamification -->
-        <div class="flex items-center gap-3">
-          <div class="relative group cursor-pointer" id="avatar-control" title="Abrir Perfil RPG">
-            <div
-              class="absolute -inset-0.5 bg-gradient-to-r from-primary to-purple-600 rounded-full blur opacity-60 transition-all group-hover:opacity-100">
+      class="sticky top-0 z-20 glass-card border-b-0 border-x-0 rounded-b-2xl mb-4">
+      <div class="max-w-3xl mx-auto w-full px-6 pt-12 pb-4 flex flex-col gap-4">
+        <div class="flex items-center justify-between w-full">
+          <!-- User Avatar & Gamification -->
+          <div class="flex items-center gap-3">
+            <div class="relative group cursor-pointer" id="avatar-control" title="Abrir Perfil RPG">
+              <div
+                class="absolute -inset-0.5 bg-gradient-to-r from-primary to-purple-600 rounded-full blur opacity-60 transition-all group-hover:opacity-100">
+              </div>
+              <div
+                class="relative h-10 w-10 flex items-center justify-center rounded-full overflow-hidden border-2 border-white/10 bg-slate-800 text-white font-bold p-1">
+                <!-- Fallback icon when no avatar chosen -->
+                <span id="avatar-placeholder" class="material-symbols-outlined text-slate-400 text-2xl">person</span>
+                <img id="avatar-img" src="" class="object-cover w-full h-full rounded-full hidden"
+                  style="transform: scale(1.35);" alt="Avatar" />
+              </div>
+              <div id="avatar-level-badge"
+                class="absolute -bottom-1 -right-1 bg-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-slate-800 z-10">
+                Lvl 1</div>
             </div>
-            <div
-              class="relative h-10 w-10 flex items-center justify-center rounded-full overflow-hidden border-2 border-white/10 bg-slate-800 text-white font-bold p-1">
-              <!-- Fallback icon when no avatar chosen -->
-              <span id="avatar-placeholder" class="material-symbols-outlined text-slate-400 text-2xl">person</span>
-              <img id="avatar-img" src="" class="object-cover w-full h-full rounded-full hidden"
-                style="transform: scale(1.35);" alt="Avatar" />
+            <div class="flex flex-col">
+              <span class="text-xs text-slate-400 font-medium tracking-wide" id="avatar-stage-name">Apprentice</span>
+              <h1 class="text-lg font-bold text-white leading-none" id="user-display-name">Meu Perfil</h1>
             </div>
-            <div id="avatar-level-badge"
-              class="absolute -bottom-1 -right-1 bg-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-slate-800 z-10">
-              Lvl 1</div>
           </div>
-          <div class="flex flex-col">
-            <span class="text-xs text-slate-400 font-medium tracking-wide" id="avatar-stage-name">Apprentice</span>
-            <h1 class="text-lg font-bold text-white leading-none" id="user-display-name">Meu Perfil</h1>
+
+          <!-- Controls: Notebook -->
+          <div class="flex items-center gap-2">
+            <button id="notes-btn"
+              class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 p-2 rounded-lg transition-colors shadow-sm flex items-center"
+              title="Bloco de Notas">
+              <span class="material-symbols-outlined shrink-0" style="font-size: 20px;">edit_note</span>
+            </button>
           </div>
         </div>
 
-        <!-- Controls: Notebook -->
-        <div class="flex items-center gap-2">
-          <button id="notes-btn"
-            class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 p-2 rounded-lg transition-colors shadow-sm flex items-center"
-            title="Bloco de Notas">
-            <span class="material-symbols-outlined shrink-0" style="font-size: 20px;">edit_note</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Temporal Navigation Bar -->
-      <div class="flex items-center justify-between w-full">
-        <h2 class="text-sm font-bold text-slate-300">Visão Geral</h2>
-        <div class="flex gap-2">
-          <select id="filter-month"
-            class="bg-slate-800/80 border border-slate-600 text-white text-sm font-medium rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer">
-            <option value="1">Jan</option>
-            <option value="2">Fev</option>
-            <option value="3">Mar</option>
-            <option value="4">Abr</option>
-            <option value="5">Mai</option>
-            <option value="6">Jun</option>
-            <option value="7">Jul</option>
-            <option value="8">Ago</option>
-            <option value="9">Set</option>
-            <option value="10">Out</option>
-            <option value="11">Nov</option>
-            <option value="12">Dez</option>
-          </select>
-          <select id="filter-year"
-            class="bg-slate-800/80 border border-slate-600 text-white text-sm font-medium rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer text-center">
-            <!-- JS vai popular -->
-            <option value="2026">2026</option>
-          </select>
+        <!-- Temporal Navigation Bar -->
+        <div class="flex items-center justify-between w-full">
+          <h2 class="text-sm font-bold text-slate-300">Visão Geral</h2>
+          <div class="flex gap-2">
+            <select id="filter-month"
+              class="bg-slate-800/80 border border-slate-600 text-white text-sm font-medium rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer">
+              <option value="1">Jan</option>
+              <option value="2">Fev</option>
+              <option value="3">Mar</option>
+              <option value="4">Abr</option>
+              <option value="5">Mai</option>
+              <option value="6">Jun</option>
+              <option value="7">Jul</option>
+              <option value="8">Ago</option>
+              <option value="9">Set</option>
+              <option value="10">Out</option>
+              <option value="11">Nov</option>
+              <option value="12">Dez</option>
+            </select>
+            <select id="filter-year"
+              class="bg-slate-800/80 border border-slate-600 text-white text-sm font-medium rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer text-center">
+              <!-- JS vai popular -->
+              <option value="2026">2026</option>
+            </select>
+          </div>
         </div>
       </div>
     </header>
 
     <!-- Main Content Scroll Area -->
-    <main class="flex-1 px-5 pb-24 overflow-y-auto no-scrollbar z-10 space-y-6">
+    <main class="flex-1 px-5 pb-24 overflow-y-auto no-scrollbar z-10 space-y-6 max-w-3xl mx-auto w-full">
 
       <!-- Total Balance Hero Card -->
       <section class="relative group">
@@ -535,7 +537,7 @@
 
     <!-- Floating Action Button -->
     <button id="add-btn"
-      class="fixed bottom-10 right-6 h-14 w-14 bg-gradient-to-tr from-purple-600 to-primary rounded-full shadow-glow-primary flex items-center justify-center z-30 hover:scale-105 active:scale-95 border border-white/20">
+      class="fixed bottom-10 right-6 md:right-[calc(50vw-360px)] h-14 w-14 bg-gradient-to-tr from-purple-600 to-primary rounded-full shadow-glow-primary flex items-center justify-center z-30 hover:scale-105 active:scale-95 border border-white/20">
       <span class="material-symbols-outlined text-white" style="font-size: 32px;">add</span>
     </button>
 
