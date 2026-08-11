@@ -483,18 +483,18 @@ button:focus-visible {
 
 [data-theme="schematic"] #dash-future-expenses .h-5 .bg-accent-red,
 [data-theme="schematic"] #dash-future-expenses .h-5 .bg-yellow-500 {
-  background-image: repeating-linear-gradient(-45deg, #F76C5E 0 3px, #F76C5E 6px, #ffffff 6px, #ffffff 12px) !important;
+  background-image: repeating-linear-gradient(-45deg, rgba(247, 108, 94, 0.65) 0 2px, #ffffff 2px 6px) !important;
   background-color: #ffffff !important;
 }
 
 [data-theme="schematic"] #dash-future-expenses .h-5 .bg-blue-400,
 [data-theme="schematic"] #dash-future-expenses .h-5 .bg-blue-500 {
-  background-image: repeating-linear-gradient(-45deg, #7392B7 0 3px, #7392B7 6px, #ffffff 6px, #ffffff 12px) !important;
+  background-image: repeating-linear-gradient(-45deg, rgba(115, 146, 183, 0.65) 0 2px, #ffffff 2px 6px) !important;
   background-color: #ffffff !important;
 }
 
 [data-theme="schematic"] #dash-future-expenses .h-5 .bg-accent-green {
-  background-image: repeating-linear-gradient(-45deg, #568259 0 3px, #568259 6px, #ffffff 6px, #ffffff 12px) !important;
+  background-image: repeating-linear-gradient(-45deg, rgba(86, 130, 89, 0.65) 0 2px, #ffffff 2px 6px) !important;
   background-color: #ffffff !important;
 }
 
