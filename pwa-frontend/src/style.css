@@ -572,5 +572,41 @@ button:focus-visible {
   border-color: #111111 !important;
 }
 
+/* Modal Submit & Action Buttons Text Visibility */
+[data-theme="schematic"] form button[type="submit"],
+[data-theme="schematic"] button[type="submit"],
+[data-theme="schematic"] #add-modal button[type="submit"],
+[data-theme="schematic"] .bg-gradient-to-r.from-primary {
+  background-image: none !important;
+  background-color: #111111 !important;
+  color: #f5f6f8 !important;
+  border: 1px solid #111111 !important;
+  box-shadow: none !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="schematic"] form button[type="submit"] *,
+[data-theme="schematic"] button[type="submit"] *,
+[data-theme="schematic"] #add-modal button[type="submit"] * {
+  color: #f5f6f8 !important;
+}
+
+/* Hachuras Finas para os Containers de Ícones de Transações (Receitas e Despesas) */
+[data-theme="schematic"] #transactions-list .bg-red-500\/10,
+[data-theme="schematic"] #transactions-list .border-red-500\/20 {
+  background-image: repeating-linear-gradient(-45deg, #fa6538 0 1px, #ffffff 1px 4px) !important;
+  background-color: #ffffff !important;
+  border: 1px solid #fa6538 !important;
+  color: #fa6538 !important;
+}
+
+[data-theme="schematic"] #transactions-list .bg-accent-green\/10,
+[data-theme="schematic"] #transactions-list .border-accent-green\/20 {
+  background-image: repeating-linear-gradient(-45deg, #0bda65 0 1px, #ffffff 1px 4px) !important;
+  background-color: #ffffff !important;
+  border: 1px solid #0bda65 !important;
+  color: #0bda65 !important;
+}
+
 
 
