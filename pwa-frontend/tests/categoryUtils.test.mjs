@@ -20,6 +20,23 @@ describe("Category Utils Normalization", () => {
     assert.strictEqual(res3.full, "🍕 Comida");
   });
 
+  it("should correctly handle 'Bem estar/Casa' with 🆙 symbol and leading emojis", () => {
+    const inputs = [
+      "Bem estar/Casa",
+      "🆙 Bem estar/Casa",
+      "Bem estar/Casa 🆙",
+      "🏷️ 🆙 Bem estar/Casa",
+      "🏷️ Bem estar/Casa"
+    ];
+
+    inputs.forEach(input => {
+      const res = normalizeCategory(input);
+      assert.strictEqual(res.name, "Bem estar/Casa");
+      assert.strictEqual(res.emoji, "🆙");
+      assert.strictEqual(res.full, "🆙 Bem estar/Casa");
+    });
+  });
+
   it("should normalize all 15 fixed categories correctly", () => {
     const testCases = [
       { input: "Aleatoriedades", expectedEmoji: "🪤" },
