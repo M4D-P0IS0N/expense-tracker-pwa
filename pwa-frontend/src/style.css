@@ -264,3 +264,178 @@ button:focus-visible {
   color: #fa6538 !important;
 }
 
+/* ==========================================================================
+   SCHEMATIC SPECIFIC FIXES (6 USER ITEMS)
+   ========================================================================== */
+
+/* Item 1: Avatar Level Badge & Custom Selects */
+[data-theme="schematic"] #avatar-level-badge {
+  background-color: #111111 !important;
+  color: #f5f6f8 !important;
+  border: 1px solid #111111 !important;
+}
+
+[data-theme="schematic"] select {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #111111 !important;
+  padding-right: 2.25rem !important;
+  padding-left: 0.75rem !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23111111'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+  background-position: right 0.5rem center !important;
+  background-repeat: no-repeat !important;
+  background-size: 0.9em !important;
+}
+
+[data-theme="schematic"] select option {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+}
+
+/* Item 2: Filter Chips Invert Hover */
+[data-theme="schematic"] .filter-chip {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #111111 !important;
+  transition: background-color 0.15s, color 0.15s !important;
+}
+
+[data-theme="schematic"] .filter-chip:hover {
+  background-color: #111111 !important;
+  color: #f5f6f8 !important;
+}
+
+[data-theme="schematic"] .filter-chip.active-chip,
+[data-theme="schematic"] .filter-chip.bg-primary {
+  background-color: #111111 !important;
+  color: #f5f6f8 !important;
+}
+
+/* Item 3: Transaction Badges & Remove Expense Glow */
+[data-theme="schematic"] #transactions-list .text-accent-red {
+  filter: none !important;
+  drop-shadow: none !important;
+  text-shadow: none !important;
+}
+
+[data-theme="schematic"] #transactions-list .glass-card span[class*="rounded"],
+[data-theme="schematic"] #transactions-list .glass-card span[class*="bg-"] {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #111111 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+[data-theme="schematic"] #transactions-list .glass-card:hover span[class*="rounded"],
+[data-theme="schematic"] #transactions-list .glass-card:hover span[class*="bg-"] {
+  background-color: #111111 !important;
+  color: #f5f6f8 !important;
+  border-color: #f5f6f8 !important;
+}
+
+/* Item 4: Technical FAB Button */
+[data-theme="schematic"] #add-btn {
+  background-image: none !important;
+  background-color: #111111 !important;
+  color: #f5f6f8 !important;
+  border-radius: 0px !important;
+  border: 1px solid #111111 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="schematic"] #add-btn-wrapper {
+  position: fixed !important;
+  padding: 4px;
+}
+
+[data-theme="schematic"] #add-btn-wrapper::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid #111111;
+  border-left: 2px solid #111111;
+  pointer-events: none;
+}
+
+[data-theme="schematic"] #add-btn-wrapper::after {
+  content: "";
+  position: absolute;
+  bottom: 14px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-bottom: 2px solid #111111;
+  border-right: 2px solid #111111;
+  pointer-events: none;
+}
+
+[data-theme="schematic"] #add-btn-schematic-label {
+  display: block !important;
+  color: #555555 !important;
+}
+
+/* Item 5: Smart Insights & Chart Hatching */
+[data-theme="schematic"] #dash-insights,
+[data-theme="schematic"] .border-purple-500\/20 {
+  background-color: #ffffff !important;
+  border: 1px dashed #111111 !important;
+  color: #111111 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="schematic"] .bg-rose-500\/10,
+[data-theme="schematic"] .bg-emerald-500\/10,
+[data-theme="schematic"] .bg-blue-500\/10,
+[data-theme="schematic"] .bg-amber-500\/10 {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #111111 !important;
+}
+
+[data-theme="schematic"] .text-rose-300,
+[data-theme="schematic"] .text-emerald-300,
+[data-theme="schematic"] .text-blue-300,
+[data-theme="schematic"] .text-amber-300,
+[data-theme="schematic"] .text-yellow-400 {
+  color: #111111 !important;
+}
+
+/* Diagonal stripe hatching for all progress bars */
+[data-theme="schematic"] #dash-categories .h-full,
+[data-theme="schematic"] #dash-credit-cards .h-full,
+[data-theme="schematic"] #dash-future-expenses .h-full {
+  background-image: repeating-linear-gradient(-45deg, #111111 0 2px, transparent 2px 5px) !important;
+  background-color: #111111 !important;
+  border: 1px solid #111111 !important;
+  border-radius: 0px !important;
+}
+
+/* Item 6: Category Breakdown Tooltip Readability */
+[data-theme="schematic"] #dash-categories .group .invisible,
+[data-theme="schematic"] #dash-categories [class*="group-hover:visible"] {
+  background-color: #ffffff !important;
+  border: 2px solid #111111 !important;
+  box-shadow: 4px 4px 0px #111111 !important;
+  color: #111111 !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="schematic"] #dash-categories .group .invisible *,
+[data-theme="schematic"] #dash-categories .group .invisible p,
+[data-theme="schematic"] #dash-categories .group .invisible span {
+  color: #111111 !important;
+}
+
+[data-theme="schematic"] #dash-categories .group .invisible .text-accent-red {
+  color: #fa6538 !important;
+}
+
+[data-theme="schematic"] #dash-categories .group .invisible .border-slate-700\/70 {
+  border-color: #111111 !important;
+}
+
+
