@@ -1,3 +1,5 @@
+import { normalizeCategory } from '../utils/categoryUtils.js';
+
 export function initContextMenuManager({
   transactionService,
   selectGroupedTransactionsForDeletion,
@@ -49,11 +51,8 @@ export function initContextMenuManager({
     ctxAmount.textContent = `${amountSign}${formattedAmount}`;
     ctxAmount.className = `text-sm font-medium ${isIncomeTransaction ? 'text-accent-green' : 'text-accent-red'}`;
 
-    const firstCategoryToken = (transaction.category || '').split(' ')[0] || '';
-    const hasEmojiCategory = /[\u1000-\uFFFF]/.test(firstCategoryToken);
-    ctxIcon.innerHTML = hasEmojiCategory
-      ? `<span style="font-size: 24px;">${firstCategoryToken}</span>`
-      : '<span class="material-symbols-outlined text-slate-400">receipt_long</span>';
+    const normalizedCat = normalizeCategory(transaction.category);
+    ctxIcon.innerHTML = `<span style="font-size: 24px;">${normalizedCat.emoji}</span>`;
 
     contextMenuModal.classList.remove('hidden');
     setTimeout(() => contextSheet.classList.remove('translate-y-full'), 10);
@@ -70,40 +69,20 @@ export function initContextMenuManager({
   function populateCategoryFields(transaction) {
     document.querySelectorAll('.custom-injected-option').forEach((optionElement) => optionElement.remove());
 
-    const fullCategory = transaction.category || 'General';
-    const firstCategoryToken = fullCategory.split(' ')[0] || '';
-    const hasEmojiCategory = /[\u1000-\uFFFF]/.test(firstCategoryToken);
+    const normalizedCat = normalizeCategory(transaction.category);
+    emojiDisplay.textContent = normalizedCat.emoji;
 
-    if (hasEmojiCategory) {
-      emojiDisplay.textContent = firstCategoryToken;
-      const plainCategoryName = fullCategory.substring(firstCategoryToken.length).trim();
-      const optionFound = Array.from(categorySelect.options).some((optionElement) => optionElement.value === plainCategoryName);
-
-      if (!optionFound) {
-        const injectedOptionElement = document.createElement('option');
-        injectedOptionElement.value = plainCategoryName;
-        injectedOptionElement.textContent = plainCategoryName;
-        injectedOptionElement.className = 'custom-injected-option';
-        categorySelect.insertBefore(injectedOptionElement, categorySelect.querySelector('option[value="New"]'));
-      }
-
-      categorySelect.value = plainCategoryName;
-      customCategoryContainer.classList.add('hidden');
-      return;
-    }
-
-    emojiDisplay.textContent = '🏷️';
-    const optionFound = Array.from(categorySelect.options).some((optionElement) => optionElement.value === fullCategory);
+    const optionFound = Array.from(categorySelect.options).some((optionElement) => optionElement.value === normalizedCat.name);
 
     if (!optionFound) {
       const injectedOptionElement = document.createElement('option');
-      injectedOptionElement.value = fullCategory;
-      injectedOptionElement.textContent = fullCategory;
+      injectedOptionElement.value = normalizedCat.name;
+      injectedOptionElement.textContent = normalizedCat.name;
       injectedOptionElement.className = 'custom-injected-option';
       categorySelect.insertBefore(injectedOptionElement, categorySelect.querySelector('option[value="New"]'));
     }
 
-    categorySelect.value = fullCategory;
+    categorySelect.value = normalizedCat.name;
     customCategoryContainer.classList.add('hidden');
   }
 

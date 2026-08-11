@@ -1,3 +1,5 @@
+import { FIXED_CATEGORY_EMOJIS } from '../utils/categoryUtils.js';
+
 export function initEmojiCategoryManager({ elements }) {
   const {
     emojiBtn,
@@ -13,18 +15,11 @@ export function initEmojiCategoryManager({ elements }) {
   } = elements;
 
   const defaultEmojis = [
-    '🍔', '🍕', '🍣', '🛒', '🛍️', '🎁', '🚌', '🚗', '✈️', '🏠', '🏢', '💡', '💧', '🔥',
-    '🏥', '💊', '🦷', '🎮', '🎬', '🎵', '⚽', '🏋️', '👕', '👗', '📚', '✏️', '💼', '💻',
-    '💸', '💰', '💳', '📈', '🏷️', '🐶', '🐱', '🛠️', '❓',
+    '🪤', '🆙', '🚗', '🍕', '🏠', '💻', '🚨', '📝', '💊', '🛒', '🩺', '🐶', '🎁', '💰', '🎞️',
+    '🍔', '🍣', '🛍️', '🚌', '✈️', '🏢', '💡', '💧', '🔥',
+    '🏥', '🦷', '🎮', '🎬', '🎵', '⚽', '🏋️', '👕', '👗', '📚', '✏️', '💼',
+    '💸', '💳', '📈', '🏷️', '🐱', '🛠️', '❓',
   ];
-
-  const categoryToEmoji = {
-    General: '🏷️',
-    Food: '🍔',
-    Transport: '🚌',
-    Home: '🏠',
-    Salary: '💰',
-  };
 
   defaultEmojis.forEach((emojiCharacter) => {
     const emojiButton = document.createElement('button');
@@ -84,8 +79,8 @@ export function initEmojiCategoryManager({ elements }) {
     customCategoryInput.required = false;
     customCategoryInput.value = '';
 
-    if (categoryToEmoji[selectedValue]) {
-      emojiDisplay.textContent = categoryToEmoji[selectedValue];
+    if (FIXED_CATEGORY_EMOJIS[selectedValue]) {
+      emojiDisplay.textContent = FIXED_CATEGORY_EMOJIS[selectedValue];
     }
   });
 }

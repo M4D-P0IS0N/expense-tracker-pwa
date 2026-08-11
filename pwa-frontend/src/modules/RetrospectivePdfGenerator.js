@@ -3,6 +3,7 @@
 // taking into account whether split-by-two (dividir por 2) was active in each respective month.
 
 import { getEffectiveTransactionAmount, shouldApplySplitByTwo, shouldIgnoreThirdParty } from "../utils/splitTransactionAmount.js";
+import { normalizeCategory } from "../utils/categoryUtils.js";
 
 function formatCurrency(val) {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val || 0);
@@ -262,7 +263,7 @@ export async function exportRetrospectivePdfReport({ TransactionService, getTran
                     monthlyStats[mIdx].expense += amount;
                     totalYearExpense += amount;
 
-                    const cat = t.category || "Sem Categoria";
+                    const cat = normalizeCategory(t.category).full;
                     categoryTotals[cat] = (categoryTotals[cat] || 0) + amount;
 
                     if (t.credit_card_name) {
@@ -339,7 +340,7 @@ export async function exportRetrospectivePdfReport({ TransactionService, getTran
             return `<tr>
                 <td>${dateStr}</td>
                 <td style="font-weight:600;">${t.description || "Sem descrição"}</td>
-                <td>${t.category || "Outros"}</td>
+                <td>${normalizeCategory(t.category).full}</td>
                 <td style="color:#dc2626; font-weight:700;">${formatCurrency(effectiveAmt)}</td>
                 <td>${detailsList.join(" | ") || "-"}</td>
             </tr>`;

@@ -1,4 +1,5 @@
 import { getEffectiveTransactionAmount } from '../utils/splitTransactionAmount.js';
+import { normalizeCategory } from '../utils/categoryUtils.js';
 
 function formatAbsoluteCurrency(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Math.abs(value));
@@ -45,9 +46,15 @@ function buildCategoryTooltipMarkup(categoryTransactions, isSplitByTwoEnabled) {
 
 function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, isSplitByTwoEnabled, budgetService }) {
   const categoryTotals = {};
+  const categoryMeta = {};
+
   expenses.forEach((transaction) => {
-    const categoryName = transaction.category || 'General';
-    categoryTotals[categoryName] = (categoryTotals[categoryName] || 0) + getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled);
+    const norm = normalizeCategory(transaction.category);
+    const key = norm.name;
+    categoryTotals[key] = (categoryTotals[key] || 0) + getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled);
+    if (!categoryMeta[key]) {
+      categoryMeta[key] = norm;
+    }
   });
 
   const sortedCategories = Object.entries(categoryTotals).sort((categoryA, categoryB) => categoryB[1] - categoryA[1]);
@@ -58,15 +65,14 @@ function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, isSpl
     return;
   }
 
-  sortedCategories.forEach(([categoryName, amount], categoryIndex) => {
+  sortedCategories.forEach(([keyName, amount], categoryIndex) => {
     const categoryTransactions = expenses
-      .filter((transaction) => (transaction.category || 'General') === categoryName)
+      .filter((transaction) => normalizeCategory(transaction.category).name === keyName)
       .sort((transactionA, transactionB) => getEffectiveTransactionAmount(transactionB, isSplitByTwoEnabled) - getEffectiveTransactionAmount(transactionA, isSplitByTwoEnabled));
     const progressPercent = totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0;
-    const firstCategoryToken = categoryName.split(' ')[0] || '';
-    const hasEmojiCategory = /[\u1000-\uFFFF]/.test(firstCategoryToken);
-    const iconLabel = hasEmojiCategory ? firstCategoryToken : '🏷️';
-    const normalizedCategoryName = hasEmojiCategory ? categoryName.substring(firstCategoryToken.length).trim() : categoryName;
+    const normMeta = categoryMeta[keyName] || normalizeCategory(keyName);
+    const iconLabel = normMeta.emoji;
+    const normalizedCategoryName = normMeta.name;oryName;
 
     const configuredBudget = budgetService.getBudget(normalizedCategoryName);
     let budgetWarning = '';
@@ -345,13 +351,13 @@ async function renderInsights({
   transactions
     .filter((tx) => tx.type === "Expense")
     .forEach((tx) => {
-      const cat = tx.category || "Geral";
+      const cat = normalizeCategory(tx.category).full;
       currentCatTotals[cat] = (currentCatTotals[cat] || 0) + getEffectiveTransactionAmount(tx, isSplitByTwoEnabled);
     });
 
   const prevCatTotals = {};
   prevExpenses.forEach((tx) => {
-    const cat = tx.category || "Geral";
+    const cat = normalizeCategory(tx.category).full;
     prevCatTotals[cat] = (prevCatTotals[cat] || 0) + getEffectiveTransactionAmount(tx, isSplitByTwoEnabled);
   });
 

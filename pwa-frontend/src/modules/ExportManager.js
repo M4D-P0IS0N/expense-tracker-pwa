@@ -3,6 +3,7 @@
 
 import { exportRetrospectivePdfReport } from "./RetrospectivePdfGenerator.js";
 import { getEffectiveTransactionAmount, shouldApplySplitByTwo, shouldIgnoreThirdParty } from "../utils/splitTransactionAmount.js";
+import { normalizeCategory } from "../utils/categoryUtils.js";
 
 export function initExportManager(options) {
     const {
@@ -71,7 +72,7 @@ export function initExportManager(options) {
                 } else if (t.type === "Expense") {
                     totalExpense += effectiveAmount;
 
-                    const categoryName = t.category || "Sem Categoria";
+                    const categoryName = normalizeCategory(t.category).full;
                     expensesByCategory[categoryName] = (expensesByCategory[categoryName] || 0) + effectiveAmount;
 
                     const cardName = t.credit_card_name || "Sem Cartão";
@@ -108,7 +109,7 @@ export function initExportManager(options) {
           '<td>' + dateStr + '</td>' +
           '<td style="color:' + color + '; font-weight:bold;' + textStyle + '">' + (isIncome ? "Receita" : "Despesa") + '</td>' +
           '<td style="' + textStyle + '">' + (t.description || "") + '</td>' +
-          '<td style="' + textStyle + '">' + (t.category || "") + '</td>' +
+          '<td style="' + textStyle + '">' + normalizeCategory(t.category).full + '</td>' +
           '<td style="color:' + color + '; font-weight:bold;' + textStyle + '">' + amountStr + '</td>' +
           '<td>' + detailsList.join(" | ") + '</td>' +
         '</tr>';

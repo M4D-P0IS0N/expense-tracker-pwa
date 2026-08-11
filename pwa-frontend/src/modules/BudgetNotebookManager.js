@@ -1,3 +1,5 @@
+import { normalizeCategory } from '../utils/categoryUtils.js';
+
 const MONTH_NAMES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
@@ -44,8 +46,7 @@ export function initBudgetNotebookManager({
     getTransactions()
       .filter((transaction) => transaction.type === 'Expense')
       .forEach((transaction) => {
-        const categoryName = transaction.category || 'General';
-        knownExpenseCategories.add(categoryName.replace(/[\u1000-\uFFFF]/, '').trim() || categoryName);
+        knownExpenseCategories.add(normalizeCategory(transaction.category).name);
       });
 
     const currentBudgets = budgetService.getBudgets();

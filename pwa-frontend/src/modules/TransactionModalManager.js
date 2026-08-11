@@ -1,3 +1,5 @@
+import { normalizeCategory } from '../utils/categoryUtils.js';
+
 export function initTransactionModal({
   addButton,
   closeButton,
@@ -39,7 +41,8 @@ export function initTransactionModal({
     incomeRadio.dispatchEvent(new Event('change'));
 
     getElementById('tx-custom-category-container').classList.add('hidden');
-    getElementById('tx-emoji-display').textContent = '🏷️';
+    const initialCategory = getElementById('tx-category').value;
+    getElementById('tx-emoji-display').textContent = normalizeCategory(initialCategory).emoji;
 
     if (advancedFields) {
       advancedFields.classList.add('hidden');
@@ -70,19 +73,8 @@ export function initTransactionModal({
     }
 
     customCategoryContainer.classList.add('hidden');
-    const transactions = getTransactions();
-    if (transactions.length > 0) {
-      const matchingTransaction = transactions.find((transaction) => (transaction.category || '').includes(selectedValue));
-      if (matchingTransaction) {
-        const firstCategoryToken = (matchingTransaction.category || '').split(' ')[0] || '';
-        if (/[\u1000-\uFFFF]/.test(firstCategoryToken)) {
-          getElementById('tx-emoji-display').textContent = firstCategoryToken;
-          return;
-        }
-      }
-    }
-
-    getElementById('tx-emoji-display').textContent = '🏷️';
+    const normalized = normalizeCategory(selectedValue);
+    getElementById('tx-emoji-display').textContent = normalized.emoji;
   });
 
   typeRadios.forEach((radioElement) => {

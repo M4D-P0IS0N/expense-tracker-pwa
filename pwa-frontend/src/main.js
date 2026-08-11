@@ -25,6 +25,8 @@ import { parseBrazilianCurrency } from './utils/currencyParser.js';
 import { showNotification } from './ui/notificationToast.js';
 import { initThemeManager } from './modules/ThemeManager.js';
 
+import { normalizeCategory } from './utils/categoryUtils.js';
+
 // --- State ---
 let transactions = [];
 let currentSearchQuery = '';
@@ -349,6 +351,21 @@ async function loadData() {
       const selectedMonth = parseInt(filterMonthEl.value);
       const selectedYear = parseInt(filterYearEl.value);
       transactions = await TransactionService.getTransactions(selectedYear, selectedMonth);
+    }
+
+    const unnormalizedTransactions = [];
+    transactions.forEach((tx) => {
+      const norm = normalizeCategory(tx.category);
+      if (tx.category !== norm.full) {
+        tx.category = norm.full;
+        unnormalizedTransactions.push(tx);
+      }
+    });
+
+    if (unnormalizedTransactions.length > 0) {
+      TransactionService.bulkUpsertTransactions(unnormalizedTransactions).catch((err) => {
+        console.warn('Falha ao sincronizar categorias normalizadas no banco de dados:', err);
+      });
     }
 
     updateUI();

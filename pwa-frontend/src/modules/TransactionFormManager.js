@@ -1,3 +1,5 @@
+import { normalizeCategory } from '../utils/categoryUtils.js';
+
 export function initTransactionForm({
   formElement,
   getElementById,
@@ -23,7 +25,8 @@ export function initTransactionForm({
       const selectedCategoryValue = getElementById('tx-category').value;
       const selectedEmoji = getElementById('tx-emoji-display').textContent;
       const customCategoryValue = getElementById('tx-custom-category').value;
-      const finalCategoryLabel = `${selectedEmoji} ${selectedCategoryValue === 'New' ? customCategoryValue : selectedCategoryValue}`;
+      const rawCategoryName = selectedCategoryValue === 'New' ? customCategoryValue : selectedCategoryValue;
+      const finalCategoryLabel = normalizeCategory(rawCategoryName, selectedEmoji).full;
 
       const transactionDescription = getElementById('tx-description').value;
       const parsedAmount = parseBrazilianCurrency(getElementById('tx-amount').value);

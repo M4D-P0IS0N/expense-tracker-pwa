@@ -1,4 +1,5 @@
 import { getEffectiveTransactionAmount, shouldApplySplitByTwo, shouldIgnoreThirdParty } from '../utils/splitTransactionAmount.js';
+import { normalizeCategory } from '../utils/categoryUtils.js';
 
 function formatBrazilianCurrency(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -28,15 +29,10 @@ function createTransactionCard({
   const iconBackgroundClass = isIncomeTransaction
     ? 'bg-accent-green/10 border-accent-green/20 text-accent-green'
     : 'bg-red-500/10 border-red-500/20 text-red-400';
-  const iconSymbol = isIncomeTransaction ? 'account_balance' : 'shopping_bag';
 
-  const categoryLabel = transaction.category || 'General';
-  const firstCategoryToken = categoryLabel.split(' ')[0] || '';
-  const hasEmojiCategory = /[\u1000-\uFFFF]/.test(firstCategoryToken);
-  const subCategoryLabel = hasEmojiCategory ? categoryLabel.substring(firstCategoryToken.length).trim() : categoryLabel;
-  const iconHtml = hasEmojiCategory
-    ? `<span style="font-size: 24px;">${firstCategoryToken}</span>`
-    : `<span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">${iconSymbol}</span>`;
+  const normCat = normalizeCategory(transaction.category);
+  const subCategoryLabel = normCat.name;
+  const iconHtml = `<span style="font-size: 24px;">${normCat.emoji}</span>`;
 
   let tagsHtml = '';
 
@@ -242,8 +238,7 @@ export function renderTransactionList({
   transactions
     .filter((transaction) => transaction.type === 'Expense')
     .forEach((transaction) => {
-      const categoryName = transaction.category || 'General';
-      const normalizedCategoryName = categoryName.replace(/[\u1000-\uFFFF]/, '').trim() || categoryName;
+      const normalizedCategoryName = normalizeCategory(transaction.category).name;
       categoryTotalsByMonth[normalizedCategoryName] = (categoryTotalsByMonth[normalizedCategoryName] || 0) + getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled);
     });
 
