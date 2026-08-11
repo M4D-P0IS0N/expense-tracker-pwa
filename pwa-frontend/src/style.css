@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -90,3 +92,175 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* ==========================================================================
+   TECHNICAL SCHEMATIC THEME (BLUEPRINT MONO)
+   ========================================================================== */
+
+[data-theme="schematic"] {
+  --schematic-paper: #f5f6f8;
+  --schematic-ink: #111111;
+  --schematic-soft: #555555;
+  --schematic-faint: #9a9a9a;
+}
+
+/* Background Blueprint Grid */
+[data-theme="schematic"] .neural-bg {
+  background-color: #f5f6f8 !important;
+  background-image:
+    linear-gradient(rgba(17, 17, 17, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17, 17, 17, 0.045) 1px, transparent 1px) !important;
+  background-size: 32px 32px !important;
+}
+
+[data-theme="schematic"] .neural-bg::before {
+  display: none !important;
+}
+
+/* Typography Overrides */
+[data-theme="schematic"],
+[data-theme="schematic"] body,
+[data-theme="schematic"] button,
+[data-theme="schematic"] input,
+[data-theme="schematic"] select,
+[data-theme="schematic"] textarea {
+  font-family: 'JetBrains Mono', monospace !important;
+  color: #111111 !important;
+}
+
+[data-theme="schematic"] h1,
+[data-theme="schematic"] h2,
+[data-theme="schematic"] h3,
+[data-theme="schematic"] .font-display,
+[data-theme="schematic"] .font-bold {
+  font-family: 'Space Grotesk', sans-serif !important;
+}
+
+/* Glass Card & Structural Components */
+[data-theme="schematic"] .glass-card {
+  background: rgba(245, 246, 248, 0.95) !important;
+  border: 1px solid #111111 !important;
+  box-shadow: none !important;
+  color: #111111 !important;
+  position: relative;
+}
+
+/* Corner Bracket Accents [ ] */
+[data-theme="schematic"] .glass-card::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid #111111;
+  border-left: 2px solid #111111;
+  pointer-events: none;
+  z-index: 10;
+}
+
+[data-theme="schematic"] .glass-card::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-bottom: 2px solid #111111;
+  border-right: 2px solid #111111;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Tailwind Dark Color Overrides for Schematic Light Paper Mode */
+[data-theme="schematic"] .text-white,
+[data-theme="schematic"] .text-slate-100,
+[data-theme="schematic"] .text-slate-200,
+[data-theme="schematic"] .text-slate-300 {
+  color: #111111 !important;
+}
+
+[data-theme="schematic"] .text-slate-400,
+[data-theme="schematic"] .text-slate-500 {
+  color: #555555 !important;
+}
+
+[data-theme="schematic"] .text-slate-600 {
+  color: #9a9a9a !important;
+}
+
+/* Background Dark Overrides */
+[data-theme="schematic"] .bg-slate-900\/90,
+[data-theme="schematic"] .bg-slate-900,
+[data-theme="schematic"] .bg-slate-800\/80,
+[data-theme="schematic"] .bg-slate-800\/90,
+[data-theme="schematic"] .bg-slate-800,
+[data-theme="schematic"] .bg-slate-700\/50,
+[data-theme="schematic"] .bg-slate-700\/80,
+[data-theme="schematic"] .bg-slate-700 {
+  background-color: #f5f6f8 !important;
+  color: #111111 !important;
+  border-color: #111111 !important;
+}
+
+/* Borders */
+[data-theme="schematic"] .border-slate-700,
+[data-theme="schematic"] .border-slate-600,
+[data-theme="schematic"] .border-slate-800,
+[data-theme="schematic"] .border-white\/10 {
+  border-color: #111111 !important;
+}
+
+/* Diagonal Stripes (Hatch) for progress bars */
+[data-theme="schematic"] .bg-primary,
+[data-theme="schematic"] .bg-gradient-to-r {
+  background-image: repeating-linear-gradient(-45deg, #111111 0 1.5px, transparent 1.5px 5px) !important;
+  background-color: #111111 !important;
+  border-color: #111111 !important;
+}
+
+/* Invert Hover Buttons */
+[data-theme="schematic"] button:hover {
+  background-color: #111111 !important;
+  color: #f5f6f8 !important;
+  border-color: #111111 !important;
+}
+
+[data-theme="schematic"] button:hover span,
+[data-theme="schematic"] button:hover p,
+[data-theme="schematic"] button:hover .material-symbols-outlined {
+  color: #f5f6f8 !important;
+}
+
+/* Header & Dropdowns */
+[data-theme="schematic"] #theme-dropdown {
+  background-color: #f5f6f8 !important;
+  border: 2px solid #111111 !important;
+  color: #111111 !important;
+  box-shadow: 4px 4px 0px #111111 !important;
+}
+
+[data-theme="schematic"] #theme-dropdown button:hover {
+  background-color: #111111 !important;
+  color: #f5f6f8 !important;
+}
+
+/* Inputs & Form Controls */
+[data-theme="schematic"] input,
+[data-theme="schematic"] select,
+[data-theme="schematic"] textarea {
+  background-color: #f5f6f8 !important;
+  color: #111111 !important;
+  border: 1px solid #111111 !important;
+}
+
+/* Preservação de Micro-acentos Funcionais */
+[data-theme="schematic"] .text-accent-green,
+[data-theme="schematic"] .bg-accent-green {
+  color: #0bda65 !important;
+}
+[data-theme="schematic"] .text-accent-red,
+[data-theme="schematic"] .bg-accent-red {
+  color: #fa6538 !important;
+}
+

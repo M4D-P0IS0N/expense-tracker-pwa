@@ -7,7 +7,7 @@
   <title>Expense Tracker</title>
 
   <!-- Fonts & Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
     rel="stylesheet" />
@@ -225,8 +225,39 @@
             </div>
           </div>
 
-          <!-- Controls: Notebook -->
+          <!-- Controls: Notebook & Theme Selector -->
           <div class="flex items-center gap-2">
+            <!-- Design Theme Selector -->
+            <div class="relative">
+              <button id="theme-selector-btn"
+                class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 p-2 rounded-lg transition-colors shadow-sm flex items-center"
+                title="Seletor de Design">
+                <span class="material-symbols-outlined shrink-0" style="font-size: 20px;">palette</span>
+              </button>
+              
+              <!-- Dropdown Menu -->
+              <div id="theme-dropdown"
+                class="hidden absolute right-0 mt-2 w-52 rounded-xl bg-slate-800 border border-slate-700 shadow-2xl p-1.5 z-50">
+                <div class="text-[9px] uppercase font-bold text-slate-400 px-2.5 py-1 tracking-widest border-b border-slate-700/50 mb-1">Seletor de Design</div>
+                <button data-theme-opt="default"
+                  class="theme-opt-btn w-full text-left px-2.5 py-1.5 text-xs rounded-lg text-white hover:bg-slate-700 flex items-center justify-between transition-colors">
+                  <span class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                    Cyberpunk Glass
+                  </span>
+                  <span class="material-symbols-outlined text-xs text-indigo-400 check-icon">check</span>
+                </button>
+                <button data-theme-opt="schematic"
+                  class="theme-opt-btn w-full text-left px-2.5 py-1.5 text-xs rounded-lg text-slate-300 hover:bg-slate-700 flex items-center justify-between transition-colors">
+                  <span class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-sm bg-[#f5f6f8] border border-[#111]"></span>
+                    Technical Schematic
+                  </span>
+                  <span class="material-symbols-outlined text-xs text-indigo-400 check-icon hidden">check</span>
+                </button>
+              </div>
+            </div>
+
             <button id="notes-btn"
               class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 p-2 rounded-lg transition-colors shadow-sm flex items-center"
               title="Bloco de Notas">

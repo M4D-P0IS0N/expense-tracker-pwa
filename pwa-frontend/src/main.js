@@ -23,6 +23,7 @@ import { initTransactionForm } from './modules/TransactionFormManager.js';
 import { selectGroupedTransactionsForDeletion } from './utils/installmentDeletion.js';
 import { parseBrazilianCurrency } from './utils/currencyParser.js';
 import { showNotification } from './ui/notificationToast.js';
+import { initThemeManager } from './modules/ThemeManager.js';
 
 // --- State ---
 let transactions = [];
@@ -557,4 +558,7 @@ renderSavingsGoals = savingsFlow.renderSavingsGoals;
 
 // Pull-to-Refresh -> ./modules/PullToRefresh.js
 initPullToRefresh();
+
+// Theme Manager -> ./modules/ThemeManager.js
+initThemeManager();
 
