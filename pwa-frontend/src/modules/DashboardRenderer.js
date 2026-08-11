@@ -72,7 +72,7 @@ function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, isSpl
     const progressPercent = totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0;
     const normMeta = categoryMeta[keyName] || normalizeCategory(keyName);
     const iconLabel = normMeta.emoji;
-    const normalizedCategoryName = normMeta.name;oryName;
+    const normalizedCategoryName = normMeta.name;
 
     const configuredBudget = budgetService.getBudget(normalizedCategoryName);
     let budgetWarning = '';
