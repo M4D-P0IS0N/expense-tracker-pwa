@@ -428,13 +428,30 @@ button:focus-visible {
   color: #555555 !important;
 }
 
-/* Checkbox Dividir por 2 Marcação Visível */
-[data-theme="schematic"] label:has(#filter-split-by-two:checked) #filter-split-by-two,
+/* Checkbox Dividir por 2 - Caixinha Branca com 'v' Preto Visível quando Marcado */
+#filter-split-by-two,
+[data-theme="schematic"] #filter-split-by-two {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 1.1rem !important;
+  height: 1.1rem !important;
+  background-color: #ffffff !important;
+  border: 1px solid #111111 !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
+
+#filter-split-by-two:checked,
 [data-theme="schematic"] #filter-split-by-two:checked {
-  accent-color: #111111 !important;
-  border-color: #ffffff !important;
-  box-shadow: 0 0 0 1.5px #ffffff !important;
-  filter: contrast(2) !important;
+  background-color: #ffffff !important;
+  border: 1.5px solid #111111 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23111111'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E") !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: 85% 85% !important;
 }
 
 /* Item 5 & Print 4: Striped Chart Bars (Categories & Credit Cards) */
