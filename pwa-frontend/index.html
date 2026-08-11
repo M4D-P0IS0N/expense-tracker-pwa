@@ -370,7 +370,7 @@
           </div>
 
           <!-- Filters Row (Chips & Dropdown) -->
-          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+          <div class="flex items-center gap-2 overflow-x-auto sm:flex-wrap no-scrollbar pb-1.5 pr-6 sm:pr-0 w-full">
             <select id="sort-transactions"
               class="shrink-0 bg-slate-800/80 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary outline-none">
               <option value="date-desc">⏱️ Data (Mais recentes)</option>
@@ -398,10 +398,10 @@
               class="filter-chip shrink-0 px-3 py-1.5 rounded-full border border-slate-700 bg-slate-800/50 text-slate-400 text-xs font-medium hover:text-white hover:border-slate-500 transition"
               data-filter="Install">Parceladas</button>
             <label
-              class="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-700 bg-slate-800/50 text-slate-400 text-xs font-medium hover:text-white hover:border-slate-500 transition cursor-pointer">
+              class="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-700 bg-slate-800/50 text-slate-400 text-xs font-medium hover:text-white hover:border-slate-500 transition cursor-pointer whitespace-nowrap">
               <input type="checkbox" id="filter-split-by-two"
-                class="w-4 h-4 bg-slate-800 border-slate-600 text-primary rounded focus:ring-primary">
-              <span>Dividir por 2</span>
+                class="w-4 h-4 bg-slate-800 border-slate-600 text-primary rounded focus:ring-primary shrink-0">
+              <span class="whitespace-nowrap">Dividir por 2</span>
             </label>
           </div>
         </div>
@@ -537,8 +537,8 @@
 
     <!-- Floating Action Button -->
     <button id="add-btn"
-      class="fixed bottom-10 right-6 md:right-[calc(50vw-360px)] h-14 w-14 bg-gradient-to-tr from-purple-600 to-primary rounded-full shadow-glow-primary flex items-center justify-center z-30 hover:scale-105 active:scale-95 border border-white/20">
-      <span class="material-symbols-outlined text-white" style="font-size: 32px;">add</span>
+      class="fixed bottom-8 right-6 sm:right-8 lg:right-12 xl:right-16 h-14 w-14 bg-gradient-to-tr from-purple-600 to-primary rounded-full shadow-glow-primary flex items-center justify-center z-30 hover:scale-110 active:scale-95 border border-white/20 group transition-all duration-300">
+      <span class="material-symbols-outlined text-white transition-transform duration-300 group-hover:rotate-90" style="font-size: 32px;">add</span>
     </button>
 
     <!-- Add Transaction Modal (Hidden setup with Dark Mode) -->
