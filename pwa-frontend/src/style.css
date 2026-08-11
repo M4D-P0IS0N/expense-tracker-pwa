@@ -379,7 +379,7 @@ button:focus-visible {
   border-color: #111111 !important;
 }
 
-/* Item 4: Technical FAB Button */
+/* Item 4: Technical FAB Button & White '+' Icon */
 [data-theme="schematic"] #add-btn {
   background-image: none !important;
   background-color: #111111 !important;
@@ -387,6 +387,11 @@ button:focus-visible {
   border-radius: 0px !important;
   border: 1px solid #111111 !important;
   box-shadow: none !important;
+}
+
+[data-theme="schematic"] #add-btn *,
+[data-theme="schematic"] #add-btn .material-symbols-outlined {
+  color: #f5f6f8 !important;
 }
 
 [data-theme="schematic"] #add-btn-wrapper {
@@ -423,7 +428,16 @@ button:focus-visible {
   color: #555555 !important;
 }
 
-/* Item 5 & Print 4: Striped Chart Bars (Print 5 Reference Image Style) */
+/* Checkbox Dividir por 2 Marcação Visível */
+[data-theme="schematic"] label:has(#filter-split-by-two:checked) #filter-split-by-two,
+[data-theme="schematic"] #filter-split-by-two:checked {
+  accent-color: #111111 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 1.5px #ffffff !important;
+  filter: contrast(2) !important;
+}
+
+/* Item 5 & Print 4: Striped Chart Bars (Categories & Credit Cards) */
 [data-theme="schematic"] #dash-categories .h-2,
 [data-theme="schematic"] #dash-credit-cards .h-2,
 [data-theme="schematic"] #dash-future-expenses .h-5 {
@@ -434,12 +448,51 @@ button:focus-visible {
 }
 
 [data-theme="schematic"] #dash-categories .h-2 .h-full,
-[data-theme="schematic"] #dash-credit-cards .h-2 .h-full,
-[data-theme="schematic"] #dash-future-expenses .h-5 .h-full {
+[data-theme="schematic"] #dash-credit-cards .h-2 .h-full {
   background-image: repeating-linear-gradient(-45deg, #111111 0 3px, #111111 6px, #ffffff 6px, #ffffff 12px) !important;
   background-color: #ffffff !important;
   border-right: 1px solid #111111 !important;
   border-radius: 0px !important;
+}
+
+/* Hachuras Coloridas Suaves para a Projeção de Despesas Futuras */
+[data-theme="schematic"] #dash-future-expenses .h-5 .h-full {
+  border-right: 1px solid #111111 !important;
+  border-radius: 0px !important;
+}
+
+[data-theme="schematic"] #dash-future-expenses .h-5 .bg-accent-red {
+  background-image: repeating-linear-gradient(-45deg, #fa6538 0 3px, #fa6538 6px, #ffebee 6px, #ffebee 12px) !important;
+  background-color: #ffebee !important;
+}
+
+[data-theme="schematic"] #dash-future-expenses .h-5 .bg-yellow-500 {
+  background-image: repeating-linear-gradient(-45deg, #e65100 0 3px, #e65100 6px, #fff8e1 6px, #fff8e1 12px) !important;
+  background-color: #fff8e1 !important;
+}
+
+[data-theme="schematic"] #dash-future-expenses .h-5 .bg-blue-400,
+[data-theme="schematic"] #dash-future-expenses .h-5 .bg-blue-500 {
+  background-image: repeating-linear-gradient(-45deg, #1976d2 0 3px, #1976d2 6px, #e3f2fd 6px, #e3f2fd 12px) !important;
+  background-color: #e3f2fd !important;
+}
+
+[data-theme="schematic"] #dash-future-expenses .h-5 .bg-accent-green {
+  background-image: repeating-linear-gradient(-45deg, #2e7d32 0 3px, #2e7d32 6px, #e8f5e9 6px, #e8f5e9 12px) !important;
+  background-color: #e8f5e9 !important;
+}
+
+/* Legibilidade do Valor Monetário nas Barras do Gráfico Futuro */
+[data-theme="schematic"] #dash-future-expenses span.whitespace-nowrap {
+  color: #111111 !important;
+  font-weight: 800 !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  padding: 1px 5px !important;
+  border-radius: 3px !important;
+  border: 1px solid #111111 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+  text-shadow: none !important;
 }
 
 /* Smart Insights Box & Arrow/Signal Colors (Red for +, Green for -) */
