@@ -472,31 +472,27 @@ button:focus-visible {
   border-radius: 0px !important;
 }
 
-/* Hachuras Coloridas Suaves para a Projeção de Despesas Futuras */
+/* Hachuras Coloridas Suaves para a Projeção de Despesas Futuras (#F76C5E, #7392B7, #568259) */
 [data-theme="schematic"] #dash-future-expenses .h-5 .h-full {
   border-right: 1px solid #111111 !important;
   border-radius: 0px !important;
 }
 
 [data-theme="schematic"] #dash-future-expenses .h-5 .bg-accent-red {
-  background-image: repeating-linear-gradient(-45deg, #fa6538 0 3px, #fa6538 6px, #ffebee 6px, #ffebee 12px) !important;
-  background-color: #ffebee !important;
+  background-image: repeating-linear-gradient(-45deg, #F76C5E 0 3px, #F76C5E 6px, #ffffff 6px, #ffffff 12px) !important;
+  background-color: #ffffff !important;
 }
 
-[data-theme="schematic"] #dash-future-expenses .h-5 .bg-yellow-500 {
-  background-image: repeating-linear-gradient(-45deg, #e65100 0 3px, #e65100 6px, #fff8e1 6px, #fff8e1 12px) !important;
-  background-color: #fff8e1 !important;
-}
-
+[data-theme="schematic"] #dash-future-expenses .h-5 .bg-yellow-500,
 [data-theme="schematic"] #dash-future-expenses .h-5 .bg-blue-400,
 [data-theme="schematic"] #dash-future-expenses .h-5 .bg-blue-500 {
-  background-image: repeating-linear-gradient(-45deg, #1976d2 0 3px, #1976d2 6px, #e3f2fd 6px, #e3f2fd 12px) !important;
-  background-color: #e3f2fd !important;
+  background-image: repeating-linear-gradient(-45deg, #7392B7 0 3px, #7392B7 6px, #ffffff 6px, #ffffff 12px) !important;
+  background-color: #ffffff !important;
 }
 
 [data-theme="schematic"] #dash-future-expenses .h-5 .bg-accent-green {
-  background-image: repeating-linear-gradient(-45deg, #2e7d32 0 3px, #2e7d32 6px, #e8f5e9 6px, #e8f5e9 12px) !important;
-  background-color: #e8f5e9 !important;
+  background-image: repeating-linear-gradient(-45deg, #568259 0 3px, #568259 6px, #ffffff 6px, #ffffff 12px) !important;
+  background-color: #ffffff !important;
 }
 
 /* Legibilidade do Valor Monetário nas Barras do Gráfico Futuro */
