@@ -478,12 +478,12 @@ button:focus-visible {
   border-radius: 0px !important;
 }
 
-[data-theme="schematic"] #dash-future-expenses .h-5 .bg-accent-red {
+[data-theme="schematic"] #dash-future-expenses .h-5 .bg-accent-red,
+[data-theme="schematic"] #dash-future-expenses .h-5 .bg-yellow-500 {
   background-image: repeating-linear-gradient(-45deg, #F76C5E 0 3px, #F76C5E 6px, #ffffff 6px, #ffffff 12px) !important;
   background-color: #ffffff !important;
 }
 
-[data-theme="schematic"] #dash-future-expenses .h-5 .bg-yellow-500,
 [data-theme="schematic"] #dash-future-expenses .h-5 .bg-blue-400,
 [data-theme="schematic"] #dash-future-expenses .h-5 .bg-blue-500 {
   background-image: repeating-linear-gradient(-45deg, #7392B7 0 3px, #7392B7 6px, #ffffff 6px, #ffffff 12px) !important;
