@@ -333,6 +333,9 @@ button:focus-visible {
 
 [data-theme="schematic"] .filter-chip.active-chip,
 [data-theme="schematic"] .filter-chip.bg-primary,
+[data-theme="schematic"] .filter-chip.border-primary,
+[data-theme="schematic"] .filter-chip[class*="border-primary"],
+[data-theme="schematic"] .filter-chip.text-white,
 [data-theme="schematic"] label:has(#filter-split-by-two:checked),
 [data-theme="schematic"] label.active-chip:has(#filter-split-by-two) {
   background-color: #111111 !important;
