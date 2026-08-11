@@ -431,9 +431,22 @@ button:focus-visible {
   color: #555555 !important;
 }
 
-/* Checkbox Dividir por 2 - Caixinha Branca com 'v' Preto Visível quando Marcado */
-#filter-split-by-two,
-[data-theme="schematic"] #filter-split-by-two {
+/* Botão Opções Avançadas no Modal (Espaçamento Interno e Borda Técnica) */
+[data-theme="schematic"] #toggle-advanced-btn {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #111111 !important;
+  padding: 0.6rem 1rem !important;
+  border-radius: 12px !important;
+}
+
+[data-theme="schematic"] #toggle-advanced-btn * {
+  color: #111111 !important;
+}
+
+/* Todos os Checkboxes (Caixinha Branca com 'v' Preto Visível quando Marcado) */
+[data-theme="schematic"] input[type="checkbox"],
+#filter-split-by-two {
   appearance: none !important;
   -webkit-appearance: none !important;
   width: 1.1rem !important;
@@ -447,8 +460,8 @@ button:focus-visible {
   vertical-align: middle !important;
 }
 
-#filter-split-by-two:checked,
-[data-theme="schematic"] #filter-split-by-two:checked {
+[data-theme="schematic"] input[type="checkbox"]:checked,
+#filter-split-by-two:checked {
   background-color: #ffffff !important;
   border: 1.5px solid #111111 !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23111111'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E") !important;
