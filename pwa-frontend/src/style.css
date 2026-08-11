@@ -265,26 +265,48 @@ button:focus-visible {
 }
 
 /* ==========================================================================
-   SCHEMATIC SPECIFIC FIXES (6 USER ITEMS)
+   SCHEMATIC SPECIFIC FIXES & REFINEMENTS
    ========================================================================== */
 
-/* Item 1: Avatar Level Badge & Custom Selects */
+/* Item 1: Avatar Level Badge, Custom Selects & XP Bar Hatching */
 [data-theme="schematic"] #avatar-level-badge {
   background-color: #111111 !important;
   color: #f5f6f8 !important;
   border: 1px solid #111111 !important;
 }
 
+/* XP Progress Bar Hatching */
+[data-theme="schematic"] #rpg-xp-bar,
+[data-theme="schematic"] .h-2:has(#rpg-xp-bar) .h-full,
+[data-theme="schematic"] #rpg-large-avatar + div .h-2 .h-full,
+[data-theme="schematic"] div:has(> #rpg-xp-text) + div .h-full {
+  background-image: repeating-linear-gradient(-45deg, #111111 0 2px, transparent 2px 4px) !important;
+  background-color: #111111 !important;
+  border-radius: 0px !important;
+}
+
+[data-theme="schematic"] div:has(> #rpg-xp-text) + div {
+  background-color: #ffffff !important;
+  border: 1px solid #111111 !important;
+  border-radius: 0px !important;
+}
+
+/* Compact Select Boxes */
 [data-theme="schematic"] select {
   background-color: #ffffff !important;
   color: #111111 !important;
   border: 1px solid #111111 !important;
-  padding-right: 2.25rem !important;
-  padding-left: 0.75rem !important;
+  padding-left: 0.5rem !important;
+  padding-right: 1.5rem !important;
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+  font-size: 0.75rem !important;
+  max-width: fit-content !important;
+  width: auto !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23111111'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
-  background-position: right 0.5rem center !important;
+  background-position: right 0.35rem center !important;
   background-repeat: no-repeat !important;
-  background-size: 0.9em !important;
+  background-size: 0.85em !important;
 }
 
 [data-theme="schematic"] select option {
@@ -292,26 +314,39 @@ button:focus-visible {
   color: #111111 !important;
 }
 
-/* Item 2: Filter Chips Invert Hover */
-[data-theme="schematic"] .filter-chip {
+/* Item 2: Filter Chips & Dividir por 2 Active Indicator */
+[data-theme="schematic"] .filter-chip,
+[data-theme="schematic"] label:has(#filter-split-by-two) {
   background-color: #ffffff !important;
   color: #111111 !important;
   border: 1px solid #111111 !important;
+  padding: 0.25rem 0.6rem !important;
+  font-size: 0.75rem !important;
   transition: background-color 0.15s, color 0.15s !important;
 }
 
-[data-theme="schematic"] .filter-chip:hover {
+[data-theme="schematic"] .filter-chip:hover,
+[data-theme="schematic"] label:has(#filter-split-by-two):hover {
   background-color: #111111 !important;
   color: #f5f6f8 !important;
 }
 
 [data-theme="schematic"] .filter-chip.active-chip,
-[data-theme="schematic"] .filter-chip.bg-primary {
+[data-theme="schematic"] .filter-chip.bg-primary,
+[data-theme="schematic"] label:has(#filter-split-by-two:checked),
+[data-theme="schematic"] label.active-chip:has(#filter-split-by-two) {
   background-color: #111111 !important;
+  color: #f5f6f8 !important;
+  border-color: #111111 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="schematic"] label:has(#filter-split-by-two:checked) span,
+[data-theme="schematic"] label.active-chip:has(#filter-split-by-two) span {
   color: #f5f6f8 !important;
 }
 
-/* Item 3: Transaction Badges & Remove Expense Glow */
+/* Item 3: Transaction Badges & Isolated Tag Hover */
 [data-theme="schematic"] #transactions-list .text-accent-red {
   filter: none !important;
   drop-shadow: none !important;
@@ -325,13 +360,23 @@ button:focus-visible {
   border: 1px solid #111111 !important;
   box-shadow: none !important;
   text-shadow: none !important;
+  transition: background-color 0.15s, color 0.15s !important;
 }
 
+/* Card hover does NOT invert tags */
 [data-theme="schematic"] #transactions-list .glass-card:hover span[class*="rounded"],
 [data-theme="schematic"] #transactions-list .glass-card:hover span[class*="bg-"] {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border-color: #111111 !important;
+}
+
+/* ONLY direct hover on the specific tag inverts that tag */
+[data-theme="schematic"] #transactions-list .glass-card span[class*="rounded"]:hover,
+[data-theme="schematic"] #transactions-list .glass-card span[class*="bg-"]:hover {
   background-color: #111111 !important;
   color: #f5f6f8 !important;
-  border-color: #f5f6f8 !important;
+  border-color: #111111 !important;
 }
 
 /* Item 4: Technical FAB Button */
@@ -378,7 +423,26 @@ button:focus-visible {
   color: #555555 !important;
 }
 
-/* Item 5: Smart Insights & Chart Hatching */
+/* Item 5 & Print 4: Striped Chart Bars (Print 5 Reference Image Style) */
+[data-theme="schematic"] #dash-categories .h-2,
+[data-theme="schematic"] #dash-credit-cards .h-2,
+[data-theme="schematic"] #dash-future-expenses .h-5 {
+  background-color: #ffffff !important;
+  border: 1px solid #111111 !important;
+  border-radius: 0px !important;
+  overflow: hidden !important;
+}
+
+[data-theme="schematic"] #dash-categories .h-2 .h-full,
+[data-theme="schematic"] #dash-credit-cards .h-2 .h-full,
+[data-theme="schematic"] #dash-future-expenses .h-5 .h-full {
+  background-image: repeating-linear-gradient(-45deg, #111111 0 3px, #111111 6px, #ffffff 6px, #ffffff 12px) !important;
+  background-color: #ffffff !important;
+  border-right: 1px solid #111111 !important;
+  border-radius: 0px !important;
+}
+
+/* Smart Insights Box & Arrow/Signal Colors (Red for +, Green for -) */
 [data-theme="schematic"] #dash-insights,
 [data-theme="schematic"] .border-purple-500\/20 {
   background-color: #ffffff !important;
@@ -387,31 +451,32 @@ button:focus-visible {
   box-shadow: none !important;
 }
 
-[data-theme="schematic"] .bg-rose-500\/10,
-[data-theme="schematic"] .bg-emerald-500\/10,
-[data-theme="schematic"] .bg-blue-500\/10,
-[data-theme="schematic"] .bg-amber-500\/10 {
+[data-theme="schematic"] #dash-insights .bg-rose-500\/10,
+[data-theme="schematic"] #dash-insights .border-rose-500\/30 {
   background-color: #ffffff !important;
-  color: #111111 !important;
+  color: #fa6538 !important; /* Vermelho para aumentos de gastos (+ / ↑) */
   border: 1px solid #111111 !important;
+  font-weight: 700 !important;
 }
 
-[data-theme="schematic"] .text-rose-300,
-[data-theme="schematic"] .text-emerald-300,
-[data-theme="schematic"] .text-blue-300,
-[data-theme="schematic"] .text-amber-300,
-[data-theme="schematic"] .text-yellow-400 {
-  color: #111111 !important;
+[data-theme="schematic"] #dash-insights .bg-rose-500\/10 *,
+[data-theme="schematic"] #dash-insights .text-rose-300 {
+  color: #fa6538 !important; /* Vermelho */
+  font-weight: 700 !important;
 }
 
-/* Diagonal stripe hatching for all progress bars */
-[data-theme="schematic"] #dash-categories .h-full,
-[data-theme="schematic"] #dash-credit-cards .h-full,
-[data-theme="schematic"] #dash-future-expenses .h-full {
-  background-image: repeating-linear-gradient(-45deg, #111111 0 2px, transparent 2px 5px) !important;
-  background-color: #111111 !important;
+[data-theme="schematic"] #dash-insights .bg-emerald-500\/10,
+[data-theme="schematic"] #dash-insights .border-emerald-500\/30 {
+  background-color: #ffffff !important;
+  color: #0bda65 !important; /* Verde para redução de gastos (- / ↓) */
   border: 1px solid #111111 !important;
-  border-radius: 0px !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="schematic"] #dash-insights .bg-emerald-500\/10 *,
+[data-theme="schematic"] #dash-insights .text-emerald-300 {
+  color: #0bda65 !important; /* Verde */
+  font-weight: 700 !important;
 }
 
 /* Item 6: Category Breakdown Tooltip Readability */
@@ -437,5 +502,6 @@ button:focus-visible {
 [data-theme="schematic"] #dash-categories .group .invisible .border-slate-700\/70 {
   border-color: #111111 !important;
 }
+
 
 
