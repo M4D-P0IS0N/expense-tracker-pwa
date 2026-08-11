@@ -591,20 +591,20 @@ button:focus-visible {
   color: #f5f6f8 !important;
 }
 
-/* Hachuras Finas para os Containers de Ícones de Transações (Receitas e Despesas) */
+/* Hachuras Finas Suaves (Com Transparência) para os Containers de Ícones de Transações */
 [data-theme="schematic"] #transactions-list .bg-red-500\/10,
 [data-theme="schematic"] #transactions-list .border-red-500\/20 {
-  background-image: repeating-linear-gradient(-45deg, #fa6538 0 1px, #ffffff 1px 4px) !important;
+  background-image: repeating-linear-gradient(-45deg, rgba(250, 101, 56, 0.3) 0 1px, transparent 1px 5px) !important;
   background-color: #ffffff !important;
-  border: 1px solid #fa6538 !important;
+  border: 1px solid rgba(250, 101, 56, 0.35) !important;
   color: #fa6538 !important;
 }
 
 [data-theme="schematic"] #transactions-list .bg-accent-green\/10,
 [data-theme="schematic"] #transactions-list .border-accent-green\/20 {
-  background-image: repeating-linear-gradient(-45deg, #0bda65 0 1px, #ffffff 1px 4px) !important;
+  background-image: repeating-linear-gradient(-45deg, rgba(11, 218, 101, 0.3) 0 1px, transparent 1px 5px) !important;
   background-color: #ffffff !important;
-  border: 1px solid #0bda65 !important;
+  border: 1px solid rgba(11, 218, 101, 0.35) !important;
   color: #0bda65 !important;
 }
 
