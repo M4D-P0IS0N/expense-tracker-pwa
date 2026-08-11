@@ -591,21 +591,34 @@ button:focus-visible {
   color: #f5f6f8 !important;
 }
 
-/* Hachuras Finas Suaves (Com Transparência) para os Containers de Ícones de Transações */
+/* Hachuras Finas Suaves (Com Transparência) para Containers de Ícones e Botões de Tipo (Receita/Despesa) */
 [data-theme="schematic"] #transactions-list .bg-red-500\/10,
-[data-theme="schematic"] #transactions-list .border-red-500\/20 {
+[data-theme="schematic"] #transactions-list .border-red-500\/20,
+[data-theme="schematic"] #add-modal .bg-red-500\/10,
+[data-theme="schematic"] #add-modal .border-red-500,
+[data-theme="schematic"] #add-modal label:has(input[value="Expense"]:checked) {
   background-image: repeating-linear-gradient(-45deg, rgba(250, 101, 56, 0.3) 0 1px, transparent 1px 5px) !important;
   background-color: #ffffff !important;
-  border: 1px solid rgba(250, 101, 56, 0.35) !important;
+  border: 1.5px solid #fa6538 !important;
   color: #fa6538 !important;
 }
 
 [data-theme="schematic"] #transactions-list .bg-accent-green\/10,
-[data-theme="schematic"] #transactions-list .border-accent-green\/20 {
+[data-theme="schematic"] #transactions-list .border-accent-green\/20,
+[data-theme="schematic"] #add-modal .bg-green-500\/10,
+[data-theme="schematic"] #add-modal .border-green-500,
+[data-theme="schematic"] #add-modal label:has(input[value="Income"]:checked) {
   background-image: repeating-linear-gradient(-45deg, rgba(11, 218, 101, 0.3) 0 1px, transparent 1px 5px) !important;
   background-color: #ffffff !important;
-  border: 1px solid rgba(11, 218, 101, 0.35) !important;
+  border: 1.5px solid #0bda65 !important;
   color: #0bda65 !important;
+}
+
+[data-theme="schematic"] #add-modal label:has(input[name="type"]:not(:checked)) {
+  background-image: none !important;
+  background-color: #ffffff !important;
+  border: 1px solid #111111 !important;
+  color: #111111 !important;
 }
 
 
