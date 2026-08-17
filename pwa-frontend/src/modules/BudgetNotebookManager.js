@@ -1,4 +1,4 @@
-import { normalizeCategory } from '../utils/categoryUtils.js';
+﻿import { normalizeCategory } from '../utils/categoryUtils.js';
 
 const MONTH_NAMES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -89,16 +89,18 @@ export function initBudgetNotebookManager({
     if (!notesHistoryList) return;
     notesHistoryList.innerHTML = '';
 
+    const historyItems = Array.isArray(history) ? history : [];
+
     if (notesHistoryCount) {
-      notesHistoryCount.textContent = `${history.length} edição${history.length === 1 ? '' : 'ões'}`;
+      notesHistoryCount.textContent = `${historyItems.length} edição${historyItems.length === 1 ? '' : 'ões'}`;
     }
 
-    if (!history || history.length === 0) {
+    if (historyItems.length === 0) {
       notesHistoryList.innerHTML = '<div class="text-slate-500 italic p-3 text-center">Nenhuma edição registrada neste mês.</div>';
       return;
     }
 
-    history.forEach((entry) => {
+    historyItems.forEach((entry) => {
       const formattedTimestamp = new Date(entry.timestamp).toLocaleString('pt-BR', {
         day: '2-digit',
         month: '2-digit',
@@ -142,7 +144,7 @@ export function initBudgetNotebookManager({
     });
   }
 
-  function openNotesModal() {
+  async function openNotesModal() {
     const { month, year } = getSelectedMonthAndYear();
     const monthName = MONTH_NAMES[month - 1] || 'Mês';
 
@@ -150,11 +152,28 @@ export function initBudgetNotebookManager({
       notesMonthBadge.textContent = `${monthName} / ${year}`;
     }
 
+    // 1. Mostrar imediatamente do cache local para resposta visual instantânea
     notesTextarea.value = notebookService.getNotes(year, month);
-    const history = notebookService.getHistory(year, month);
-    renderHistoryList(history);
+    const cachedHistory = notebookService.getHistory(year, month);
+    renderHistoryList(cachedHistory);
 
     notesModal.classList.remove('hidden');
+
+    // 2. Sincronização em segundo plano da nuvem
+    if (typeof notebookService.fetchNotes === 'function') {
+      try {
+        const cloudData = await notebookService.fetchNotes(year, month);
+        if (cloudData && typeof cloudData === 'object') {
+          // Atualiza caso o usuário ainda não tenha começado a digitar uma nova nota
+          if (document.activeElement !== notesTextarea) {
+            notesTextarea.value = cloudData.content || '';
+          }
+          renderHistoryList(cloudData.history || []);
+        }
+      } catch (err) {
+        console.warn('Erro ao sincronizar notas da nuvem:', err);
+      }
+    }
   }
 
   function closeNotesModal() {
@@ -185,23 +204,32 @@ export function initBudgetNotebookManager({
   closeNotesBtn.addEventListener('click', closeNotesModal);
   notesOverlay.addEventListener('click', closeNotesModal);
 
-  saveNotesBtn.addEventListener('click', () => {
+  saveNotesBtn.addEventListener('click', async () => {
     const { month, year } = getSelectedMonthAndYear();
-    notebookService.saveNotes(notesTextarea.value, year, month);
-
-    const history = notebookService.getHistory(year, month);
-    renderHistoryList(history);
-
     const originalButtonMarkup = saveNotesBtn.innerHTML;
-    saveNotesBtn.innerHTML = 'Salvo!';
-    saveNotesBtn.classList.add('bg-accent-green/20', 'text-accent-green', 'border-accent-green');
-    saveNotesBtn.classList.remove('bg-primary/20', 'text-primary', 'border-primary');
+    saveNotesBtn.disabled = true;
 
-    setTimeout(() => {
-      saveNotesBtn.innerHTML = originalButtonMarkup;
-      saveNotesBtn.classList.remove('bg-accent-green/20', 'text-accent-green', 'border-accent-green');
-      saveNotesBtn.classList.add('bg-primary/20', 'text-primary', 'border-primary');
-    }, 2000);
+    try {
+      const saveResult = await Promise.resolve(notebookService.saveNotes(notesTextarea.value, year, month));
+      const history = (saveResult && saveResult.history) ? saveResult.history : notebookService.getHistory(year, month);
+      renderHistoryList(history);
+
+      saveNotesBtn.innerHTML = 'Salvo!';
+      saveNotesBtn.classList.add('bg-accent-green/20', 'text-accent-green', 'border-accent-green');
+      saveNotesBtn.classList.remove('bg-primary/20', 'text-primary', 'border-primary');
+    } catch (err) {
+      console.error('Erro ao salvar notas:', err);
+      saveNotesBtn.innerHTML = 'Erro ao salvar';
+      saveNotesBtn.classList.add('bg-accent-red/20', 'text-accent-red', 'border-accent-red');
+      saveNotesBtn.classList.remove('bg-primary/20', 'text-primary', 'border-primary');
+    } finally {
+      setTimeout(() => {
+        saveNotesBtn.innerHTML = originalButtonMarkup;
+        saveNotesBtn.classList.remove('bg-accent-green/20', 'text-accent-green', 'border-accent-green', 'bg-accent-red/20', 'text-accent-red', 'border-accent-red');
+        saveNotesBtn.classList.add('bg-primary/20', 'text-primary', 'border-primary');
+        saveNotesBtn.disabled = false;
+      }, 2000);
+    }
   });
 
   return {

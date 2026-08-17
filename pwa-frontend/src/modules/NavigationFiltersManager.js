@@ -1,6 +1,9 @@
+﻿import { MonthPreferencesService } from '../services/MonthPreferencesService.js';
+
 export function initNavigationFilters({
   transactionService,
   gamificationService,
+  monthPreferencesService = MonthPreferencesService,
   showNotification,
   loadData,
   updateUI,
@@ -18,14 +21,33 @@ export function initNavigationFilters({
   setCurrentTab,
   setSplitByTwoEnabled,
 }) {
-  function syncSplitByTwoState() {
+  async function syncSplitByTwoState(fetchCloud = true) {
     if (!elements.filterSplitByTwoEl) return;
-    const year = elements.filterYearEl.value;
-    const month = elements.filterMonthEl.value;
-    const storageKey = `split_by_two_${year}_${month}`;
-    const isEnabled = localStorage.getItem(storageKey) === 'true';
-    elements.filterSplitByTwoEl.checked = isEnabled;
-    setSplitByTwoEnabled(isEnabled);
+    const year = parseInt(elements.filterYearEl.value, 10);
+    const month = parseInt(elements.filterMonthEl.value, 10);
+    if (!year || !month) return;
+
+    // 1. Estado imediato via cache local
+    const cachedEnabled = monthPreferencesService.getSplitByTwoFromCache(year, month);
+    elements.filterSplitByTwoEl.checked = cachedEnabled;
+    setSplitByTwoEnabled(cachedEnabled);
+
+    // 2. Sincronização assíncrona em nuvem com Supabase
+    if (fetchCloud && typeof monthPreferencesService.getSplitByTwo === 'function') {
+      try {
+        const cloudEnabled = await monthPreferencesService.getSplitByTwo(year, month);
+        if (cloudEnabled !== cachedEnabled) {
+          elements.filterSplitByTwoEl.checked = cloudEnabled;
+          setSplitByTwoEnabled(cloudEnabled);
+          updateUI();
+          if (getCurrentTab() === 'Dashboard') {
+            renderDashboard();
+          }
+        }
+      } catch (err) {
+        console.warn('Erro ao sincronizar Dividir por 2 da nuvem:', err);
+      }
+    }
   }
 
   async function initTemporalNav() {
@@ -47,13 +69,13 @@ export function initNavigationFilters({
 
     elements.filterMonthEl.value = (currentDate.getMonth() + 1).toString();
     elements.filterYearEl.value = currentDate.getFullYear().toString();
-    syncSplitByTwoState();
+    await syncSplitByTwoState(true);
 
-    elements.filterMonthEl.addEventListener('change', () => {
-      syncSplitByTwoState();
+    elements.filterMonthEl.addEventListener('change', async () => {
+      await syncSplitByTwoState(true);
       loadData();
     });
-    elements.filterYearEl.addEventListener('change', () => {
+    elements.filterYearEl.addEventListener('change', async () => {
       if (elements.filterYearEl.value === '__add_year__') {
         const newYearString = prompt('Digite o ano que deseja adicionar (ex: 2030):');
         if (newYearString) {
@@ -67,17 +89,17 @@ export function initNavigationFilters({
               elements.filterYearEl.insertBefore(newOptionElement, addYearOption);
             }
             elements.filterYearEl.value = String(newYear);
-            syncSplitByTwoState();
+            await syncSplitByTwoState(true);
             loadData();
           } else {
-            showNotification('Ano inv�lido. Use entre 2020 e 2050.', 'error');
+            showNotification('Ano inválido. Use entre 2020 e 2050.', 'error');
             elements.filterYearEl.value = currentDate.getFullYear().toString();
           }
         } else {
           elements.filterYearEl.value = currentDate.getFullYear().toString();
         }
       } else {
-        syncSplitByTwoState();
+        await syncSplitByTwoState(true);
         loadData();
       }
     });
@@ -118,20 +140,15 @@ export function initNavigationFilters({
     }
 
     if (elements.filterSplitByTwoEl) {
-      syncSplitByTwoState();
-      elements.filterSplitByTwoEl.addEventListener('change', (event) => {
-        const year = elements.filterYearEl.value;
-        const month = elements.filterMonthEl.value;
-        const storageKey = `split_by_two_${year}_${month}`;
+      syncSplitByTwoState(false);
+      elements.filterSplitByTwoEl.addEventListener('change', async (event) => {
+        const year = parseInt(elements.filterYearEl.value, 10);
+        const month = parseInt(elements.filterMonthEl.value, 10);
         const isChecked = event.target.checked;
 
-        if (isChecked) {
-          localStorage.setItem(storageKey, 'true');
-        } else {
-          localStorage.removeItem(storageKey);
-        }
-
         setSplitByTwoEnabled(isChecked);
+        await monthPreferencesService.setSplitByTwo(year, month, isChecked);
+
         updateUI();
         if (getCurrentTab() === 'Dashboard') {
           renderDashboard();
@@ -199,5 +216,6 @@ export function initNavigationFilters({
     initTemporalNav,
     initFilters,
     setActiveTab,
+    syncSplitByTwoState,
   };
 }

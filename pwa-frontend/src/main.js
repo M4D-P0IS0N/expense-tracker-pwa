@@ -1,4 +1,4 @@
-import { supabase } from './services/supabaseClient.js';
+﻿import { supabase } from './services/supabaseClient.js';
 import './style.css';
 import { TransactionService } from './services/TransactionService.js';
 import { BudgetService } from './services/BudgetService.js';
@@ -7,6 +7,7 @@ import { NotebookService } from './services/NotebookService.js';
 import { GamificationService } from './services/GamificationService.js';
 import { SavingsService } from './services/SavingsService.js';
 import { AuthService } from './services/AuthService.js';
+import { MonthPreferencesService } from './services/MonthPreferencesService.js';
 import { initContextMenuManager } from './modules/ContextMenuManager.js';
 import { initNeuralBorder } from './modules/NeuralBorderAnimation.js';
 import { initPullToRefresh } from './modules/PullToRefresh.js';
@@ -40,23 +41,21 @@ let isSplitByTwoEnabled = false;
 const balanceEl = document.getElementById('total-balance');
 const incomeEl = document.getElementById('total-income');
 const expenseEl = document.getElementById('total-expense');
-const listEl = document.getElementById('transactions-list');
+const listEl = document.getElementById('transaction-list');
 const emptyEl = document.getElementById('empty-state');
-
-// Temporal Navigation Elements
-const filterMonthEl = document.getElementById('filter-month');
-const filterYearEl = document.getElementById('filter-year');
-
 const tabAll = document.getElementById('tab-all');
 const tabIncome = document.getElementById('tab-income');
 const tabExpense = document.getElementById('tab-expense');
 const tabDashboard = document.getElementById('tab-dashboard');
-
 const dashboardView = document.getElementById('dashboard-view');
-const dashInsights = document.getElementById('dash-insights');
+const filterMonthEl = document.getElementById('filter-month');
+const filterYearEl = document.getElementById('filter-year');
+
+// Dashboard Elements
 const dashForecast = document.getElementById('dash-forecast');
 const dashNetworth = document.getElementById('dash-networth');
 const dashNetworthTrend = document.getElementById('dash-networth-trend');
+const dashInsights = document.getElementById('dash-insights');
 const dashCategories = document.getElementById('dash-categories');
 const dashCreditCards = document.getElementById('dash-credit-cards');
 // Savings Elements
@@ -198,6 +197,22 @@ const transactionListElements = {
   listEl,
   emptyEl,
   filterCardEl,
+  filterChips,
+  typeRadios,
+  amountInput: txAmountInput,
+  descriptionInput: txDescriptionInput,
+  dateInput: txDateInput,
+  categorySelect: txCategorySelect,
+  emojiDisplay: txEmojiDisplay,
+  customCategoryContainer: txCustomCategoryContainer,
+  cardInput: txCardInput,
+  installmentTotalInput: txInstallTotalInput,
+  recurringInput: txRecurringInput,
+  splitByTwoInput: txSplitByTwoInput,
+  thirdPartyInput: txThirdPartyInput,
+  modalTitleElement,
+  modalSubmitButton,
+  parseBrazilianCurrency,
 };
 
 // --- Initialization ---
@@ -225,11 +240,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Init neural border
   initNeuralBorder();
+
+  // Sincronização em segundo plano das preferências mensais e bloco de notas
+  MonthPreferencesService.syncAllPreferences().catch((err) => {
+    console.warn('Erro ao sincronizar preferências no carregamento:', err);
+  });
+  NotebookService.syncAllNotes().catch((err) => {
+    console.warn('Erro ao sincronizar notas no carregamento:', err);
+  });
 });
 
 const { initTemporalNav, initFilters } = initNavigationFilters({
   transactionService: TransactionService,
   gamificationService: GamificationService,
+  monthPreferencesService: MonthPreferencesService,
   showNotification,
   loadData,
   updateUI,
@@ -578,4 +602,3 @@ initPullToRefresh();
 
 // Theme Manager -> ./modules/ThemeManager.js
 initThemeManager();
-

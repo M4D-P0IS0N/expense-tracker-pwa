@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NotebookService } from '../src/services/NotebookService.js';
 
@@ -8,7 +8,9 @@ function createLocalStorageMock() {
         getItem: (key) => store.has(key) ? store.get(key) : null,
         setItem: (key, val) => store.set(key, String(val)),
         removeItem: (key) => store.delete(key),
-        clear: () => store.clear()
+        clear: () => store.clear(),
+        key: (i) => Array.from(store.keys())[i],
+        get length() { return store.size; }
     };
 }
 
@@ -37,6 +39,16 @@ test('NotebookService should keep edit history with timestamps and diffs', () =>
     assert.deepEqual(latestEdit.added, ['Linha 3']);
     assert.deepEqual(latestEdit.removed, ['Linha 2']);
     assert.ok(latestEdit.timestamp);
+});
+
+test('NotebookService fetchNotes should return cached content and history when offline', async () => {
+    localStorage.clear();
+    NotebookService.saveNotes('Conteúdo offline', 2026, 12);
+
+    const result = await NotebookService.fetchNotes(2026, 12);
+    assert.equal(result.content, 'Conteúdo offline');
+    assert.ok(Array.isArray(result.history));
+    assert.equal(result.history.length, 1);
 });
 
 test('NotebookService should migrate legacy global notes if available', () => {

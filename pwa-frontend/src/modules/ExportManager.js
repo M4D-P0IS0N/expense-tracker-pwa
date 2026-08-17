@@ -1,4 +1,4 @@
-// --- Export & Backup Manager ---
+﻿// --- Export & Backup Manager ---
 // Handles CSV, PDF, JSON Export, Retrospective Report, and Full Backup Restoration.
 
 import { exportRetrospectivePdfReport } from "./RetrospectivePdfGenerator.js";
@@ -58,7 +58,6 @@ export function initExportManager(options) {
 
             let totalIncome = 0;
             let totalExpense = 0;
-
             const expensesByCategory = {};
             const expensesByCard = {};
 
@@ -67,122 +66,105 @@ export function initExportManager(options) {
                 const isHalved = shouldApplySplitByTwo(t, isSplitByTwo);
                 const isIgnoredThirdParty = shouldIgnoreThirdParty(t, isSplitByTwo);
 
+                let displayAmount = t.amount;
+                let splitTag = "";
+
+                if (isIgnoredThirdParty) {
+                    splitTag = ' <span style="font-size:10px; color:#d97706; font-weight:600;">(Terceiro/Isento)</span>';
+                } else if (isHalved) {
+                    displayAmount = effectiveAmount;
+                    splitTag = ' <span style="font-size:10px; color:#2563eb; font-weight:600;">(1/2)</span>';
+                }
+
                 if (t.type === "Income") {
                     totalIncome += effectiveAmount;
-                } else if (t.type === "Expense") {
+                } else {
                     totalExpense += effectiveAmount;
-
-                    const categoryName = normalizeCategory(t.category).full;
-                    expensesByCategory[categoryName] = (expensesByCategory[categoryName] || 0) + effectiveAmount;
+                    const normalized = normalizeCategory(t.category);
+                    const catName = normalized.name;
+                    expensesByCategory[catName] = (expensesByCategory[catName] || 0) + effectiveAmount;
 
                     const cardName = t.credit_card_name || "Sem Cartão";
                     expensesByCard[cardName] = (expensesByCard[cardName] || 0) + effectiveAmount;
                 }
 
-                const isIncome = t.type === "Income";
-                const color = isIncome ? "green" : (isIgnoredThirdParty ? "#64748b" : "red");
+                const d = new Date(t.date);
+                const dateStr = !isNaN(d.getTime()) ? d.toLocaleDateString("pt-BR") : t.date;
+                const formattedVal = "R$ " + Number(displayAmount).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const typeColor = t.type === "Income" ? "#16a34a" : "#dc2626";
 
-                const dateObj = new Date(t.date);
-                dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
-                const dateStr = dateObj.toLocaleDateString("pt-BR");
+                let details = "";
+                if (t.credit_card_name) details += "💳 " + t.credit_card_name + " ";
+                if (t.total_installments > 1) details += "🔢 Parcela " + t.installment_number + "/" + t.total_installments + " ";
+                if (t.is_recurring) details += "🔁 Recorrente ";
 
-                const detailsList = [];
-                if (t.total_installments > 1) detailsList.push("Parc: " + t.installment_number + "/" + t.total_installments);
-                if (t.credit_card_name) detailsList.push("Cartão: " + t.credit_card_name);
-                
-                if (isHalved) {
-                    const origStr = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(t.amount);
-                    detailsList.push(`½ Div. por 2 (Orig: ${origStr})`);
-                }
-
-                if (isIgnoredThirdParty) {
-                    const origStr = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(t.amount);
-                    detailsList.push(`👤 Terceiro desconsiderado (Orig: ${origStr})`);
-                } else if (t.is_third_party) {
-                    detailsList.push("👤 Terceiros");
-                }
-
-                const amountStr = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(effectiveAmount);
-                const textStyle = isIgnoredThirdParty ? "text-decoration: line-through; color: #64748b;" : "";
-
-                return '<tr style="' + (isIgnoredThirdParty ? 'opacity: 0.65; background-color: #f8fafc;' : '') + '">' +
-          '<td>' + dateStr + '</td>' +
-          '<td style="color:' + color + '; font-weight:bold;' + textStyle + '">' + (isIncome ? "Receita" : "Despesa") + '</td>' +
-          '<td style="' + textStyle + '">' + (t.description || "") + '</td>' +
-          '<td style="' + textStyle + '">' + normalizeCategory(t.category).full + '</td>' +
-          '<td style="color:' + color + '; font-weight:bold;' + textStyle + '">' + amountStr + '</td>' +
-          '<td>' + detailsList.join(" | ") + '</td>' +
+                return '<tr>' +
+          '<td style="white-space:nowrap;">' + dateStr + '</td>' +
+          '<td style="color:' + typeColor + '; font-weight:600;">' + (t.type === "Income" ? "Receita" : "Despesa") + '</td>' +
+          '<td>' + t.description + '</td>' +
+          '<td>' + (t.category || "Geral") + '</td>' +
+          '<td style="font-weight:600; text-align:right; white-space:nowrap;">' + formattedVal + splitTag + '</td>' +
+          '<td style="font-size:11px; color:#666;">' + details + '</td>' +
         '</tr>';
             }).join("");
 
             const balance = totalIncome - totalExpense;
+            const formatCur = (val) => "R$ " + Number(val).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const hasExpenses = totalExpense > 0;
-            const formatCur = (val) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+
+            const PALETTE = [
+                "#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6",
+                "#ec4899", "#06b6d4", "#14b8a6", "#f97316", "#6366f1",
+                "#84cc16", "#eab308", "#a855f7", "#d946ef", "#64748b"
+            ];
 
             function renderDoughnutToDataUrl(labels, values) {
+                const total = values.reduce((sum, current) => sum + current, 0);
+                if (total <= 0) return "";
+
                 const canvas = document.createElement("canvas");
-                const legendItemHeight = 20;
-                const legendHeaderPadding = 16;
-                const legendHeight = labels.length * legendItemHeight + legendHeaderPadding;
-
-                const chartDiameter = 180;
-                const canvasWidth = 400;
-                const canvasHeight = chartDiameter + legendHeight;
-
+                const canvasWidth = 380;
+                const canvasHeight = Math.max(220, labels.length * 20 + 40);
                 canvas.width = canvasWidth;
                 canvas.height = canvasHeight;
                 const ctx = canvas.getContext("2d");
 
-                const chartCenterX = canvasWidth / 2;
-                const chartCenterY = chartDiameter / 2 + 10;
-                const outerRadius = chartDiameter / 2 - 10;
-                const innerRadius = outerRadius * 0.55;
-
-                const total = values.reduce((sum, val) => sum + val, 0);
-
-                ctx.fillStyle = "#ffffff";
+                ctx.fillStyle = "#fafafa";
                 ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-                if (total <= 0) return canvas.toDataURL("image/png");
+                const chartCenterX = 90;
+                const chartCenterY = 110;
+                const outerRadius = 75;
+                const innerRadius = 45;
 
-                const chartColorPalette = [
-                    "#6366f1", "#ec4899", "#8b5cf6", "#10b981", "#f59e0b",
-                    "#3b82f6", "#ef4444", "#14b8a6", "#84cc16", "#a855f7"
-                ];
+                let currentAngle = -Math.PI / 2;
 
-                let currentAngle = -0.5 * Math.PI;
-
-                values.forEach((val, segmentIndex) => {
-                    const sliceAngle = (val / total) * 2 * Math.PI;
+                values.forEach((value, index) => {
+                    const sliceAngle = (value / total) * 2 * Math.PI;
                     ctx.beginPath();
                     ctx.arc(chartCenterX, chartCenterY, outerRadius, currentAngle, currentAngle + sliceAngle);
                     ctx.arc(chartCenterX, chartCenterY, innerRadius, currentAngle + sliceAngle, currentAngle, true);
                     ctx.closePath();
-                    ctx.fillStyle = chartColorPalette[segmentIndex % chartColorPalette.length];
+                    ctx.fillStyle = PALETTE[index % PALETTE.length];
                     ctx.fill();
-                    ctx.strokeStyle = "#ffffff";
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
                     currentAngle += sliceAngle;
                 });
 
-                ctx.textBaseline = "middle";
-                const legendLeftPadding = 24;
-                const legendStartY = chartDiameter + legendHeaderPadding;
+                const legendLeftPadding = 185;
+                let legendTopOffset = 20;
+                ctx.font = "11px Segoe UI, sans-serif";
+                ctx.textAlign = "left";
 
-                labels.forEach((label, legendIndex) => {
-                    const itemY = legendStartY + legendIndex * legendItemHeight;
-                    const percentage = ((values[legendIndex] / total) * 100).toFixed(1);
-                    const segmentColor = chartColorPalette[legendIndex % chartColorPalette.length];
+                labels.forEach((label, index) => {
+                    const value = values[index];
+                    const percentage = ((value / total) * 100).toFixed(1);
+                    const formattedValue = "R$ " + Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const itemY = legendTopOffset + (index * 20);
 
-                    ctx.beginPath();
-                    ctx.arc(legendLeftPadding + 6, itemY + 9, 6, 0, 2 * Math.PI);
-                    ctx.fillStyle = segmentColor;
-                    ctx.fill();
+                    ctx.fillStyle = PALETTE[index % PALETTE.length];
+                    ctx.fillRect(legendLeftPadding, itemY, 10, 10);
 
-                    const formattedValue = formatCur(values[legendIndex]);
                     ctx.fillStyle = "#333333";
-                    ctx.font = "12px Segoe UI, system-ui, sans-serif";
                     ctx.fillText(label + " (" + percentage + "%) - " + formattedValue, legendLeftPadding + 18, itemY + 9);
                 });
 
@@ -256,7 +238,7 @@ export function initExportManager(options) {
                 ...rows.map(r => r.map(field => '"' + String(field).replace(/"/g, '""') + '"').join(","))
             ].join("\n");
 
-            const blob = new Blob(["﻿" + csvContent], { type: "text/csv;charset=utf-8;" });
+            const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
@@ -309,6 +291,8 @@ export async function exportFullJsonBackup({ TransactionService, supabase, showN
         let userProfile = null;
         let savingsGoals = [];
         let achievements = [];
+        let monthPreferences = [];
+        let notebookNotes = [];
 
         if (supabase) {
             const sessionRes = await supabase.auth.getSession();
@@ -323,6 +307,12 @@ export async function exportFullJsonBackup({ TransactionService, supabase, showN
 
                 const { data: ach } = await supabase.from("achievements").select("*").eq("user_id", userId);
                 if (ach) achievements = ach;
+
+                const { data: mp } = await supabase.from("month_preferences").select("*").eq("user_id", userId);
+                if (mp) monthPreferences = mp;
+
+                const { data: nn } = await supabase.from("notebook_notes").select("*").eq("user_id", userId);
+                if (nn) notebookNotes = nn;
             }
         }
 
@@ -350,6 +340,8 @@ export async function exportFullJsonBackup({ TransactionService, supabase, showN
                 userProfile,
                 savingsGoals,
                 achievements,
+                monthPreferences,
+                notebookNotes,
                 localStorageData
             }
         };
@@ -403,7 +395,7 @@ export async function exportFullCsv({ TransactionService, showNotification }) {
             ...rows.map(r => r.map(field => '"' + String(field).replace(/"/g, '""') + '"').join(","))
         ].join("\n");
 
-        const blob = new Blob(["﻿" + csvContent], { type: "text/csv;charset=utf-8;" });
+        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         const dateStr = new Date().toISOString().split("T")[0];
@@ -437,7 +429,7 @@ export async function importBackup(file, { TransactionService, supabase, showNot
             throw new Error("Formato de backup não reconhecido.");
         }
 
-        const { transactions, userProfile, savingsGoals, achievements, localStorageData } = backupObj.data;
+        const { transactions, userProfile, savingsGoals, achievements, monthPreferences, notebookNotes, localStorageData } = backupObj.data;
 
         let userId = null;
         if (supabase) {
@@ -464,6 +456,29 @@ export async function importBackup(file, { TransactionService, supabase, showNot
         if (Array.isArray(achievements) && achievements.length > 0 && userId && supabase) {
             const achToUpsert = achievements.map(a => ({ ...a, user_id: userId }));
             await supabase.from("achievements").upsert(achToUpsert, { onConflict: "id" });
+        }
+
+        if (Array.isArray(monthPreferences) && monthPreferences.length > 0 && userId && supabase) {
+            const prefsToUpsert = monthPreferences.map(p => ({
+                user_id: userId,
+                year: parseInt(p.year, 10),
+                month: parseInt(p.month, 10),
+                is_split_by_2: Boolean(p.is_split_by_2),
+                updated_at: new Date().toISOString()
+            }));
+            await supabase.from("month_preferences").upsert(prefsToUpsert, { onConflict: "user_id,year,month" });
+        }
+
+        if (Array.isArray(notebookNotes) && notebookNotes.length > 0 && userId && supabase) {
+            const notesToUpsert = notebookNotes.map(n => ({
+                user_id: userId,
+                year: parseInt(n.year, 10),
+                month: parseInt(n.month, 10),
+                content: n.content || "",
+                history: Array.isArray(n.history) ? n.history : [],
+                updated_at: new Date().toISOString()
+            }));
+            await supabase.from("notebook_notes").upsert(notesToUpsert, { onConflict: "user_id,year,month" });
         }
 
         if (localStorageData && typeof localStorageData === "object") {
