@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js';
+﻿import { supabase } from './supabaseClient.js';
 import { AuthService } from './AuthService.js';
 import { getEffectiveTransactionAmount } from '../utils/splitTransactionAmount.js';
 
@@ -39,8 +39,12 @@ export class TransactionService {
         const userId = await getCurrentUserId();
         if (!userId) return [];
 
-        const startDate = new Date(year, month - 1, 1).toISOString();
-        const endDate = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
+        const parsedYear = parseInt(year, 10);
+        const parsedMonth = parseInt(month, 10);
+        const padMonth = String(parsedMonth).padStart(2, '0');
+        const startDate = `${parsedYear}-${padMonth}-01T00:00:00.000Z`;
+        const lastDay = new Date(Date.UTC(parsedYear, parsedMonth, 0)).getUTCDate();
+        const endDate = `${parsedYear}-${padMonth}-${String(lastDay).padStart(2, '0')}T23:59:59.999Z`;
 
         const { data, error } = await supabase
             .from('transactions')
@@ -128,99 +132,32 @@ export class TransactionService {
         const userId = await getCurrentUserId();
         if (!userId) return 0;
 
-        // Fetch transactions for calculation
-        let query = supabase
+        const profile = await this.ensureUserProfile(userId);
+        const baseNetWorth = Number(profile?.base_net_worth || 0);
+
+        const parsedYear = parseInt(year, 10);
+        const parsedMonth = parseInt(month, 10);
+        const padMonth = String(parsedMonth).padStart(2, '0');
+        const lastDay = new Date(Date.UTC(parsedYear, parsedMonth, 0)).getUTCDate();
+        const endOfMonthISO = `${parsedYear}-${padMonth}-${String(lastDay).padStart(2, '0')}T23:59:59.999Z`;
+
+        const { data, error } = await supabase
             .from('transactions')
-            .select('amount, type, is_split_by_2, is_third_party, date')
-            .eq('user_id', userId);
-
-        if (year && month) {
-            const endDate = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
-            query = query.lte('date', endDate);
-        }
-
-        const { data: txData, error: txError } = await query;
-        if (txError) {
-            console.error("Error fetching net worth:", txError);
-            return 0;
-        }
-
-        // Fetch baseNetWorth from Cloud Profile
-        let baseNetWorth = 0;
-        const { data: profileData, error: profileError } = await supabase
-            .from('user_profiles')
-            .select('base_net_worth')
-            .eq('id', userId)
-            .single();
-
-        if (!profileError && profileData) {
-            baseNetWorth = Number(profileData.base_net_worth || 0);
-            // Cache locally for offline resilience
-            localStorage.setItem('baseNetWorth', baseNetWorth.toString());
-        } else {
-            // Fallback to local storage if offline or profile read fails
-            baseNetWorth = Number(localStorage.getItem('baseNetWorth') || 0);
-        }
-
-        return txData.reduce((acc, tx) => {
-            const effectiveTransactionAmount = getEffectiveTransactionAmount(tx, isSplitByTwoEnabled);
-            return tx.type === 'Income' ? acc + effectiveTransactionAmount : acc - effectiveTransactionAmount;
-        }, baseNetWorth);
-    }
-
-    /**
-     * Retrieves ONLY the base adjustment value from the cloud or local fallback
-     */
-    static async getBaseNetWorth() {
-        const userId = await getCurrentUserId();
-        if (!userId) return Number(localStorage.getItem('baseNetWorth') || 0);
-
-        const { data: profileData, error: profileError } = await supabase
-            .from('user_profiles')
-            .select('base_net_worth')
-            .eq('id', userId)
-            .single();
-
-        if (!profileError && profileData) {
-            const base = Number(profileData.base_net_worth || 0);
-            localStorage.setItem('baseNetWorth', base.toString());
-            return base;
-        }
-
-        const ensuredProfile = await this.ensureUserProfile(userId);
-        if (ensuredProfile) {
-            const base = Number(ensuredProfile.base_net_worth || 0);
-            localStorage.setItem('baseNetWorth', base.toString());
-            return base;
-        }
-
-        return Number(localStorage.getItem('baseNetWorth') || 0);
-    }
-
-    /**
-     * Updates the base net worth on the cloud profile
-     */
-    static async updateBaseNetWorth(newBaseAmount) {
-        const userId = await getCurrentUserId();
-        if (!userId) return;
-
-        const numericBase = Number(newBaseAmount);
-
-        // Save locally immediately for fast UI response
-        localStorage.setItem('baseNetWorth', numericBase.toString());
-
-        // Sync to cloud, creating the profile row if needed
-        const { error } = await supabase
-            .from('user_profiles')
-            .upsert({
-                id: userId,
-                base_net_worth: numericBase,
-                last_sync: new Date().toISOString()
-            }, { onConflict: 'id' });
+            .select('amount, type, date, is_split_by_2, is_third_party')
+            .eq('user_id', userId)
+            .lte('date', endOfMonthISO);
 
         if (error) {
-            console.error("Error updating base net worth:", error);
+            console.error("Error fetching net worth:", error);
+            return baseNetWorth;
         }
+
+        const historicalDiff = data.reduce((acc, tx) => {
+            const effectiveTransactionAmount = getEffectiveTransactionAmount(tx, isSplitByTwoEnabled);
+            return tx.type === 'Income' ? acc + effectiveTransactionAmount : acc - effectiveTransactionAmount;
+        }, 0);
+
+        return baseNetWorth + historicalDiff;
     }
 
     /**
@@ -251,50 +188,33 @@ export class TransactionService {
     }
 
     /**
- * Add a new transaction (supports multiple installments)
- */
+     * Add a new transaction (supports multiple installments)
+     */
     static async addTransaction(transaction) {
         const userId = await getCurrentUserId();
         if (!userId) throw new Error("Usuário não autenticado");
 
-        let baseDateStr = transaction.date || new Date().toISOString();
-        // Fix timezone issue when only date is provided (YYYY-MM-DD from input[type="date"])
-        if (baseDateStr.length === 10) {
-            baseDateStr += 'T12:00:00Z'; // Forces it to noon UTC, dodging UTC midnight day-boundary jumps
+        const totalInstallments = parseInt(transaction.total_installments, 10) || 1;
+        const currentInstallment = parseInt(transaction.installment_number, 10) || 1;
+        const installmentGroupId = totalInstallments > 1 ? crypto.randomUUID() : null;
+        const isRecurring = Boolean(transaction.is_recurring);
+        const recurringGroupId = isRecurring ? crypto.randomUUID() : null;
+
+        let baseDateStr = transaction.date;
+        if (baseDateStr && baseDateStr.length === 10) {
+            baseDateStr += 'T12:00:00Z';
         }
-        const baseDate = new Date(baseDateStr);
+        const baseDate = baseDateStr ? new Date(baseDateStr) : new Date();
 
         const txList = [];
-        const totalInstallments = transaction.total_installments || 1;
-        const currentInstallment = transaction.installment_number || 1;
-        const isRecurring = transaction.is_recurring || false;
-        
-        // Define how many transactions to generate
-        let iterations = 1;
-        if (totalInstallments > 1) {
-             iterations = (totalInstallments - currentInstallment) + 1; // e.g 10 - 1 + 1 = 10
-        } else if (isRecurring) {
-             iterations = 12; // Generate next 12 months for recurring by default
-        }
+        const installmentsToGenerate = isRecurring ? 12 : (totalInstallments - currentInstallment + 1);
 
-        // Group ID
-        let installmentGroupId = null;
-        let recurringGroupId = null;
-
-        if (totalInstallments > 1) {
-            installmentGroupId = crypto.randomUUID();
-        } else if (isRecurring) {
-            recurringGroupId = crypto.randomUUID();
-        }
-
-        // Insert from current to total (generating multiple rows for DB)
-        for (let i = 0; i < iterations; i++) {
+        for (let i = 0; i < installmentsToGenerate; i++) {
             const txDate = new Date(baseDate);
-            const expectedMonth = (baseDate.getMonth() + i) % 12;
-            const normalizedExpectedMonth = expectedMonth < 0 ? expectedMonth + 12 : expectedMonth;
+            const originalDay = baseDate.getDate();
+            txDate.setMonth(baseDate.getMonth() + i);
 
-            txDate.setMonth(txDate.getMonth() + i);
-            if (txDate.getMonth() !== normalizedExpectedMonth) {
+            if (txDate.getDate() !== originalDay) {
                 txDate.setDate(0);
             }
 
@@ -316,9 +236,6 @@ export class TransactionService {
                 txToInsert.installment_number = currentInstallment + i;
                 txToInsert.installment_group_id = installmentGroupId;
             } else if (isRecurring) {
-                // To track recurring siblings we reuse installment_group_id conceptually
-                // or add a new custom field if DB allowed, but since DB has no recurring_group_id 
-                // we will stick to installment_group_id to group recurring transactions too
                 txToInsert.installment_group_id = recurringGroupId;
             }
             txList.push(txToInsert);
@@ -333,7 +250,6 @@ export class TransactionService {
             console.error("Error adding transaction:", error);
             throw error;
         }
-        // Return all generated transactions
         return data;
     }
 
