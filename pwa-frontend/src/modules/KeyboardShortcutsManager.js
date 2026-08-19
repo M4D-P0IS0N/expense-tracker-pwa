@@ -63,12 +63,14 @@ export function initKeyboardShortcuts({
     monthButtons.forEach((btn, idx) => {
       const isSelected = idx === currentHighlightedMonthIndex;
       if (isSelected) {
-        btn.classList.add('bg-primary', 'text-white', 'border-primary', 'shadow-glow-primary', 'ring-2', 'ring-primary');
+        btn.classList.add('bg-primary', 'text-white', 'border-primary', 'shadow-glow-primary', 'ring-2', 'ring-primary', 'is-selected');
         btn.classList.remove('bg-slate-800/80', 'text-slate-300', 'border-slate-700');
+        btn.setAttribute('aria-selected', 'true');
         btn.focus();
       } else {
-        btn.classList.remove('bg-primary', 'text-white', 'border-primary', 'shadow-glow-primary', 'ring-2', 'ring-primary');
+        btn.classList.remove('bg-primary', 'text-white', 'border-primary', 'shadow-glow-primary', 'ring-2', 'ring-primary', 'is-selected');
         btn.classList.add('bg-slate-800/80', 'text-slate-300', 'border-slate-700');
+        btn.setAttribute('aria-selected', 'false');
       }
     });
   }

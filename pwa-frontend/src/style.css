@@ -688,6 +688,49 @@ button:focus-visible {
   background-color: #f5f6f8 !important;
 }
 
+/* ==========================================================================
+   MONTH QUICK SELECTOR MODAL - SCHEMATIC THEME (LIGHT PAPER MODE)
+   ========================================================================== */
+[data-theme="schematic"] #month-selector-modal #month-selector-content {
+  background-color: #ffffff !important;
+  border: 1.5px solid #111111 !important;
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.15) !important;
+  color: #111111 !important;
+}
 
+[data-theme="schematic"] #month-selector-modal .month-opt-btn {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #111111 !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
 
+[data-theme="schematic"] #month-selector-modal .month-opt-btn:hover {
+  background-color: #f0f1f4 !important;
+  color: #111111 !important;
+  border-color: #111111 !important;
+}
 
+[data-theme="schematic"] #month-selector-modal .month-opt-btn.is-selected,
+[data-theme="schematic"] #month-selector-modal .month-opt-btn.bg-primary,
+[data-theme="schematic"] #month-selector-modal .month-opt-btn[aria-selected="true"] {
+  background-image: none !important;
+  background-color: #111111 !important;
+  color: #ffffff !important;
+  border: 1.5px solid #111111 !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="schematic"] #month-selector-modal .month-opt-btn.is-selected *,
+[data-theme="schematic"] #month-selector-modal .month-opt-btn.bg-primary *,
+[data-theme="schematic"] #month-selector-modal .month-opt-btn[aria-selected="true"] * {
+  color: #ffffff !important;
+}
+
+[data-theme="schematic"] #month-selector-modal kbd {
+  background-color: #f5f6f8 !important;
+  color: #111111 !important;
+  border: 1px solid #111111 !important;
+}
