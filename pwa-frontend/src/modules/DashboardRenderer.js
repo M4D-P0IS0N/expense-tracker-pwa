@@ -468,6 +468,7 @@ export async function renderDashboardSection({
   filterYearEl,
   isSplitByTwoEnabled,
   getElementById,
+  onNetWorthCalculated,
 }) {
   const expenses = transactions.filter((transaction) => transaction.type === 'Expense');
   const totalExpense = expenses.reduce((sum, transaction) => sum + getEffectiveTransactionAmount(transaction, isSplitByTwoEnabled), 0);
@@ -500,41 +501,9 @@ export async function renderDashboardSection({
 
   dashNetworth.textContent = 'Calculando...';
   const netWorth = await transactionService.getNetWorth(selectedYear, selectedMonth, isSplitByTwoEnabled);
-
-  dashNetworth.parentElement.classList.add('cursor-pointer', 'hover:bg-slate-700/50', 'transition-colors');
-  dashNetworth.parentElement.setAttribute('title', 'Ajustar Saldo Real');
-  dashNetworth.parentElement.onclick = async () => {
-    dashNetworth.parentElement.style.pointerEvents = 'none';
-    const currentBase = await transactionService.getBaseNetWorth();
-    const sumOfTransactions = netWorth - currentBase;
-
-    const newTargetValue = prompt(
-      'Ajuste Mágico de Saldo\n\nDigite quanto de dinheiro você tem na conta bancária hoje (Ex: 2248,23):\nO aplicativo fará o cálculo retroativo para calibrar seu saldo dinamicamente na nuvem.',
-      netWorth.toFixed(2).replace('.', ',')
-    );
-
-    if (newTargetValue !== null) {
-      const targetNetWorth = parseBrazilianCurrency(newTargetValue);
-      if (!Number.isNaN(targetNetWorth)) {
-        const newBase = targetNetWorth - sumOfTransactions;
-        dashNetworthTrend.textContent = '☁️ Sincronizando...';
-        dashNetworthTrend.classList.replace('text-accent-green', 'text-yellow-400');
-        dashNetworthTrend.classList.replace('text-accent-red', 'text-yellow-400');
-
-        try {
-          await transactionService.updateBaseNetWorth(newBase);
-          markPatrimonioCalibrated();
-          patrimonioReminder.classList.add('hidden');
-        } catch (error) {
-          console.error('Failed to sync new base net worth', error);
-          alert('Erro ao sincronizar saldo com a nuvem. Valor atualizado apenas localmente.');
-        }
-
-        renderDashboard();
-      }
-    }
-    dashNetworth.parentElement.style.pointerEvents = 'auto';
-  };
+  if (typeof onNetWorthCalculated === 'function') {
+    onNetWorthCalculated(netWorth);
+  }
 
   dashNetworth.textContent = `${netWorth >= 0 ? '+' : '-'} ${formatAbsoluteCurrency(netWorth)}`;
   if (netWorth >= 0) {

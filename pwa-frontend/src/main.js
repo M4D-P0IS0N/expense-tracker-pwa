@@ -1,4 +1,4 @@
-﻿import { supabase } from './services/supabaseClient.js';
+import { supabase } from './services/supabaseClient.js';
 import './style.css';
 import { TransactionService } from './services/TransactionService.js';
 import { BudgetService } from './services/BudgetService.js';
@@ -21,6 +21,7 @@ import { initSavingsFlow } from './modules/SavingsFlowManager.js';
 import { initTransactionModal } from './modules/TransactionModalManager.js';
 import { renderTransactionList } from './modules/TransactionListRenderer.js';
 import { initTransactionForm } from './modules/TransactionFormManager.js';
+import { initNetworthCalibrationManager } from './modules/NetworthCalibrationManager.js';
 import { selectGroupedTransactionsForDeletion } from './utils/installmentDeletion.js';
 import { parseBrazilianCurrency } from './utils/currencyParser.js';
 import { showNotification } from './ui/notificationToast.js';
@@ -36,6 +37,7 @@ let currentCardFilter = 'All';
 let currentSort = 'date-desc';
 let currentTab = 'All';
 let isSplitByTwoEnabled = false;
+let currentCalculatedNetWorth = 0;
 
 // --- DOM Elements ---
 const balanceEl = document.getElementById('total-balance');
@@ -53,11 +55,23 @@ const filterYearEl = document.getElementById('filter-year');
 
 // Dashboard Elements
 const dashForecast = document.getElementById('dash-forecast');
+const dashNetworthCard = document.getElementById('dash-networth-card');
 const dashNetworth = document.getElementById('dash-networth');
 const dashNetworthTrend = document.getElementById('dash-networth-trend');
 const dashInsights = document.getElementById('dash-insights');
 const dashCategories = document.getElementById('dash-categories');
 const dashCreditCards = document.getElementById('dash-credit-cards');
+
+// Calibration Modal Elements
+const calibrateNetworthModal = document.getElementById('calibrate-networth-modal');
+const calibrateNetworthOverlay = document.getElementById('calibrate-networth-overlay');
+const calibrateNetworthContent = document.getElementById('calibrate-networth-content');
+const calibrateCurrentNetworth = document.getElementById('calibrate-current-networth');
+const calibrateNetworthInput = document.getElementById('calibrate-networth-input');
+const closeCalibrateNetworthBtn = document.getElementById('close-calibrate-networth-btn');
+const cancelCalibrateNetworthBtn = document.getElementById('cancel-calibrate-networth-btn');
+const saveCalibrateNetworthBtn = document.getElementById('save-calibrate-networth-btn');
+const saveCalibrateNetworthText = document.getElementById('save-calibrate-networth-text');
 // Savings Elements
 const addSavingsBtn = document.getElementById('add-savings-btn');
 const savingsList = document.getElementById('savings-list');
@@ -425,6 +439,9 @@ async function renderDashboard() {
     filterYearEl,
     isSplitByTwoEnabled,
     getElementById: (elementId) => document.getElementById(elementId),
+    onNetWorthCalculated: (netWorthValue) => {
+      currentCalculatedNetWorth = netWorthValue;
+    },
   });
 }
 
@@ -593,12 +610,32 @@ const savingsFlow = initSavingsFlow({
 
 renderSavingsGoals = savingsFlow.renderSavingsGoals;
 
+// Net Worth Calibration Modal Manager
+initNetworthCalibrationManager({
+  dashNetworthCard,
+  calibrateNetworthModal,
+  calibrateNetworthOverlay,
+  calibrateNetworthContent,
+  calibrateCurrentNetworth,
+  calibrateNetworthInput,
+  closeCalibrateNetworthBtn,
+  cancelCalibrateNetworthBtn,
+  saveCalibrateNetworthBtn,
+  saveCalibrateNetworthText,
+  patrimonioReminder,
+  markPatrimonioCalibrated: () => markPatrimonioCalibrated(),
+  transactionService: TransactionService,
+  parseBrazilianCurrency,
+  getCurrentNetWorth: () => currentCalculatedNetWorth,
+  renderDashboard,
+});
+
 // Neural Border Animation -> ./modules/NeuralBorderAnimation.js
 // initNeuralBorder() is imported and called from DOMContentLoaded
-
 
 // Pull-to-Refresh -> ./modules/PullToRefresh.js
 initPullToRefresh();
 
 // Theme Manager -> ./modules/ThemeManager.js
 initThemeManager();
+

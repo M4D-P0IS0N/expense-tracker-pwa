@@ -634,5 +634,60 @@ button:focus-visible {
   color: #111111 !important;
 }
 
+/* Net Worth Calibration Modal & Card - Schematic Theme Overrides */
+[data-theme="schematic"] #dash-networth-card {
+  border: 1px solid #111111 !important;
+  background-color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+[data-theme="schematic"] #dash-networth-card:hover {
+  background-color: #f5f6f8 !important;
+}
+
+[data-theme="schematic"] #calibrate-networth-modal #calibrate-networth-content {
+  background-color: #ffffff !important;
+  border: 1.5px solid #111111 !important;
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="schematic"] #calibrate-networth-input {
+  background-color: #ffffff !important;
+  border: 1px solid #111111 !important;
+  color: #111111 !important;
+  font-family: 'SF Mono', 'Courier New', monospace !important;
+}
+
+[data-theme="schematic"] #calibrate-networth-input:focus {
+  border-color: #111111 !important;
+  outline: 2px solid #111111 !important;
+}
+
+[data-theme="schematic"] #save-calibrate-networth-btn {
+  background-color: #111111 !important;
+  color: #f5f6f8 !important;
+  border: 1px solid #111111 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="schematic"] #save-calibrate-networth-btn * {
+  color: #f5f6f8 !important;
+}
+
+[data-theme="schematic"] #save-calibrate-networth-btn:hover {
+  background-color: #333333 !important;
+}
+
+[data-theme="schematic"] #cancel-calibrate-networth-btn {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #111111 !important;
+}
+
+[data-theme="schematic"] #cancel-calibrate-networth-btn:hover {
+  background-color: #f5f6f8 !important;
+}
+
+
 
 

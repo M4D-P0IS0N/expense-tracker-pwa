@@ -468,8 +468,16 @@
               <p id="dash-daily-expense" class="text-[9px] font-medium text-slate-500 mt-0.5 hidden">Gasto diário de R$
                 0,00</p>
             </div>
-            <div class="glass-card rounded-xl p-3 border border-slate-700 relative overflow-hidden text-center">
-              <h4 class="text-xs font-bold text-slate-400 mb-1">Patrimônio Líquido</h4>
+            <div
+              id="dash-networth-card"
+              role="button"
+              tabindex="0"
+              class="glass-card rounded-xl p-3 border border-slate-700 relative overflow-hidden text-center cursor-pointer hover:bg-slate-700/50 active:scale-[0.98] transition group select-none"
+              title="Toque para ajustar o saldo real">
+              <div class="flex items-center justify-center gap-1 mb-1">
+                <h4 class="text-xs font-bold text-slate-400">Patrimônio Líquido</h4>
+                <span class="material-symbols-outlined text-[13px] text-slate-400 group-hover:text-primary transition">tune</span>
+              </div>
               <p id="dash-networth" class="text-lg font-bold text-white tracking-tight">R$ 0,00</p>
               <p id="dash-networth-trend" class="text-[10px] font-bold text-accent-green mt-0.5">Calculando...</p>
             </div>
@@ -997,6 +1005,76 @@
             Excluir Caixinha
           </button>
         </form>
+      </div>
+    </div>
+
+    <!-- Net Worth Calibration Modal -->
+    <div id="calibrate-networth-modal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center hidden">
+      <!-- Overlay -->
+      <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm" id="calibrate-networth-overlay"></div>
+
+      <!-- Modal Content -->
+      <div
+        id="calibrate-networth-content"
+        class="bg-slate-800 w-full sm:w-[450px] sm:max-w-[450px] max-h-[90vh] overflow-y-auto sm:rounded-2xl rounded-t-2xl border-t sm:border border-slate-700 p-5 z-10 animate-slide-up shadow-glow-primary">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-purple-400">account_balance</span>
+            Calibrar Patrimônio
+          </h2>
+          <button id="close-calibrate-networth-btn" class="text-slate-400 hover:text-white transition-colors p-1" aria-label="Fechar">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+          Informe o saldo real da sua conta bancária hoje. O aplicativo fará o cálculo retroativo para calibrar seu saldo dinamicamente na nuvem.
+        </p>
+
+        <!-- Current Calculated Balance Display -->
+        <div class="glass-card rounded-xl p-3 border border-slate-700 mb-4 flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-medium text-slate-400">Saldo Calculado Atual</p>
+            <p id="calibrate-current-networth" class="text-base font-bold text-white tracking-tight">R$ 0,00</p>
+          </div>
+          <div class="h-8 w-8 rounded-lg bg-slate-700/50 flex items-center justify-center text-slate-400">
+            <span class="material-symbols-outlined text-lg">tune</span>
+          </div>
+        </div>
+
+        <!-- Input for Real Target Balance -->
+        <div class="mb-5">
+          <label for="calibrate-networth-input" class="block text-xs font-semibold text-slate-300 mb-1.5">
+            Saldo Real na Conta (R$)
+          </label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">R$</span>
+            <input
+              type="text"
+              id="calibrate-networth-input"
+              inputmode="decimal"
+              placeholder="0,00"
+              class="w-full bg-slate-900/90 border border-slate-700 rounded-xl py-3 pl-11 pr-4 text-white text-base font-bold focus:outline-none focus:border-primary transition"
+            />
+          </div>
+          <p class="text-[10px] text-slate-500 mt-1.5">Exemplo: 2.248,23 ou -150,00</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+          <button
+            type="button"
+            id="cancel-calibrate-networth-btn"
+            class="flex-1 bg-slate-700/50 hover:bg-slate-700 text-slate-300 font-bold py-3 px-4 rounded-xl transition text-sm">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            id="save-calibrate-networth-btn"
+            class="flex-1 bg-primary hover:bg-primary-hover text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-primary/20 text-sm flex items-center justify-center gap-2">
+            <span id="save-calibrate-networth-text">Salvar Ajuste</span>
+          </button>
+        </div>
       </div>
     </div>
 
