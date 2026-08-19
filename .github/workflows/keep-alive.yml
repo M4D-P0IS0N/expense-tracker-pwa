@@ -1,0 +1,36 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    # Executa a cada 4 dias às 12:00 UTC (evita o limite de 7 dias do Supabase)
+    - cron: '0 12 */4 * *'
+  workflow_dispatch: # Permite execução manual a qualquer momento pelo painel do GitHub
+
+jobs:
+  keep-alive:
+    name: Ping Supabase Database
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Keep-Alive Request to Supabase REST API
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::As variáveis SUPABASE_URL ou SUPABASE_ANON_KEY não estão configuradas nos Secrets do repositório."
+            exit 1
+          fi
+
+          echo "Enviando ping para o Supabase REST endpoint..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/rest/v1/user_profiles?select=id&limit=1")
+
+          echo "Resposta HTTP: $HTTP_STATUS"
+
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
+            echo "✅ Ping realizado com sucesso! O Supabase foi mantido ativo."
+          else
+            echo "::warning::O servidor respondeu com status $HTTP_STATUS. Verifique se o projeto não está pausado no momento."
+          fi
