@@ -22,7 +22,7 @@ export function initTransactionModal({
     }, 300);
   }
 
-  addButton.addEventListener('click', () => {
+  function openAddModal() {
     formElement.reset();
     clearEditTransactionId();
     document.querySelector('#modal-content h3').textContent = 'Nova Transação';
@@ -52,8 +52,14 @@ export function initTransactionModal({
     modalElement.classList.remove('hidden');
     setTimeout(() => {
       modalContentElement.classList.remove('translate-y-full');
-    }, 10);
-  });
+      const labelIncome = getElementById('label-income');
+      if (labelIncome) {
+        labelIncome.focus();
+      }
+    }, 50);
+  }
+
+  addButton.addEventListener('click', openAddModal);
 
   closeButton.addEventListener('click', closeModal);
   modalContentElement.parentElement.addEventListener('click', (event) => {
@@ -83,10 +89,12 @@ export function initTransactionModal({
         labelElement.classList.remove('border-green-500', 'bg-green-500/10', 'text-green-400');
         labelElement.classList.remove('border-red-500', 'bg-red-500/10', 'text-red-400');
         labelElement.classList.add('border-transparent', 'bg-slate-800', 'text-slate-400');
+        labelElement.setAttribute('aria-pressed', 'false');
       });
 
       const activeLabel = radioElement.parentElement;
       activeLabel.classList.remove('border-transparent', 'bg-slate-800', 'text-slate-400');
+      activeLabel.setAttribute('aria-pressed', 'true');
 
       if (radioElement.value === 'Income') {
         activeLabel.classList.add('border-green-500', 'bg-green-500/10', 'text-green-400');
@@ -102,5 +110,5 @@ export function initTransactionModal({
     advancedIcon.textContent = advancedFields.classList.contains('hidden') ? '▼' : '▲';
   });
 
-  return { closeModal };
+  return { closeModal, openAddModal };
 }

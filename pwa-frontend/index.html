@@ -602,12 +602,12 @@
           <div>
             <label class="block text-sm font-medium text-slate-300 mb-1">Tipo</label>
             <div class="flex gap-4">
-              <label id="label-income"
-                class="flex-1 flex items-center justify-center p-3 border-2 border-green-500 rounded-xl cursor-pointer bg-green-500/10 text-green-400 font-bold transition">
+              <label id="label-income" tabindex="0" role="button" aria-pressed="true"
+                class="flex-1 flex items-center justify-center p-3 border-2 border-green-500 rounded-xl cursor-pointer bg-green-500/10 text-green-400 font-bold transition focus:ring-2 focus:ring-primary focus:outline-none">
                 <input type="radio" name="type" value="Income" class="hidden" checked> Receita
               </label>
-              <label id="label-expense"
-                class="flex-1 flex items-center justify-center p-3 border-2 border-transparent bg-slate-800 rounded-xl cursor-pointer text-slate-400 font-bold hover:bg-slate-700 transition">
+              <label id="label-expense" tabindex="0" role="button" aria-pressed="false"
+                class="flex-1 flex items-center justify-center p-3 border-2 border-transparent bg-slate-800 rounded-xl cursor-pointer text-slate-400 font-bold hover:bg-slate-700 transition focus:ring-2 focus:ring-primary focus:outline-none">
                 <input type="radio" name="type" value="Expense" class="hidden"> Despesa
               </label>
             </div>
@@ -686,7 +686,7 @@
           <!-- Advanced Fields Toggle -->
           <div>
             <button type="button" id="toggle-advanced-btn"
-              class="text-sm text-primary font-medium w-full text-left flex justify-between items-center px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-xl">
+              class="text-sm text-primary font-medium w-full text-left flex justify-between items-center px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-primary focus:outline-none transition">
               <span>Opções Avançadas (Cartão, Parcelas)</span>
               <span id="advanced-icon">▼</span>
             </button>
@@ -1074,6 +1074,43 @@
             class="flex-1 bg-primary hover:bg-primary-hover text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-primary/20 text-sm flex items-center justify-center gap-2">
             <span id="save-calibrate-networth-text">Salvar Ajuste</span>
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Month Quick Selector Modal (Keyboard Accessible Alt+M) -->
+    <div id="month-selector-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+      <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm" id="month-selector-overlay"></div>
+      <div
+        class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl p-5 shadow-2xl z-10 mx-4 transform transition-all scale-95 duration-200"
+        id="month-selector-content">
+        <div class="flex justify-between items-center mb-4">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">calendar_month</span>
+            <h3 class="font-bold text-lg text-white">Selecionar Mês</h3>
+          </div>
+          <button id="close-month-selector-btn" class="text-slate-400 hover:text-white text-xl p-1 rounded-lg hover:bg-slate-800 transition" aria-label="Fechar">&times;</button>
+        </div>
+
+        <p class="text-xs text-slate-400 mb-3 flex items-center justify-between">
+          <span>Navegue com as <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 font-mono">Setas</kbd></span>
+          <span>Confirme com <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 font-mono">Enter</kbd></span>
+        </p>
+
+        <!-- 12 Months Grid -->
+        <div class="grid grid-cols-3 gap-2" id="month-selector-grid">
+          <button type="button" data-month="1" class="month-opt-btn p-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 font-semibold hover:bg-slate-700 hover:text-white transition focus:ring-2 focus:ring-primary focus:outline-none text-center">Janeiro</button>
+          <button type="button" data-month="2" class="month-opt-btn p-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 font-semibold hover:bg-slate-700 hover:text-white transition focus:ring-2 focus:ring-primary focus:outline-none text-center">Fevereiro</button>
+          <button type="button" data-month="3" class="month-opt-btn p-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 font-semibold hover:bg-slate-700 hover:text-white transition focus:ring-2 focus:ring-primary focus:outline-none text-center">Março</button>
+          <button type="button" data-month="4" class="month-opt-btn p-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 font-semibold hover:bg-slate-700 hover:text-white transition focus:ring-2 focus:ring-primary focus:outline-none text-center">Abril</button>
+          <button type="button" data-month="5" class="month-opt-btn p-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 font-semibold hover:bg-slate-700 hover:text-white transition focus:ring-2 focus:ring-primary focus:outline-none text-center">Maio</button>
+          <button type="button" data-month="6" class="month-opt-btn p-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 font-semibold hover:bg-slate-700 hover:text-white transition focus:ring-2 focus:ring-primary focus:outline-none text-center">Junho</button>
+          <button type="button" data-month="7" class="month-opt-btn p-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 font-semibold hover:bg-slate-700 hover:text-white transition focus:ring-2 focus:ring-primary focus:outline-none text-center">Julho</button>
+          <button type="button" data-month="8" class="month-opt-btn p-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 font-semibold hover:bg-slate-700 hover:text-white transition focus:ring-2 focus:ring-primary focus:outline-none text-center">Agosto</button>
+          <button type="button" data-month="9" class="month-opt-btn p-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 font-semibold hover:bg-slate-700 hover:text-white transition focus:ring-2 focus:ring-primary focus:outline-none text-center">Setembro</button>
+          <button type="button" data-month="10" class="month-opt-btn p-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 font-semibold hover:bg-slate-700 hover:text-white transition focus:ring-2 focus:ring-primary focus:outline-none text-center">Outubro</button>
+          <button type="button" data-month="11" class="month-opt-btn p-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 font-semibold hover:bg-slate-700 hover:text-white transition focus:ring-2 focus:ring-primary focus:outline-none text-center">Novembro</button>
+          <button type="button" data-month="12" class="month-opt-btn p-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 font-semibold hover:bg-slate-700 hover:text-white transition focus:ring-2 focus:ring-primary focus:outline-none text-center">Dezembro</button>
         </div>
       </div>
     </div>
@@ -1483,6 +1520,39 @@
                   sua saúde financeira.</li>
                 <li>🎮 Continue registrando transações para subir de nível e evoluir seu avatar!</li>
               </ul>
+          <!-- Section 13: Keyboard Shortcuts -->
+          <details class="help-section glass-card rounded-2xl mb-3 border border-primary/30 group">
+            <summary class="flex items-center gap-3 p-4 cursor-pointer list-none">
+              <span class="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-primary">keyboard</span>
+              </span>
+              <span class="font-bold text-white flex-1">Atalhos de Teclado (Desktop)</span>
+              <span
+                class="material-symbols-outlined text-slate-400 transition-transform group-open:rotate-180">expand_more</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm text-slate-300 space-y-3">
+              <div class="space-y-2 text-xs">
+                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-800/60 border border-slate-700/50">
+                  <span class="text-slate-200 font-medium">Nova Transação</span>
+                  <kbd class="px-2 py-1 bg-slate-700 text-white rounded font-mono font-bold">Alt + N</kbd>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-800/60 border border-slate-700/50">
+                  <span class="text-slate-200 font-medium">Selecionar Mês</span>
+                  <kbd class="px-2 py-1 bg-slate-700 text-white rounded font-mono font-bold">Alt + M</kbd>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-800/60 border border-slate-700/50">
+                  <span class="text-slate-200 font-medium">Fechar Qualquer Modal</span>
+                  <kbd class="px-2 py-1 bg-slate-700 text-white rounded font-mono font-bold">Esc</kbd>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-800/60 border border-slate-700/50">
+                  <span class="text-slate-200 font-medium">Alternar Despesa/Receita & Opções</span>
+                  <kbd class="px-2 py-1 bg-slate-700 text-white rounded font-mono font-bold">Tab + Espaço</kbd>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-800/60 border border-slate-700/50">
+                  <span class="text-slate-200 font-medium">Salvar / Confirmar</span>
+                  <kbd class="px-2 py-1 bg-slate-700 text-white rounded font-mono font-bold">Enter</kbd>
+                </div>
+              </div>
             </div>
           </details>
 

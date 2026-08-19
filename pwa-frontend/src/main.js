@@ -19,6 +19,7 @@ import { initNavigationFilters } from './modules/NavigationFiltersManager.js';
 import { initProfileOnboardingManager } from './modules/ProfileOnboardingManager.js';
 import { initSavingsFlow } from './modules/SavingsFlowManager.js';
 import { initTransactionModal } from './modules/TransactionModalManager.js';
+import { initKeyboardShortcuts } from './modules/KeyboardShortcutsManager.js';
 import { renderTransactionList } from './modules/TransactionListRenderer.js';
 import { initTransactionForm } from './modules/TransactionFormManager.js';
 import { initNetworthCalibrationManager } from './modules/NetworthCalibrationManager.js';
@@ -304,7 +305,7 @@ const { initTemporalNav, initFilters } = initNavigationFilters({
 let editTransactionId = null;
 
 // --- UI Logic: Modal & Interactions ---
-const { closeModal } = initTransactionModal({
+const { closeModal, openAddModal } = initTransactionModal({
   addButton: addBtn,
   closeButton: closeBtn,
   formElement: form,
@@ -320,6 +321,21 @@ const { closeModal } = initTransactionModal({
   clearEditTransactionId: () => {
     editTransactionId = null;
   },
+});
+
+initKeyboardShortcuts({
+  openAddModal,
+  closeModal,
+  filterMonthEl,
+  getModalsToClose: () => [
+    { element: budgetModal, close: () => closeBudgetBtn && closeBudgetBtn.click() },
+    { element: notesModal, close: () => closeNotesBtn && closeNotesBtn.click() },
+    { element: contextMenuModal, close: () => ctxCancelBtn && ctxCancelBtn.click() },
+    { element: rpgModal, close: () => closeRpgBtn && closeRpgBtn.click() },
+    { element: helpModal, close: () => closeHelpBtn && closeHelpBtn.click() },
+    { element: savingsModal, close: () => closeSavingsBtn && closeSavingsBtn.click() },
+    { element: calibrateNetworthModal, close: () => cancelCalibrateNetworthBtn && cancelCalibrateNetworthBtn.click() },
+  ],
 });
 
 initBudgetNotebookManager({
