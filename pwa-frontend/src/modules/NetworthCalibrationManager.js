@@ -97,7 +97,14 @@ export function initNetworthCalibrationManager({
       const sumOfTransactions = currentNetWorthValue - currentBase;
       const newBase = targetNetWorth - sumOfTransactions;
 
-      await transactionService.updateBaseNetWorth(newBase);
+      // Ensure local persistence is always updated immediately
+      localStorage.setItem('baseNetWorth', newBase.toString());
+
+      try {
+        await transactionService.updateBaseNetWorth(newBase);
+      } catch (cloudError) {
+        console.warn('Erro ao sincronizar com Supabase, mantido em cache local:', cloudError);
+      }
 
       if (typeof markPatrimonioCalibrated === 'function') {
         markPatrimonioCalibrated();
@@ -113,12 +120,8 @@ export function initNetworthCalibrationManager({
         await renderDashboard();
       }
     } catch (error) {
-      console.error('Falha ao atualizar base de patrimônio:', error);
-      alert('Erro ao sincronizar saldo com a nuvem. O valor foi atualizado localmente.');
-      closeModal();
-      if (typeof renderDashboard === 'function') {
-        await renderDashboard();
-      }
+      console.error('Falha ao processar calibração de patrimônio:', error);
+      alert('Não foi possível calcular o ajuste de saldo. Verifique os dados e tente novamente.');
     } finally {
       isSubmitting = false;
     }

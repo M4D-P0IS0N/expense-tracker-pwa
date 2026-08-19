@@ -1,4 +1,4 @@
-﻿import { supabase } from './supabaseClient.js';
+import { supabase } from './supabaseClient.js';
 import { AuthService } from './AuthService.js';
 import { getEffectiveTransactionAmount } from '../utils/splitTransactionAmount.js';
 
@@ -126,14 +126,65 @@ export class TransactionService {
     }
 
     /**
+     * Retrieves ONLY the base adjustment value from cloud or local fallback
+     */
+    static async getBaseNetWorth() {
+        const userId = await getCurrentUserId();
+        if (!userId) return Number(localStorage.getItem('baseNetWorth') || 0);
+
+        try {
+            const { data, error } = await supabase
+                .from('user_profiles')
+                .select('base_net_worth')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (!error && data && data.base_net_worth !== null && data.base_net_worth !== undefined) {
+                const base = Number(data.base_net_worth || 0);
+                localStorage.setItem('baseNetWorth', base.toString());
+                return base;
+            }
+        } catch (err) {
+            console.error("Error reading baseNetWorth from Supabase:", err);
+        }
+
+        return Number(localStorage.getItem('baseNetWorth') || 0);
+    }
+
+    /**
+     * Updates the base net worth on the cloud profile and local cache
+     */
+    static async updateBaseNetWorth(newBaseAmount) {
+        const numericBase = Number(newBaseAmount) || 0;
+        
+        // Save locally first for instant resilience and responsiveness
+        localStorage.setItem('baseNetWorth', numericBase.toString());
+
+        const userId = await getCurrentUserId();
+        if (!userId) return;
+
+        const { error } = await supabase
+            .from('user_profiles')
+            .upsert({
+                id: userId,
+                base_net_worth: numericBase,
+                last_sync: new Date().toISOString()
+            }, { onConflict: 'id' });
+
+        if (error) {
+            console.error("Error updating base net worth in Supabase:", error);
+            throw error;
+        }
+    }
+
+    /**
      * Fast global sum for Net Worth (Receitas - Despesas) up to the specified month/year
      */
     static async getNetWorth(year, month, isSplitByTwoEnabled = false) {
         const userId = await getCurrentUserId();
-        if (!userId) return 0;
+        if (!userId) return Number(localStorage.getItem('baseNetWorth') || 0);
 
-        const profile = await this.ensureUserProfile(userId);
-        const baseNetWorth = Number(profile?.base_net_worth || 0);
+        const baseNetWorth = await this.getBaseNetWorth();
 
         const parsedYear = parseInt(year, 10);
         const parsedMonth = parseInt(month, 10);
