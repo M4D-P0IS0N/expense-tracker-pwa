@@ -2,8 +2,8 @@ name: Supabase Keep Alive
 
 on:
   schedule:
-    # Executa a cada 4 dias às 12:00 UTC (evita o limite de 7 dias do Supabase)
-    - cron: '0 12 */4 * *'
+    # Executa a cada 2 dias às 12:00 UTC (garante que nunca atinja os 7 dias, mesmo com eventuais atrasos do GitHub)
+    - cron: '0 12 */2 * *'
   workflow_dispatch: # Permite execução manual a qualquer momento pelo painel do GitHub
 
 jobs:
@@ -21,16 +21,23 @@ jobs:
             exit 1
           fi
 
-          echo "Enviando ping para o Supabase REST endpoint..."
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          echo "Enviando ping para o Supabase REST endpoint ($SUPABASE_URL)..."
+          
+          # Realiza o curl capturando tanto a saída quanto o HTTP status code
+          RESPONSE=$(curl -sS -w "\n%{http_code}" \
             -H "apikey: $SUPABASE_ANON_KEY" \
             -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-            "$SUPABASE_URL/rest/v1/user_profiles?select=id&limit=1")
+            "$SUPABASE_URL/rest/v1/user_profiles?select=id&limit=1" || echo -e "\n000")
 
-          echo "Resposta HTTP: $HTTP_STATUS"
+          HTTP_BODY=$(echo "$RESPONSE" | sed '$d')
+          HTTP_STATUS=$(echo "$RESPONSE" | tail -n 1)
+
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "HTTP Body: $HTTP_BODY"
 
           if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
-            echo "✅ Ping realizado com sucesso! O Supabase foi mantido ativo."
+            echo "✅ Ping realizado com sucesso! O Supabase processou a query e renovou a atividade."
           else
-            echo "::warning::O servidor respondeu com status $HTTP_STATUS. Verifique se o projeto não está pausado no momento."
+            echo "::error::Falha no ping! Status HTTP: $HTTP_STATUS. Se o status for 000, o projeto está pausado no Supabase e o DNS está desativado. É obrigatório restaurá-lo em app.supabase.com."
+            exit 1
           fi
