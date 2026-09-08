@@ -2,8 +2,8 @@ name: Supabase Keep Alive
 
 on:
   schedule:
-    # Executa a cada 2 dias às 12:00 UTC (garante que nunca atinja os 7 dias, mesmo com eventuais atrasos do GitHub)
-    - cron: '0 12 */2 * *'
+    # Executa a cada 6 horas (4 vezes ao dia) todos os dias para garantir atividade diária contínua no Supabase
+    - cron: '0 */6 * * *'
   workflow_dispatch: # Permite execução manual a qualquer momento pelo painel do GitHub
 
 jobs:
@@ -23,10 +23,11 @@ jobs:
 
           echo "Enviando ping para o Supabase REST endpoint ($SUPABASE_URL)..."
           
-          # Realiza o curl capturando tanto a saída quanto o HTTP status code
+          # Consulta REST com Prefer: count=exact para forçar execução de query SQL no PostgreSQL
           RESPONSE=$(curl -sS -w "\n%{http_code}" \
             -H "apikey: $SUPABASE_ANON_KEY" \
             -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Prefer: count=exact" \
             "$SUPABASE_URL/rest/v1/user_profiles?select=id&limit=1" || echo -e "\n000")
 
           HTTP_BODY=$(echo "$RESPONSE" | sed '$d')
