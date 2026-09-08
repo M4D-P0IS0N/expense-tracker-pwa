@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { AuthService } from './AuthService.js';
 import { getEffectiveTransactionAmount } from '../utils/splitTransactionAmount.js';
+import { buildPropagationPayload, isGroupedTransaction } from '../utils/transactionPropagation.js';
 
 async function getCurrentUserId() {
     const session = await AuthService.getSession();
@@ -305,12 +306,23 @@ export class TransactionService {
     }
 
     /**
-     * Update an existing transaction
+     * Update an existing transaction and propagate relevant changes to future transactions in the series
      */
     static async updateTransaction(id, transaction) {
+        const { data: originalTx, error: originalFetchError } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle();
+
+        if (originalFetchError) {
+            console.error("Error fetching original transaction before update:", originalFetchError);
+        }
+
         let baseDateStr = transaction.date;
         if (baseDateStr && baseDateStr.length === 10) baseDateStr += 'T12:00:00Z';
 
+        const isExpense = transaction.type === 'Expense';
         const txToUpdate = {
             description: transaction.description,
             amount: transaction.amount,
@@ -318,10 +330,18 @@ export class TransactionService {
             category: transaction.category || 'General',
             date: baseDateStr ? new Date(baseDateStr).toISOString() : undefined,
             credit_card_name: transaction.credit_card_name || null,
-            is_recurring: transaction.is_recurring !== undefined ? transaction.is_recurring : false,
-            is_split_by_2: transaction.type === 'Expense' ? Boolean(transaction.is_split_by_2) : false,
-            is_third_party: transaction.type === 'Expense' ? Boolean(transaction.is_third_party) : false
+            is_recurring: transaction.is_recurring !== undefined ? Boolean(transaction.is_recurring) : false,
+            is_split_by_2: isExpense ? Boolean(transaction.is_split_by_2) : false,
+            is_third_party: isExpense ? Boolean(transaction.is_third_party) : false
         };
+
+        const isGrouped = isGroupedTransaction(originalTx) || isGroupedTransaction(transaction);
+        let activeGroupId = originalTx?.installment_group_id || transaction?.installment_group_id || null;
+
+        if (isGrouped && !activeGroupId) {
+            activeGroupId = crypto.randomUUID();
+            txToUpdate.installment_group_id = activeGroupId;
+        }
 
         const { data, error } = await supabase
             .from('transactions')
@@ -334,37 +354,56 @@ export class TransactionService {
             throw error;
         }
 
-        if (data && data.length > 0) {
-            const updatedTx = data[0];
-            const isGrouped = updatedTx.installment_group_id || updatedTx.total_installments > 1 || updatedTx.is_recurring;
-            
-            if (updatedTx.type === 'Expense' && isGrouped) {
-                const updatePayload = {
-                    amount: updatedTx.amount,
-                    is_split_by_2: updatedTx.is_split_by_2,
-                    is_third_party: updatedTx.is_third_party,
-                    category: updatedTx.category,
-                    credit_card_name: updatedTx.credit_card_name
-                };
+        const updatedTx = data && data.length > 0 ? data[0] : null;
+        if (!updatedTx) return null;
 
-                if (updatedTx.installment_group_id) {
-                    await supabase
-                        .from('transactions')
-                        .update(updatePayload)
-                        .eq('installment_group_id', updatedTx.installment_group_id)
-                        .gt('date', updatedTx.date);
-                } else {
-                    await supabase
-                        .from('transactions')
-                        .update(updatePayload)
-                        .eq('user_id', updatedTx.user_id)
-                        .eq('description', updatedTx.description)
-                        .gt('date', updatedTx.date);
+        if (isGrouped && originalTx) {
+            const propagationPayload = buildPropagationPayload(updatedTx);
+
+            if (activeGroupId && !originalTx.installment_group_id) {
+                propagationPayload.installment_group_id = activeGroupId;
+            }
+
+            if (originalTx.installment_group_id) {
+                let futureTransactionsQuery = supabase
+                    .from('transactions')
+                    .update(propagationPayload)
+                    .eq('installment_group_id', originalTx.installment_group_id);
+
+                const hasInstallmentOrder = Number(originalTx.installment_number) > 0 && Number(originalTx.total_installments) > 1;
+                if (hasInstallmentOrder) {
+                    futureTransactionsQuery = futureTransactionsQuery.gt('installment_number', originalTx.installment_number);
+                } else if (originalTx.date) {
+                    futureTransactionsQuery = futureTransactionsQuery.gt('date', originalTx.date);
+                }
+
+                const { error: propagationError } = await futureTransactionsQuery;
+                if (propagationError) {
+                    console.error("Error propagating update to grouped transactions:", propagationError);
+                }
+            } else {
+                // Fallback for legacy series without installment_group_id: match by original description & user_id
+                let legacyTransactionsQuery = supabase
+                    .from('transactions')
+                    .update(propagationPayload)
+                    .eq('user_id', originalTx.user_id)
+                    .eq('description', originalTx.description);
+
+                const hasInstallmentOrder = Number(originalTx.installment_number) > 0 && Number(originalTx.total_installments) > 1;
+                if (hasInstallmentOrder) {
+                    legacyTransactionsQuery = legacyTransactionsQuery.gt('installment_number', originalTx.installment_number);
+                } else if (originalTx.date) {
+                    legacyTransactionsQuery = legacyTransactionsQuery.gt('date', originalTx.date);
+                }
+
+                const { error: legacyPropagationError } = await legacyTransactionsQuery;
+                if (legacyPropagationError) {
+                    console.error("Error propagating update to legacy transactions:", legacyPropagationError);
                 }
             }
         }
 
-        return data[0];
+        return updatedTx;
     }
 
     /**
