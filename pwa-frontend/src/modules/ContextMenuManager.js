@@ -27,10 +27,13 @@ export function initContextMenuManager({
     emojiDisplay,
     customCategoryContainer,
     cardInput,
+    installmentNumberInput,
     installmentTotalInput,
     recurringInput,
     splitByTwoInput,
     thirdPartyInput,
+    advancedFields,
+    advancedIcon,
     modalTitleElement,
     modalSubmitButton,
   } = elements;
@@ -149,6 +152,9 @@ export function initContextMenuManager({
 
     populateCategoryFields(selectedTransaction);
     cardInput.value = selectedTransaction.credit_card_name || '';
+    if (installmentNumberInput) {
+      installmentNumberInput.value = selectedTransaction.installment_number || 1;
+    }
     installmentTotalInput.value = selectedTransaction.total_installments || 1;
     recurringInput.checked = selectedTransaction.is_recurring || false;
     if (splitByTwoInput) {
@@ -156,6 +162,24 @@ export function initContextMenuManager({
     }
     if (thirdPartyInput) {
       thirdPartyInput.checked = selectedTransaction.type === 'Expense' && Boolean(selectedTransaction.is_third_party);
+    }
+
+    const hasAdvancedDetails = Boolean(
+      selectedTransaction.credit_card_name ||
+      Number(selectedTransaction.total_installments) > 1 ||
+      selectedTransaction.is_recurring ||
+      selectedTransaction.is_split_by_2 ||
+      selectedTransaction.is_third_party
+    );
+
+    if (advancedFields) {
+      if (hasAdvancedDetails) {
+        advancedFields.classList.remove('hidden');
+        if (advancedIcon) advancedIcon.textContent = '▲';
+      } else {
+        advancedFields.classList.add('hidden');
+        if (advancedIcon) advancedIcon.textContent = '▼';
+      }
     }
 
     modalTitleElement.textContent = 'Editar Transação';

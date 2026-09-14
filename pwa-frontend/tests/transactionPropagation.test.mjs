@@ -111,3 +111,22 @@ test('shouldPropagateToTransaction should propagate by date for recurring transa
         date: '2026-04-15T12:00:00.000Z'
     }, referenceTx), true);
 });
+
+test('buildPropagationPayload should propagate total_installments when provided', () => {
+    const updatedTx = {
+        description: 'Mercado Livre - Calça + moletom',
+        amount: 37.78,
+        type: 'Expense',
+        category: '🆙 Bem estar/Casa',
+        credit_card_name: 'Nubank',
+        total_installments: 2,
+        is_split_by_2: false,
+        is_third_party: false
+    };
+
+    const payload = buildPropagationPayload(updatedTx);
+
+    assert.equal(payload.total_installments, 2);
+    assert.equal(payload.description, 'Mercado Livre - Calça + moletom');
+    assert.equal(payload.credit_card_name, 'Nubank');
+});

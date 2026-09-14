@@ -35,6 +35,13 @@ export function initTransactionForm({
         return;
       }
 
+      let parsedTotalInstallments = parseInt(getElementById('tx-install-total').value, 10) || 1;
+      let parsedInstallmentNumber = parseInt(getElementById('tx-install-number').value, 10) || 1;
+
+      if (parsedInstallmentNumber > parsedTotalInstallments) {
+        parsedTotalInstallments = parsedInstallmentNumber;
+      }
+
       const transactionPayload = {
         description: transactionDescription,
         amount: parsedAmount,
@@ -42,8 +49,8 @@ export function initTransactionForm({
         category: finalCategoryLabel,
         date: getElementById('tx-date').value,
         credit_card_name: getElementById('tx-card').value || null,
-        total_installments: parseInt(getElementById('tx-install-total').value, 10) || 1,
-        installment_number: parseInt(getElementById('tx-install-number').value, 10) || 1,
+        total_installments: parsedTotalInstallments,
+        installment_number: parsedInstallmentNumber,
         is_recurring: getElementById('tx-recurring').checked,
         is_split_by_2: transactionType === 'Expense' && getElementById('tx-split-by-two').checked,
         is_third_party: transactionType === 'Expense' && getElementById('tx-third-party').checked,

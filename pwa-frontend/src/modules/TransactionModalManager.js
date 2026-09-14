@@ -16,6 +16,7 @@ export function initTransactionModal({
   clearEditTransactionId,
 }) {
   function closeModal() {
+    clearEditTransactionId();
     modalContentElement.classList.add('translate-y-full');
     setTimeout(() => {
       modalElement.classList.add('hidden');
@@ -35,6 +36,11 @@ export function initTransactionModal({
     getElementById('tx-date').valueAsDate = isViewingCurrentMonth
       ? today
       : new Date(selectedYear, selectedMonth - 1, 1);
+
+    const installNumberEl = getElementById('tx-install-number');
+    if (installNumberEl) installNumberEl.value = '1';
+    const installTotalEl = getElementById('tx-install-total');
+    if (installTotalEl) installTotalEl.value = '';
 
     const incomeRadio = document.querySelector('input[name="type"][value="Income"]');
     incomeRadio.checked = true;

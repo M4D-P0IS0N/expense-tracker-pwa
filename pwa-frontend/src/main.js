@@ -182,6 +182,7 @@ const form = document.getElementById('transaction-form');
 const typeRadios = document.querySelectorAll('input[name="type"]');
 const toggleAdvancedBtn = document.getElementById('toggle-advanced-btn');
 const advancedFields = document.getElementById('advanced-fields');
+const advancedIcon = document.getElementById('advanced-icon');
 const txAmountInput = document.getElementById('tx-amount');
 const txDescriptionInput = document.getElementById('tx-description');
 const txDateInput = document.getElementById('tx-date');
@@ -189,6 +190,7 @@ const txCategorySelect = document.getElementById('tx-category');
 const txEmojiDisplay = document.getElementById('tx-emoji-display');
 const txCustomCategoryContainer = document.getElementById('tx-custom-category-container');
 const txCardInput = document.getElementById('tx-card');
+const txInstallNumberInput = document.getElementById('tx-install-number');
 const txInstallTotalInput = document.getElementById('tx-install-total');
 const txRecurringInput = document.getElementById('tx-recurring');
 const txSplitByTwoInput = document.getElementById('tx-split-by-two');
@@ -528,10 +530,13 @@ const contextMenuManager = initContextMenuManager({
     emojiDisplay: txEmojiDisplay,
     customCategoryContainer: txCustomCategoryContainer,
     cardInput: txCardInput,
+    installmentNumberInput: txInstallNumberInput,
     installmentTotalInput: txInstallTotalInput,
     recurringInput: txRecurringInput,
     splitByTwoInput: txSplitByTwoInput,
     thirdPartyInput: txThirdPartyInput,
+    advancedFields,
+    advancedIcon,
     modalTitleElement,
     modalSubmitButton,
   },

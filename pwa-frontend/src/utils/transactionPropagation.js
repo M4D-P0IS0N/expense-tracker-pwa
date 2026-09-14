@@ -28,7 +28,7 @@ export function buildPropagationPayload(updatedTransaction) {
 
     const isExpense = updatedTransaction.type === 'Expense';
 
-    return {
+    const payload = {
         description: updatedTransaction.description,
         amount: updatedTransaction.amount,
         type: updatedTransaction.type,
@@ -37,6 +37,12 @@ export function buildPropagationPayload(updatedTransaction) {
         is_split_by_2: isExpense ? Boolean(updatedTransaction.is_split_by_2) : false,
         is_third_party: isExpense ? Boolean(updatedTransaction.is_third_party) : false,
     };
+
+    if (updatedTransaction.total_installments !== undefined && updatedTransaction.total_installments !== null) {
+        payload.total_installments = Number(updatedTransaction.total_installments);
+    }
+
+    return payload;
 }
 
 /**

@@ -323,6 +323,10 @@ export class TransactionService {
         if (baseDateStr && baseDateStr.length === 10) baseDateStr += 'T12:00:00Z';
 
         const isExpense = transaction.type === 'Expense';
+        const totalInstallments = parseInt(transaction.total_installments, 10) || 1;
+        const currentInstallment = parseInt(transaction.installment_number, 10) || 1;
+        const isRecurring = transaction.is_recurring !== undefined ? Boolean(transaction.is_recurring) : false;
+
         const txToUpdate = {
             description: transaction.description,
             amount: transaction.amount,
@@ -330,9 +334,11 @@ export class TransactionService {
             category: transaction.category || 'General',
             date: baseDateStr ? new Date(baseDateStr).toISOString() : undefined,
             credit_card_name: transaction.credit_card_name || null,
-            is_recurring: transaction.is_recurring !== undefined ? Boolean(transaction.is_recurring) : false,
+            is_recurring: isRecurring,
             is_split_by_2: isExpense ? Boolean(transaction.is_split_by_2) : false,
-            is_third_party: isExpense ? Boolean(transaction.is_third_party) : false
+            is_third_party: isExpense ? Boolean(transaction.is_third_party) : false,
+            total_installments: totalInstallments > 1 ? totalInstallments : null,
+            installment_number: totalInstallments > 1 ? currentInstallment : null,
         };
 
         const isGrouped = isGroupedTransaction(originalTx) || isGroupedTransaction(transaction);
@@ -341,6 +347,8 @@ export class TransactionService {
         if (isGrouped && !activeGroupId) {
             activeGroupId = crypto.randomUUID();
             txToUpdate.installment_group_id = activeGroupId;
+        } else if (!isGrouped) {
+            txToUpdate.installment_group_id = null;
         }
 
         const { data, error } = await supabase
@@ -357,22 +365,83 @@ export class TransactionService {
         const updatedTx = data && data.length > 0 ? data[0] : null;
         if (!updatedTx) return null;
 
+        // Se a transação agora possui múltiplas parcelas, garantir que as parcelas futuras existam no banco
+        if (totalInstallments > 1 && activeGroupId) {
+            try {
+                const existingGroupTransactions = await TransactionService.getTransactionsByInstallmentGroup(activeGroupId);
+                const existingInstallmentNumbers = new Set(
+                    existingGroupTransactions
+                        .map(t => Number(t.installment_number))
+                        .filter(n => !Number.isNaN(n) && n > 0)
+                );
+                existingInstallmentNumbers.add(currentInstallment);
+
+                const missingInstallmentsToInsert = [];
+                const baseDate = baseDateStr ? new Date(baseDateStr) : new Date(updatedTx.date);
+
+                for (let installNum = currentInstallment + 1; installNum <= totalInstallments; installNum++) {
+                    if (!existingInstallmentNumbers.has(installNum)) {
+                        const monthOffset = installNum - currentInstallment;
+                        const futureTxDate = new Date(baseDate);
+                        const originalDay = baseDate.getDate();
+                        futureTxDate.setMonth(baseDate.getMonth() + monthOffset);
+
+                        if (futureTxDate.getDate() !== originalDay) {
+                            futureTxDate.setDate(0);
+                        }
+
+                        missingInstallmentsToInsert.push({
+                            user_id: updatedTx.user_id,
+                            description: updatedTx.description,
+                            amount: updatedTx.amount,
+                            type: updatedTx.type,
+                            category: updatedTx.category || 'General',
+                            date: futureTxDate.toISOString(),
+                            is_recurring: false,
+                            credit_card_name: updatedTx.credit_card_name || null,
+                            is_split_by_2: isExpense ? Boolean(updatedTx.is_split_by_2) : false,
+                            is_third_party: isExpense ? Boolean(updatedTx.is_third_party) : false,
+                            total_installments: totalInstallments,
+                            installment_number: installNum,
+                            installment_group_id: activeGroupId
+                        });
+                    }
+                }
+
+                if (missingInstallmentsToInsert.length > 0) {
+                    const { error: insertMissingError } = await supabase
+                        .from('transactions')
+                        .insert(missingInstallmentsToInsert);
+
+                    if (insertMissingError) {
+                        console.error("Error inserting missing installments during update:", insertMissingError);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to check and generate missing installments on update:", err);
+            }
+        }
+
         if (isGrouped && originalTx) {
             const propagationPayload = buildPropagationPayload(updatedTx);
+            if (totalInstallments > 1) {
+                propagationPayload.total_installments = totalInstallments;
+            }
 
             if (activeGroupId && !originalTx.installment_group_id) {
                 propagationPayload.installment_group_id = activeGroupId;
             }
 
-            if (originalTx.installment_group_id) {
+            const targetGroupId = originalTx.installment_group_id || activeGroupId;
+            if (targetGroupId) {
                 let futureTransactionsQuery = supabase
                     .from('transactions')
                     .update(propagationPayload)
-                    .eq('installment_group_id', originalTx.installment_group_id);
+                    .eq('installment_group_id', targetGroupId);
 
-                const hasInstallmentOrder = Number(originalTx.installment_number) > 0 && Number(originalTx.total_installments) > 1;
+                const hasInstallmentOrder = Number(currentInstallment) > 0 && totalInstallments > 1;
                 if (hasInstallmentOrder) {
-                    futureTransactionsQuery = futureTransactionsQuery.gt('installment_number', originalTx.installment_number);
+                    futureTransactionsQuery = futureTransactionsQuery.gt('installment_number', currentInstallment);
                 } else if (originalTx.date) {
                     futureTransactionsQuery = futureTransactionsQuery.gt('date', originalTx.date);
                 }
