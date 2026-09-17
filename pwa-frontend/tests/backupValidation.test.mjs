@@ -1,3 +1,4 @@
+import { accountStorage, setStorageAccount } from '../src/services/accountStorage.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { exportFullJsonBackup, importBackup } from '../src/modules/ExportManager.js';
@@ -15,6 +16,7 @@ function createLocalStorageMock() {
 }
 
 globalThis.localStorage = createLocalStorageMock();
+setStorageAccount('user-123');
 if (typeof globalThis.document === 'undefined') {
     globalThis.document = {
         createElement: () => ({
@@ -38,11 +40,11 @@ if (typeof globalThis.URL === 'undefined') {
 
 test('importBackup should parse valid backup JSON and call bulkUpsertTransactions', async () => {
     localStorage.clear();
-    localStorage.setItem('userDisplayName', 'Usuario Teste');
+    accountStorage.setItem('userDisplayName', 'Usuario Teste');
 
     const fakeTransactions = [
-        { id: 'tx-1', description: 'Mercado', amount: 150, type: 'Expense' },
-        { id: 'tx-2', description: 'Salário', amount: 3000, type: 'Income' }
+        { id: '11111111-1111-4111-8111-111111111111', date: '2026-09-01', description: 'Mercado', amount: 150, type: 'Expense' },
+        { id: '22222222-2222-4222-8222-222222222222', date: '2026-09-02', description: 'Salário', amount: 3000, type: 'Income' }
     ];
 
     const fakeBackup = {
@@ -93,7 +95,7 @@ test('importBackup should parse valid backup JSON and call bulkUpsertTransaction
 
     assert.equal(upsertedTransactions.length, 2);
     assert.equal(upsertedTransactions[0].description, 'Mercado');
-    assert.equal(localStorage.getItem('userDisplayName'), 'Usuario Teste Backup');
+    assert.equal(accountStorage.getItem('userDisplayName'), 'Usuario Teste Backup');
     assert.match(notificationMessage, /Backup restaurado com sucesso/);
 });
 

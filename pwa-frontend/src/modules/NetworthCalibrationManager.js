@@ -30,11 +30,11 @@ export function initNetworthCalibrationManager({
 }) {
   let isSubmitting = false;
 
-  function openModal() {
+  async function openModal() {
     if (!calibrateNetworthModal) return;
 
     try {
-      const currentNetWorthValue = typeof getCurrentNetWorth === 'function' ? getCurrentNetWorth() : 0;
+      const currentNetWorthValue = typeof getCurrentNetWorth === 'function' ? await getCurrentNetWorth() : 0;
       
       if (calibrateCurrentNetworth) {
         calibrateCurrentNetworth.textContent = formatBrazilianCurrency(currentNetWorthValue);
@@ -92,19 +92,12 @@ export function initNetworthCalibrationManager({
     }
 
     try {
-      const currentNetWorthValue = typeof getCurrentNetWorth === 'function' ? getCurrentNetWorth() : 0;
+      const currentNetWorthValue = typeof getCurrentNetWorth === 'function' ? await getCurrentNetWorth() : 0;
       const currentBase = await transactionService.getBaseNetWorth();
       const sumOfTransactions = currentNetWorthValue - currentBase;
       const newBase = targetNetWorth - sumOfTransactions;
 
-      // Ensure local persistence is always updated immediately
-      localStorage.setItem('baseNetWorth', newBase.toString());
-
-      try {
-        await transactionService.updateBaseNetWorth(newBase);
-      } catch (cloudError) {
-        console.warn('Erro ao sincronizar com Supabase, mantido em cache local:', cloudError);
-      }
+      await transactionService.updateBaseNetWorth(newBase);
 
       if (typeof markPatrimonioCalibrated === 'function') {
         markPatrimonioCalibrated();
@@ -124,6 +117,8 @@ export function initNetworthCalibrationManager({
       alert('Não foi possível calcular o ajuste de saldo. Verifique os dados e tente novamente.');
     } finally {
       isSubmitting = false;
+      if (saveCalibrateNetworthBtn) saveCalibrateNetworthBtn.disabled = false;
+      if (saveCalibrateNetworthText) saveCalibrateNetworthText.textContent = "Salvar Ajuste";
     }
   }
 

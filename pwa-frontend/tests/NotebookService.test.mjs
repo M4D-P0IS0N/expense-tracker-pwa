@@ -1,4 +1,5 @@
-﻿import test from 'node:test';
+import { accountStorage, setStorageAccount } from '../src/services/accountStorage.js';
+﻿import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { NotebookService } from '../src/services/NotebookService.js';
 
@@ -15,6 +16,8 @@ function createLocalStorageMock() {
 }
 
 globalThis.localStorage = createLocalStorageMock();
+setStorageAccount('user-123');
+mock.method(NotebookService, 'saveNotesToCloud', async () => {});
 
 test('NotebookService should store and retrieve notes individually per month and year', () => {
     localStorage.clear();
@@ -53,11 +56,11 @@ test('NotebookService fetchNotes should return cached content and history when o
 
 test('NotebookService should migrate legacy global notes if available', () => {
     localStorage.clear();
-    localStorage.setItem('@appdecustos/notebook_notes', 'Nota antiga global');
+    accountStorage.setItem('@appdecustos/notebook_notes', 'Nota antiga global');
 
     const migrated = NotebookService.getNotes(2026, 8);
     assert.equal(migrated, 'Nota antiga global');
 
     const monthKey = NotebookService.getStorageKey(2026, 8);
-    assert.ok(localStorage.getItem(monthKey));
+    assert.ok(accountStorage.getItem(monthKey));
 });

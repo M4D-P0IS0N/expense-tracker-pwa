@@ -1,4 +1,9 @@
-﻿// --- Export & Backup Manager ---
+import { fetchAllRows } from '../utils/pagination.js';
+import { escapeHtml, csvField } from '../utils/escapeHtml.js';
+import { validateBackup } from '../utils/backupValidation.js';
+import { isRestorableKey } from '../services/accountStorage.js';
+import { accountStorage, assertStorageAccount, getStorageAccount } from '../services/accountStorage.js';
+// --- Export & Backup Manager ---
 // Handles CSV, PDF, JSON Export, Retrospective Report, and Full Backup Restoration.
 
 import { exportRetrospectivePdfReport } from "./RetrospectivePdfGenerator.js";
@@ -99,12 +104,12 @@ export function initExportManager(options) {
                 if (t.is_recurring) details += "🔁 Recorrente ";
 
                 return '<tr>' +
-          '<td style="white-space:nowrap;">' + dateStr + '</td>' +
+          '<td style="white-space:nowrap;">' + escapeHtml(dateStr) + '</td>' +
           '<td style="color:' + typeColor + '; font-weight:600;">' + (t.type === "Income" ? "Receita" : "Despesa") + '</td>' +
-          '<td>' + t.description + '</td>' +
-          '<td>' + (t.category || "Geral") + '</td>' +
+          '<td>' + escapeHtml(t.description) + '</td>' +
+          '<td>' + escapeHtml(t.category || "Geral") + '</td>' +
           '<td style="font-weight:600; text-align:right; white-space:nowrap;">' + formattedVal + splitTag + '</td>' +
-          '<td style="font-size:11px; color:#666;">' + details + '</td>' +
+          '<td style="font-size:11px; color:#666;">' + escapeHtml(details) + '</td>' +
         '</tr>';
             }).join("");
 
@@ -235,7 +240,7 @@ export function initExportManager(options) {
 
             const csvContent = [
                 headers.join(","),
-                ...rows.map(r => r.map(field => '"' + String(field).replace(/"/g, '""') + '"').join(","))
+                ...rows.map(r => r.map(csvField).join(","))
             ].join("\n");
 
             const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
@@ -253,15 +258,13 @@ export function initExportManager(options) {
 
     if (exportJsonBtn) {
         exportJsonBtn.addEventListener("click", async () => {
-            await exportFullJsonBackup({ TransactionService, supabase, showNotification });
-            notifyExportSuccess();
+            if (await exportFullJsonBackup({ TransactionService, supabase, showNotification })) notifyExportSuccess();
         });
     }
 
     if (exportFullCsvBtn) {
         exportFullCsvBtn.addEventListener("click", async () => {
-            await exportFullCsv({ TransactionService, showNotification });
-            notifyExportSuccess();
+            if (await exportFullCsv({ TransactionService, showNotification })) notifyExportSuccess();
         });
     }
 
@@ -286,7 +289,9 @@ export function initExportManager(options) {
 export async function exportFullJsonBackup({ TransactionService, supabase, showNotification }) {
     try {
         if (!TransactionService) throw new Error("TransactionService não configurado.");
+        const accountAtStart = getStorageAccount();
         const transactions = await TransactionService.getAllTransactions();
+        assertStorageAccount(accountAtStart);
 
         let userProfile = null;
         let savingsGoals = [];
@@ -299,35 +304,34 @@ export async function exportFullJsonBackup({ TransactionService, supabase, showN
             const userId = sessionRes?.data?.session?.user?.id;
 
             if (userId) {
-                const { data: prof } = await supabase.from("user_profiles").select("*").eq("id", userId).single();
+                const { data: prof, error: profError } = await supabase.from("user_profiles").select("*").eq("id", userId).maybeSingle();
+                if (profError) throw profError;
                 if (prof) userProfile = prof;
 
-                const { data: sg } = await supabase.from("savings_goals").select("*").eq("user_id", userId);
+                const { data: sg, error: sgError } = await fetchAllRows(() => supabase.from("savings_goals").select("*").eq("user_id", userId).order("id", { ascending: true }));
+                if (sgError) throw sgError;
                 if (sg) savingsGoals = sg;
 
-                const { data: ach } = await supabase.from("achievements").select("*").eq("user_id", userId);
+                const { data: ach, error: achError } = await fetchAllRows(() => supabase.from("achievements").select("*").eq("user_id", userId).order("id", { ascending: true }));
+                if (achError) throw achError;
                 if (ach) achievements = ach;
 
-                const { data: mp } = await supabase.from("month_preferences").select("*").eq("user_id", userId);
+                const { data: mp, error: mpError } = await fetchAllRows(() => supabase.from("month_preferences").select("*").eq("user_id", userId).order("id", { ascending: true }));
+                if (mpError) throw mpError;
                 if (mp) monthPreferences = mp;
 
-                const { data: nn } = await supabase.from("notebook_notes").select("*").eq("user_id", userId);
+                const { data: nn, error: nnError } = await fetchAllRows(() => supabase.from("notebook_notes").select("*").eq("user_id", userId).order("id", { ascending: true }));
+                if (nnError) throw nnError;
                 if (nn) notebookNotes = nn;
             }
         }
 
+        assertStorageAccount(accountAtStart);
         const localStorageData = {};
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && (
-                key.startsWith("@appdecustos") ||
-                key.includes("onboarding") ||
-                key.includes("patrimonio") ||
-                key.includes("baseNetWorth") ||
-                key.includes("userDisplayName") ||
-                key.includes("splitByTwoEnabled")
-            )) {
-                localStorageData[key] = localStorage.getItem(key);
+        for (let i = 0; i < accountStorage.length; i++) {
+            const key = accountStorage.key(i);
+            if (key && isRestorableKey(key)) {
+                localStorageData[key] = accountStorage.getItem(key);
             }
         }
 
@@ -358,6 +362,7 @@ export async function exportFullJsonBackup({ TransactionService, supabase, showN
         URL.revokeObjectURL(url);
 
         if (showNotification) showNotification("Backup completo exportado com sucesso (JSON)!", "success");
+        return true;
     } catch (err) {
         console.error("Erro ao exportar backup JSON:", err);
         if (showNotification) showNotification("Erro ao exportar backup JSON.", "error");
@@ -367,7 +372,9 @@ export async function exportFullJsonBackup({ TransactionService, supabase, showN
 export async function exportFullCsv({ TransactionService, showNotification }) {
     try {
         if (!TransactionService) throw new Error("TransactionService não configurado.");
+        const accountAtStart = getStorageAccount();
         const transactions = await TransactionService.getAllTransactions();
+        assertStorageAccount(accountAtStart);
         if (!transactions || transactions.length === 0) {
             if (showNotification) showNotification("Nenhuma transação encontrada para exportar.", "warning");
             return;
@@ -392,7 +399,7 @@ export async function exportFullCsv({ TransactionService, showNotification }) {
 
         const csvContent = [
             headers.join(","),
-            ...rows.map(r => r.map(field => '"' + String(field).replace(/"/g, '""') + '"').join(","))
+            ...rows.map(r => r.map(csvField).join(","))
         ].join("\n");
 
         const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
@@ -407,6 +414,7 @@ export async function exportFullCsv({ TransactionService, showNotification }) {
         URL.revokeObjectURL(url);
 
         if (showNotification) showNotification("CSV completo de todo o histórico exportado!", "success");
+        return true;
     } catch (err) {
         console.error("Erro ao exportar CSV completo:", err);
         if (showNotification) showNotification("Erro ao exportar CSV completo.", "error");
@@ -417,7 +425,9 @@ export async function importBackup(file, { TransactionService, supabase, showNot
     if (!file) return;
 
     try {
+        if (file.size > 25 * 1024 * 1024) throw new Error("Backup excede 25 MB.");
         const text = await file.text();
+        if (text.length > 25 * 1024 * 1024) throw new Error("Backup excede 25 MB.");
         let backupObj;
         try {
             backupObj = JSON.parse(text);
@@ -429,6 +439,7 @@ export async function importBackup(file, { TransactionService, supabase, showNot
             throw new Error("Formato de backup não reconhecido.");
         }
 
+        validateBackup(backupObj);
         const { transactions, userProfile, savingsGoals, achievements, monthPreferences, notebookNotes, localStorageData } = backupObj.data;
 
         let userId = null;
@@ -437,6 +448,8 @@ export async function importBackup(file, { TransactionService, supabase, showNot
             userId = sessionRes?.data?.session?.user?.id;
         }
 
+        if (!userId) throw new Error("Usuário não autenticado.");
+        assertStorageAccount(userId);
         let restoredTxCount = 0;
 
         if (Array.isArray(transactions) && transactions.length > 0 && TransactionService) {
@@ -445,17 +458,17 @@ export async function importBackup(file, { TransactionService, supabase, showNot
 
         if (userProfile && userId && supabase) {
             const profileToUpsert = { ...userProfile, id: userId, last_sync: new Date().toISOString() };
-            await supabase.from("user_profiles").upsert(profileToUpsert, { onConflict: "id" });
+            { const { error } = await supabase.from("user_profiles").upsert(profileToUpsert, { onConflict: "id" }); if (error) throw error; }
         }
 
         if (Array.isArray(savingsGoals) && savingsGoals.length > 0 && userId && supabase) {
             const goalsToUpsert = savingsGoals.map(g => ({ ...g, user_id: userId }));
-            await supabase.from("savings_goals").upsert(goalsToUpsert, { onConflict: "id" });
+            { const { error } = await supabase.from("savings_goals").upsert(goalsToUpsert, { onConflict: "id" }); if (error) throw error; }
         }
 
         if (Array.isArray(achievements) && achievements.length > 0 && userId && supabase) {
             const achToUpsert = achievements.map(a => ({ ...a, user_id: userId }));
-            await supabase.from("achievements").upsert(achToUpsert, { onConflict: "id" });
+            { const { error } = await supabase.from("achievements").upsert(achToUpsert, { onConflict: "id" }); if (error) throw error; }
         }
 
         if (Array.isArray(monthPreferences) && monthPreferences.length > 0 && userId && supabase) {
@@ -466,7 +479,7 @@ export async function importBackup(file, { TransactionService, supabase, showNot
                 is_split_by_2: Boolean(p.is_split_by_2),
                 updated_at: new Date().toISOString()
             }));
-            await supabase.from("month_preferences").upsert(prefsToUpsert, { onConflict: "user_id,year,month" });
+            { const { error } = await supabase.from("month_preferences").upsert(prefsToUpsert, { onConflict: "user_id,year,month" }); if (error) throw error; }
         }
 
         if (Array.isArray(notebookNotes) && notebookNotes.length > 0 && userId && supabase) {
@@ -478,13 +491,14 @@ export async function importBackup(file, { TransactionService, supabase, showNot
                 history: Array.isArray(n.history) ? n.history : [],
                 updated_at: new Date().toISOString()
             }));
-            await supabase.from("notebook_notes").upsert(notesToUpsert, { onConflict: "user_id,year,month" });
+            { const { error } = await supabase.from("notebook_notes").upsert(notesToUpsert, { onConflict: "user_id,year,month" }); if (error) throw error; }
         }
 
+        assertStorageAccount(userId);
         if (localStorageData && typeof localStorageData === "object") {
             Object.keys(localStorageData).forEach(key => {
-                if (localStorageData[key] !== null && localStorageData[key] !== undefined) {
-                    localStorage.setItem(key, localStorageData[key]);
+                if (isRestorableKey(key) && localStorageData[key] !== null && localStorageData[key] !== undefined) {
+                    accountStorage.setItem(key, localStorageData[key]);
                 }
             });
         }
@@ -496,6 +510,6 @@ export async function importBackup(file, { TransactionService, supabase, showNot
         }
     } catch (err) {
         console.error("Erro ao importar backup:", err);
-        if (showNotification) showNotification("Erro na restauração: " + err.message, "error");
+        if (showNotification) showNotification("Restauração interrompida; etapas anteriores podem ter sido gravadas. " + err.message, "error");
     }
 }

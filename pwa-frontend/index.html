@@ -12,34 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
     rel="stylesheet" />
 
-  <!-- Tailwind via CDN -->
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <script id="tailwind-config">
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "primary": "#2547f4",
-            "primary-dark": "#1a33b0",
-            "accent-green": "#0bda65",
-            "accent-red": "#fa6538",
-            "background-light": "#f5f6f8",
-            "background-dark": "#0f172a",
-          },
-          fontFamily: {
-            "display": ["Manrope", "sans-serif"]
-          },
-          boxShadow: {
-            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-            'glow-primary': '0 0 20px -5px rgba(37, 71, 244, 0.5)',
-            'glow-green': '0 0 20px -5px rgba(11, 218, 101, 0.4)',
-            'glow-red': '0 0 20px -5px rgba(250, 101, 56, 0.4)',
-          }
-        },
-      },
-    }
-  </script>
+  <link rel="stylesheet" href="./src/tailwind.css">
 
   <!-- PWA Settings -->
   <link rel="manifest" href="manifest.json">
@@ -1513,7 +1486,11 @@
               <ul class="space-y-2 list-disc list-inside marker:text-amber-400">
                 <li>📱 <strong class="text-white">Instale o app no iPhone:</strong> Safari → Compartilhar → "Adicionar à
                   Tela de Início".</li>
-                <li>🔄 O app funciona <strong class="text-white">offline</strong> para navegação básica.</li>
+                <li>🔄 A navegação básica pode usar arquivos em cache. Consultar ou alterar transações exige conexão; falhas aparecem como erro, sem simular saldo zero.</li>
+                <li>💾 Exporte um Backup (JSON) antes de restaurar dados. A importação valida o arquivo e não altera sua sessão. Se houver falha, etapas anteriores podem ter sido gravadas; repetir a importação atualiza os mesmos registros. Filas antigas de exclusão são ignoradas.</li>
+                <li>👤 Dados locais são separados por conta. Ao atualizar uma versão antiga, confirme a associação somente se os dados deste navegador forem seus; a cópia antiga é preservada.</li>
+                <li>🔢 Editar parcelas atualiza a série de uma vez. Para reduzir o total, exclua explicitamente as excedentes antes. Séries antigas ambíguas exigem revisão.</li>
+                <li>💰 A calibração só é confirmada após salvar na nuvem. O bloco de notas confirma o salvamento no dispositivo e tenta sincronizar.</li>
                 <li>🔒 Seus dados são <strong class="text-white">privados e criptografados</strong> — ninguém mais tem
                   acesso.</li>
                 <li>💰 Use o <strong class="text-white">Patrimônio Líquido</strong> no Painel como termômetro geral da
@@ -1675,7 +1652,7 @@
     </div>
 
     <!-- Main Application Script -->
-    <script type="module" src="./src/main.js"></script>
+    <script type="module" src="./src/bootstrap.js"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -1690,7 +1667,6 @@
             refreshing = true;
             window.location.reload();
           }
-        });
         });
       }
     </script>

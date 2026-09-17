@@ -1,9 +1,15 @@
-﻿import { supabase } from './supabaseClient.js';
+import { accountStorage, assertStorageAccount, getStorageAccount } from './accountStorage.js';
+import { supabase } from './supabaseClient.js';
 import { AuthService } from './AuthService.js';
 
 async function getCurrentUserId() {
+    const accountAtStart = getStorageAccount();
     try {
         const session = await AuthService.getSession();
+        if (session?.user?.id) {
+            assertStorageAccount(accountAtStart);
+            if (session.user.id !== accountAtStart) throw new Error('A conta mudou. Recarregue a página.');
+        }
         return session?.user?.id || null;
     } catch {
         return null;
@@ -20,7 +26,7 @@ export class MonthPreferencesService {
     static getSplitByTwoFromCache(year, month) {
         if (typeof localStorage === 'undefined') return false;
         const storageKey = this.getStorageKey(year, month);
-        return localStorage.getItem(storageKey) === 'true';
+        return accountStorage.getItem(storageKey) === 'true';
     }
 
     static async getSplitByTwo(year, month) {
@@ -41,6 +47,7 @@ export class MonthPreferencesService {
                 .eq('year', parsedYear)
                 .eq('month', parsedMonth)
                 .maybeSingle();
+            assertStorageAccount(userId);
 
             if (error) {
                 console.warn('Erro ao carregar preferência de mês do Supabase:', error);
@@ -52,9 +59,9 @@ export class MonthPreferencesService {
                 if (typeof localStorage !== 'undefined') {
                     const storageKey = this.getStorageKey(parsedYear, parsedMonth);
                     if (isEnabled) {
-                        localStorage.setItem(storageKey, 'true');
+                        accountStorage.setItem(storageKey, 'true');
                     } else {
-                        localStorage.removeItem(storageKey);
+                        accountStorage.removeItem(storageKey);
                     }
                 }
                 return isEnabled;
@@ -81,9 +88,9 @@ export class MonthPreferencesService {
         if (typeof localStorage !== 'undefined') {
             const storageKey = this.getStorageKey(parsedYear, parsedMonth);
             if (booleanValue) {
-                localStorage.setItem(storageKey, 'true');
+                accountStorage.setItem(storageKey, 'true');
             } else {
-                localStorage.removeItem(storageKey);
+                accountStorage.removeItem(storageKey);
             }
         }
 
@@ -128,6 +135,7 @@ export class MonthPreferencesService {
                 return [];
             }
 
+            assertStorageAccount(userId);
             const cloudMap = new Map();
             if (Array.isArray(data)) {
                 data.forEach(item => {
@@ -136,9 +144,9 @@ export class MonthPreferencesService {
                     if (typeof localStorage !== 'undefined') {
                         const storageKey = this.getStorageKey(item.year, item.month);
                         if (item.is_split_by_2) {
-                            localStorage.setItem(storageKey, 'true');
+                            accountStorage.setItem(storageKey, 'true');
                         } else {
-                            localStorage.removeItem(storageKey);
+                            accountStorage.removeItem(storageKey);
                         }
                     }
                 });
@@ -146,21 +154,14 @@ export class MonthPreferencesService {
 
             // Sobe configurações locais que ainda não estão na nuvem
             if (typeof localStorage !== 'undefined') {
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
+                for (let i = 0; i < accountStorage.length; i++) {
+                    const key = accountStorage.key(i);
                     if (key && key.startsWith('split_by_two_')) {
-                        const parts = key.split('_');
-                        // Formato: split_by_two_YYYY_M ou split_by_two_USERID_YYYY_M
-                        let y, m;
-                        if (parts.length === 4) {
-                            y = parseInt(parts[2], 10);
-                            m = parseInt(parts[3], 10);
-                        } else if (parts.length === 5) {
-                            y = parseInt(parts[3], 10);
-                            m = parseInt(parts[4], 10);
-                        }
+                        const match = /^split_by_two_(\d{4})_([1-9]|1[0-2])$/.exec(key);
+                        const y = Number(match?.[1]);
+                        const m = Number(match?.[2]);
 
-                        if (y && m && localStorage.getItem(key) === 'true') {
+                        if (y && m && accountStorage.getItem(key) === 'true') {
                             const cloudKey = `${y}_${m}`;
                             if (!cloudMap.has(cloudKey)) {
                                 await this.setSplitByTwo(y, m, true);

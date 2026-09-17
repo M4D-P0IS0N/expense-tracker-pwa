@@ -1,3 +1,4 @@
+import { accountStorage } from './accountStorage.js';
 export class GamificationService {
     static storageKey = '@appdecustos/user_profile';
 
@@ -98,10 +99,10 @@ export class GamificationService {
     ];
 
     static getProfile() {
-        const data = localStorage.getItem(this.storageKey);
-        if (!data) return { ...this.DEFAULT_PROFILE };
+        const data = accountStorage.getItem(this.storageKey);
+        if (!data) return structuredClone(this.DEFAULT_PROFILE);
 
-        const profile = { ...this.DEFAULT_PROFILE, ...JSON.parse(data) };
+        const profile = { ...structuredClone(this.DEFAULT_PROFILE), ...JSON.parse(data) };
 
         // Migration: convert old EvolutionStage values to new format
         if (['Apprentice', 'Adept', 'Master', 'Archmage'].includes(profile.EvolutionStage)) {
@@ -122,7 +123,7 @@ export class GamificationService {
 
     static saveProfile(profile) {
         profile.LastUpdated = new Date().toISOString();
-        localStorage.setItem(this.storageKey, JSON.stringify(profile));
+        accountStorage.setItem(this.storageKey, JSON.stringify(profile));
     }
 
     static getStageDefinition(stageId) {

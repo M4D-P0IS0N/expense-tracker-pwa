@@ -1,13 +1,11 @@
 ---
 name: auto-git-push
-description: Executa automaticamente build, incremento de versão do service worker, commit git e git push origin main logo após terminar e testar qualquer nova funcionalidade.
+description: Valida, versiona e publica automaticamente alterações autorizadas neste projeto.
 ---
 
-# Workflow de Commit e Push Automático
-
-Sempre que uma nova funcionalidade ou correção for finalizada e validada:
-1. Executar os testes automatizados (npm test).
-2. Incrementar a versão de cache em pwa-frontend/public/sw.js.
-3. Executar o build de produção (npm run build).
-4. Adicionar os arquivos (git add .) e commitar (git commit -m "...").
-5. Executar git push origin main automaticamente sem aguardar solicitação do usuário.
+Leia `AGENTS.md` na raiz e siga seu fluxo de publicação automática.
+Antes de alterações amplas, preserve e confira tag ou backup dos arquivos afetados.
+Depois de implementar: testes pertinentes e `npm test`, incremento do cache do service worker,
+`npm run build`, revisão do diff, staging com caminhos explícitos, commit e `git push origin main`.
+Envie também a tag de recuperação. Confira o workflow GitHub Pages e a versão publicada.
+Não publique testes/build com falha, não use staging indiscriminado e não afirme sucesso sem evidência.

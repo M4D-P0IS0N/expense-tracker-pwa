@@ -1,3 +1,4 @@
+import { escapeHtml } from '../utils/escapeHtml.js';
 import { getEffectiveTransactionAmount, shouldApplySplitByTwo, shouldIgnoreThirdParty } from '../utils/splitTransactionAmount.js';
 import { normalizeCategory } from '../utils/categoryUtils.js';
 
@@ -32,7 +33,7 @@ function createTransactionCard({
 
   const normCat = normalizeCategory(transaction.category);
   const subCategoryLabel = normCat.name;
-  const iconHtml = `<span style="font-size: 24px;">${normCat.emoji}</span>`;
+  const iconHtml = `<span style="font-size: 24px;">${escapeHtml(normCat.emoji)}</span>`;
 
   let tagsHtml = '';
 
@@ -44,7 +45,7 @@ function createTransactionCard({
   }
 
   if (transaction.credit_card_name) {
-    tagsHtml += `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 mr-1">${transaction.credit_card_name}</span>`;
+    tagsHtml += `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 mr-1">${escapeHtml(transaction.credit_card_name)}</span>`;
   }
 
   if (transaction.total_installments > 1) {
@@ -56,7 +57,7 @@ function createTransactionCard({
     const basicInstallmentLabel = `Parc. ${transaction.installment_number}/${transaction.total_installments}`;
     const expandedInstallmentLabel = `Fim: ${finishDateLabel}`;
 
-    tagsHtml += `<span title="Finaliza em: ${finishDateLabel}" onclick="this.textContent = this.textContent === '${basicInstallmentLabel}' ? '${expandedInstallmentLabel}' : '${basicInstallmentLabel}'; event.stopPropagation();" class="text-[10px] cursor-help font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/20 hover:bg-purple-500/40 transition active:scale-95 inline-block mr-1">${basicInstallmentLabel}</span>`;
+    tagsHtml += `<span title="Finaliza em: ${finishDateLabel}" data-installment-toggle data-basic="${escapeHtml(basicInstallmentLabel)}" data-expanded="${escapeHtml(expandedInstallmentLabel)}" class="text-[10px] cursor-help font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/20 hover:bg-purple-500/40 transition active:scale-95 inline-block mr-1">${escapeHtml(basicInstallmentLabel)}</span>`;
   }
 
   if (!isIncomeTransaction && transaction.is_recurring) {
@@ -83,16 +84,30 @@ function createTransactionCard({
     </div>
     <div class="flex-1 min-w-0">
       <div class="flex justify-between items-center gap-3 mb-0.5">
-        <h4 class="text-white font-semibold truncate ${isThirdPartyIgnored ? 'line-through text-slate-500' : ''}">${transaction.description}</h4>
+        <h4 class="text-white font-semibold truncate ${isThirdPartyIgnored ? 'line-through text-slate-500' : ''}">${escapeHtml(transaction.description)}</h4>
         <span class="${amountColorClass} font-bold whitespace-nowrap ${isThirdPartyIgnored ? 'line-through text-slate-500' : ''}">${transactionSignal}${formatBrazilianCurrency(Math.abs(effectiveTransactionAmount))}</span>
       </div>
       <div class="flex justify-between items-center gap-2 mt-1">
-        <p class="text-xs text-slate-400 shrink-0 ${isThirdPartyIgnored ? 'line-through text-slate-600' : ''}">${subCategoryLabel} • ${transactionDateLabel}</p>
+        <p class="text-xs text-slate-400 shrink-0 ${isThirdPartyIgnored ? 'line-through text-slate-600' : ''}">${escapeHtml(subCategoryLabel)} • ${transactionDateLabel}</p>
         <div class="flex items-center justify-end flex-wrap gap-1">${tagsHtml}</div>
       </div>
     </div>
   `;
 
+  transactionCard.tabIndex = 0;
+  transactionCard.setAttribute('role', 'button');
+  transactionCard.setAttribute('aria-label', `Opções: ${transaction.description}`);
+  transactionCard.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openContextMenu(transaction);
+    }
+  });
+  const toggle = transactionCard.querySelector('[data-installment-toggle]');
+  toggle?.addEventListener('click', event => {
+    event.stopPropagation();
+    toggle.textContent = toggle.textContent === toggle.dataset.basic ? toggle.dataset.expanded : toggle.dataset.basic;
+  });
   let pressTimer;
   const cancelPress = () => clearTimeout(pressTimer);
 

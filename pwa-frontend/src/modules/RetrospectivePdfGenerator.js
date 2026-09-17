@@ -1,3 +1,4 @@
+import { escapeHtml } from '../utils/escapeHtml.js';
 // --- Retrospective PDF Generator Module ---
 // Generates a year-to-date comparative analysis PDF report from January up to the current month,
 // taking into account whether split-by-two (dividir por 2) was active in each respective month.
@@ -338,11 +339,11 @@ export async function exportRetrospectivePdfReport({ TransactionService, getTran
             }
 
             return `<tr>
-                <td>${dateStr}</td>
-                <td style="font-weight:600;">${t.description || "Sem descrição"}</td>
-                <td>${normalizeCategory(t.category).full}</td>
+                <td>${escapeHtml(dateStr)}</td>
+                <td style="font-weight:600;">${escapeHtml(t.description || "Sem descrição")}</td>
+                <td>${escapeHtml(normalizeCategory(t.category).full)}</td>
                 <td style="color:#dc2626; font-weight:700;">${formatCurrency(effectiveAmt)}</td>
-                <td>${detailsList.join(" | ") || "-"}</td>
+                <td>${escapeHtml(detailsList.join(" | ") || "-")}</td>
             </tr>`;
         }).join("");
 

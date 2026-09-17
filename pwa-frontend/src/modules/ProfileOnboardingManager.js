@@ -1,3 +1,4 @@
+import { accountStorage } from '../services/accountStorage.js';
 export function initProfileOnboardingManager({
   gamificationService,
   authService,
@@ -42,19 +43,19 @@ export function initProfileOnboardingManager({
   let onboardingAvatarGender = null;
 
   function isOnboardingCompleted() {
-    return localStorage.getItem('onboardingCompleted') === 'true';
+    return accountStorage.getItem('onboardingCompleted') === 'true';
   }
 
   function markOnboardingCompleted() {
-    localStorage.setItem('onboardingCompleted', 'true');
+    accountStorage.setItem('onboardingCompleted', 'true');
   }
 
   function isPatrimonioCalibrated() {
-    return localStorage.getItem('patrimonioCalibrated') === 'true';
+    return accountStorage.getItem('patrimonioCalibrated') === 'true';
   }
 
   function markPatrimonioCalibrated() {
-    localStorage.setItem('patrimonioCalibrated', 'true');
+    accountStorage.setItem('patrimonioCalibrated', 'true');
   }
 
   function updateAvatarUI() {
@@ -284,7 +285,7 @@ export function initProfileOnboardingManager({
     }
 
     if (userDisplayNameEl) userDisplayNameEl.textContent = name;
-    localStorage.setItem('userDisplayName', name);
+    accountStorage.setItem('userDisplayName', name);
     gamificationService.setAvatarGender(onboardingAvatarGender);
     updateAvatarUI();
 

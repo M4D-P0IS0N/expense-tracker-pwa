@@ -1,8 +1,9 @@
+import { accountStorage } from './accountStorage.js';
 export class BudgetService {
     static storageKey = '@appdecustos/budgets';
 
     static getBudgets() {
-        const data = localStorage.getItem(this.storageKey);
+        const data = accountStorage.getItem(this.storageKey);
         return data ? JSON.parse(data) : {};
     }
 
@@ -18,6 +19,6 @@ export class BudgetService {
         } else {
             budgets[category] = amount;
         }
-        localStorage.setItem(this.storageKey, JSON.stringify(budgets));
+        accountStorage.setItem(this.storageKey, JSON.stringify(budgets));
     }
 }

@@ -1,3 +1,4 @@
+import { escapeHtml } from '../utils/escapeHtml.js';
 import { normalizeCategory } from '../utils/categoryUtils.js';
 
 export function initContextMenuManager({
@@ -55,7 +56,7 @@ export function initContextMenuManager({
     ctxAmount.className = `text-sm font-medium ${isIncomeTransaction ? 'text-accent-green' : 'text-accent-red'}`;
 
     const normalizedCat = normalizeCategory(transaction.category);
-    ctxIcon.innerHTML = `<span style="font-size: 24px;">${normalizedCat.emoji}</span>`;
+    ctxIcon.innerHTML = `<span style="font-size: 24px;">${escapeHtml(normalizedCat.emoji)}</span>`;
 
     contextMenuModal.classList.remove('hidden');
     setTimeout(() => contextSheet.classList.remove('translate-y-full'), 10);

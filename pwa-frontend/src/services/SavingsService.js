@@ -1,8 +1,9 @@
+import { accountStorage } from './accountStorage.js';
 export class SavingsService {
     static storageKey = '@appdecustos/savings_goals';
 
     static getGoals() {
-        const data = localStorage.getItem(this.storageKey);
+        const data = accountStorage.getItem(this.storageKey);
         return data ? JSON.parse(data) : [];
     }
 
@@ -16,7 +17,7 @@ export class SavingsService {
     }
 
     static saveGoals(goals) {
-        localStorage.setItem(this.storageKey, JSON.stringify(goals));
+        accountStorage.setItem(this.storageKey, JSON.stringify(goals));
     }
 
     static addGoal(name, targetAmount, icon = '🎯') {

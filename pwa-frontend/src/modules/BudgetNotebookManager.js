@@ -1,4 +1,5 @@
-﻿import { normalizeCategory } from '../utils/categoryUtils.js';
+import { escapeHtml } from '../utils/escapeHtml.js';
+import { normalizeCategory } from '../utils/categoryUtils.js';
 
 const MONTH_NAMES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -67,10 +68,10 @@ export function initBudgetNotebookManager({
       const budgetRowElement = document.createElement('div');
       budgetRowElement.className = 'flex items-center justify-between p-2 rounded-lg bg-slate-700/30 border border-slate-700';
       budgetRowElement.innerHTML = `
-        <span class="text-sm text-white font-medium">${categoryName}</span>
+        <span class="text-sm text-white font-medium">${escapeHtml(categoryName)}</span>
         <div class="relative w-32">
           <span class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500 text-xs">R$</span>
-          <input type="text" inputmode="decimal" value="${budgetAmount}" data-category="${categoryName}" placeholder="Ilimitado" class="budget-input w-full bg-slate-800 border border-slate-600 rounded-md text-white text-sm py-1.5 pl-7 pr-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+          <input type="text" inputmode="decimal" value="${escapeHtml(budgetAmount)}" data-category="${escapeHtml(categoryName)}" placeholder="Ilimitado" class="budget-input w-full bg-slate-800 border border-slate-600 rounded-md text-white text-sm py-1.5 pl-7 pr-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
         </div>
       `;
       budgetListEl.appendChild(budgetRowElement);
@@ -119,12 +120,12 @@ export function initBudgetNotebookManager({
       } else {
         if (entry.added && entry.added.length > 0) {
           entry.added.forEach(lineContent => {
-            diffMarkup += `<div class="text-accent-green bg-accent-green/10 px-2 py-0.5 rounded truncate text-[11px] font-mono">+ ${lineContent}</div>`;
+            diffMarkup += `<div class="text-accent-green bg-accent-green/10 px-2 py-0.5 rounded truncate text-[11px] font-mono">+ ${escapeHtml(lineContent)}</div>`;
           });
         }
         if (entry.removed && entry.removed.length > 0) {
           entry.removed.forEach(lineContent => {
-            diffMarkup += `<div class="text-accent-red bg-accent-red/10 px-2 py-0.5 rounded truncate line-through opacity-80 text-[11px] font-mono">- ${lineContent}</div>`;
+            diffMarkup += `<div class="text-accent-red bg-accent-red/10 px-2 py-0.5 rounded truncate line-through opacity-80 text-[11px] font-mono">- ${escapeHtml(lineContent)}</div>`;
           });
         }
       }
@@ -214,7 +215,7 @@ export function initBudgetNotebookManager({
       const history = (saveResult && saveResult.history) ? saveResult.history : notebookService.getHistory(year, month);
       renderHistoryList(history);
 
-      saveNotesBtn.innerHTML = 'Salvo!';
+      saveNotesBtn.textContent = 'Salvo neste dispositivo';
       saveNotesBtn.classList.add('bg-accent-green/20', 'text-accent-green', 'border-accent-green');
       saveNotesBtn.classList.remove('bg-primary/20', 'text-primary', 'border-primary');
     } catch (err) {

@@ -1,8 +1,9 @@
+import { accountStorage } from './accountStorage.js';
 export class TrashService {
     static storageKey = '@appdecustos/deleted_ids';
 
     static getDeletedIds() {
-        const data = localStorage.getItem(this.storageKey);
+        const data = accountStorage.getItem(this.storageKey);
         return data ? JSON.parse(data) : [];
     }
 
@@ -10,17 +11,17 @@ export class TrashService {
         const ids = this.getDeletedIds();
         if (!ids.includes(transactionId)) {
             ids.push(transactionId);
-            localStorage.setItem(this.storageKey, JSON.stringify(ids));
+            accountStorage.setItem(this.storageKey, JSON.stringify(ids));
         }
     }
 
     static restoreFromTrash(transactionId) {
         let ids = this.getDeletedIds();
         ids = ids.filter(id => id !== transactionId);
-        localStorage.setItem(this.storageKey, JSON.stringify(ids));
+        accountStorage.setItem(this.storageKey, JSON.stringify(ids));
     }
 
     static clearTrash() {
-        localStorage.removeItem(this.storageKey);
+        accountStorage.removeItem(this.storageKey);
     }
 }

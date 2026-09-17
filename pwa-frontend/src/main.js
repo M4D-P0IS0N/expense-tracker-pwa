@@ -233,7 +233,7 @@ const transactionListElements = {
 };
 
 // --- Initialization ---
-document.addEventListener('DOMContentLoaded', async () => {
+async function initializeApp() {
 
   // --- AUTH GUARD ---
   const session = await AuthService.getSession();
@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   NotebookService.syncAllNotes().catch((err) => {
     console.warn('Erro ao sincronizar notas no carregamento:', err);
   });
-});
+}
 
 const { initTemporalNav, initFilters } = initNavigationFilters({
   transactionService: TransactionService,
@@ -438,6 +438,7 @@ async function loadData() {
 }
 
 async function renderDashboard() {
+  try {
   await renderDashboardSection({
     transactions,
     budgetService: BudgetService,
@@ -461,6 +462,12 @@ async function renderDashboard() {
       currentCalculatedNetWorth = netWorthValue;
     },
   });
+  } catch (error) {
+    console.error('Erro ao carregar dashboard:', error);
+    dashNetworth.textContent = 'Indisponível';
+    dashNetworthTrend.textContent = 'Verifique a conexão';
+    showNotification('Não foi possível atualizar o dashboard. Tente novamente.', 'error');
+  }
 }
 
 function updateUI() {
@@ -647,7 +654,7 @@ initNetworthCalibrationManager({
   markPatrimonioCalibrated: () => markPatrimonioCalibrated(),
   transactionService: TransactionService,
   parseBrazilianCurrency,
-  getCurrentNetWorth: () => currentCalculatedNetWorth,
+  getCurrentNetWorth: () => TransactionService.getNetWorth(Number(filterYearEl.value), Number(filterMonthEl.value), isSplitByTwoEnabled),
   renderDashboard,
 });
 
@@ -660,3 +667,5 @@ initPullToRefresh();
 // Theme Manager -> ./modules/ThemeManager.js
 initThemeManager();
 
+
+initializeApp().catch(error => { console.error(error); showNotification("Não foi possível carregar os dados. Verifique sua conexão e recarregue.", "error"); });

@@ -72,7 +72,9 @@ export function initTransactionForm({
       await loadData();
       closeModal();
     } catch (error) {
-      alert('Erro ao salvar transação. Verifique se o Supabase está configurado corretamente.');
+      const message = error.code === 'P0001' || error instanceof Error
+        ? error.message : 'Não foi possível salvar. Verifique a conexão e tente novamente.';
+      showNotification(message, 'error');
       console.error(error);
     } finally {
       submitButton.textContent = originalButtonText;

@@ -1,11 +1,18 @@
+import { accountStorage, assertStorageAccount, getStorageAccount } from './accountStorage.js';
 import { supabase } from './supabaseClient.js';
 import { AuthService } from './AuthService.js';
 import { getEffectiveTransactionAmount } from '../utils/splitTransactionAmount.js';
-import { buildPropagationPayload, isGroupedTransaction } from '../utils/transactionPropagation.js';
+import { validateTransaction } from '../utils/backupValidation.js';
+import { fetchAllRows } from '../utils/pagination.js';
 
 async function getCurrentUserId() {
+    const accountAtStart = getStorageAccount();
     const session = await AuthService.getSession();
-    return session?.user?.id || null;
+    if (session?.user?.id) {
+            assertStorageAccount(accountAtStart);
+            if (session.user.id !== accountAtStart) throw new Error('A conta mudou. Recarregue a página.');
+        }
+        return session?.user?.id || null;
 }
 
 export class TransactionService {
@@ -47,17 +54,16 @@ export class TransactionService {
         const lastDay = new Date(Date.UTC(parsedYear, parsedMonth, 0)).getUTCDate();
         const endDate = `${parsedYear}-${padMonth}-${String(lastDay).padStart(2, '0')}T23:59:59.999Z`;
 
-        const { data, error } = await supabase
-            .from('transactions')
+        const { data, error } = await fetchAllRows(() => supabase.from('transactions')
             .select('*')
             .eq('user_id', userId)
             .gte('date', startDate)
             .lte('date', endDate)
-            .order('date', { ascending: false });
+            .order('date', { ascending: false }).order('id', { ascending: true }));
 
         if (error) {
             console.error("Error fetching transactions:", error);
-            return [];
+            throw error;
         }
         return data;
     }
@@ -112,16 +118,15 @@ export class TransactionService {
         const sanitizedQuery = query.replace(/[,.()"\\]/g, '');
         if (!sanitizedQuery.trim()) return [];
 
-        const { data, error } = await supabase
-            .from('transactions')
+        const { data, error } = await fetchAllRows(() => supabase.from('transactions')
             .select('*')
             .eq('user_id', userId)
             .or(`description.ilike.%${sanitizedQuery}%,category.ilike.%${sanitizedQuery}%`)
-            .order('date', { ascending: false });
+            .order('date', { ascending: false }).order('id', { ascending: true }));
 
         if (error) {
             console.error("Error searching transactions:", error);
-            return [];
+            throw error;
         }
         return data;
     }
@@ -131,7 +136,7 @@ export class TransactionService {
      */
     static async getBaseNetWorth() {
         const userId = await getCurrentUserId();
-        if (!userId) return Number(localStorage.getItem('baseNetWorth') || 0);
+        if (!userId) return Number(accountStorage.getItem('baseNetWorth') || 0);
 
         try {
             const { data, error } = await supabase
@@ -139,17 +144,18 @@ export class TransactionService {
                 .select('base_net_worth')
                 .eq('id', userId)
                 .maybeSingle();
+            assertStorageAccount(userId);
 
             if (!error && data && data.base_net_worth !== null && data.base_net_worth !== undefined) {
                 const base = Number(data.base_net_worth || 0);
-                localStorage.setItem('baseNetWorth', base.toString());
+                accountStorage.setItem('baseNetWorth', base.toString());
                 return base;
             }
         } catch (err) {
             console.error("Error reading baseNetWorth from Supabase:", err);
         }
 
-        return Number(localStorage.getItem('baseNetWorth') || 0);
+        return Number(accountStorage.getItem('baseNetWorth') || 0);
     }
 
     /**
@@ -158,11 +164,10 @@ export class TransactionService {
     static async updateBaseNetWorth(newBaseAmount) {
         const numericBase = Number(newBaseAmount) || 0;
         
-        // Save locally first for instant resilience and responsiveness
-        localStorage.setItem('baseNetWorth', numericBase.toString());
+        if (!Number.isFinite(Number(newBaseAmount))) throw new Error("Saldo inválido.");
 
         const userId = await getCurrentUserId();
-        if (!userId) return;
+        if (!userId) throw new Error("Usuário não autenticado");
 
         const { error } = await supabase
             .from('user_profiles')
@@ -176,6 +181,8 @@ export class TransactionService {
             console.error("Error updating base net worth in Supabase:", error);
             throw error;
         }
+        assertStorageAccount(userId);
+        accountStorage.setItem('baseNetWorth', numericBase.toString());
     }
 
     /**
@@ -183,7 +190,7 @@ export class TransactionService {
      */
     static async getNetWorth(year, month, isSplitByTwoEnabled = false) {
         const userId = await getCurrentUserId();
-        if (!userId) return Number(localStorage.getItem('baseNetWorth') || 0);
+        if (!userId) return Number(accountStorage.getItem('baseNetWorth') || 0);
 
         const baseNetWorth = await this.getBaseNetWorth();
 
@@ -193,15 +200,14 @@ export class TransactionService {
         const lastDay = new Date(Date.UTC(parsedYear, parsedMonth, 0)).getUTCDate();
         const endOfMonthISO = `${parsedYear}-${padMonth}-${String(lastDay).padStart(2, '0')}T23:59:59.999Z`;
 
-        const { data, error } = await supabase
-            .from('transactions')
+        const { data, error } = await fetchAllRows(() => supabase.from('transactions')
             .select('amount, type, date, is_split_by_2, is_third_party')
             .eq('user_id', userId)
-            .lte('date', endOfMonthISO);
+            .lte('date', endOfMonthISO).order('id', { ascending: true }));
 
         if (error) {
             console.error("Error fetching net worth:", error);
-            return baseNetWorth;
+            throw error;
         }
 
         const historicalDiff = data.reduce((acc, tx) => {
@@ -221,10 +227,9 @@ export class TransactionService {
             return [new Date().getFullYear()];
         }
 
-        const { data, error } = await supabase
-            .from('transactions')
+        const { data, error } = await fetchAllRows(() => supabase.from('transactions')
             .select('date')
-            .eq('user_id', userId);
+            .eq('user_id', userId).order('id', { ascending: true }));
 
         if (error) {
             console.error("Error fetching years:", error);
@@ -232,7 +237,7 @@ export class TransactionService {
             return [currentYear];
         }
 
-        const years = new Set(data.map(tx => new Date(tx.date).getFullYear()));
+        const years = new Set(data.map(tx => new Date(tx.date).getUTCFullYear()));
         const currentYear = new Date().getFullYear();
         years.add(currentYear); // Always include current year
 
@@ -243,6 +248,8 @@ export class TransactionService {
      * Add a new transaction (supports multiple installments)
      */
     static async addTransaction(transaction) {
+        validateTransaction(transaction);
+        if (transaction.is_recurring && transaction.total_installments > 1) throw new Error("Escolha parcelas ou recorrência.");
         const userId = await getCurrentUserId();
         if (!userId) throw new Error("Usuário não autenticado");
 
@@ -309,170 +316,14 @@ export class TransactionService {
      * Update an existing transaction and propagate relevant changes to future transactions in the series
      */
     static async updateTransaction(id, transaction) {
-        const { data: originalTx, error: originalFetchError } = await supabase
-            .from('transactions')
-            .select('*')
-            .eq('id', id)
-            .maybeSingle();
-
-        if (originalFetchError) {
-            console.error("Error fetching original transaction before update:", originalFetchError);
-        }
-
-        let baseDateStr = transaction.date;
-        if (baseDateStr && baseDateStr.length === 10) baseDateStr += 'T12:00:00Z';
-
-        const isExpense = transaction.type === 'Expense';
-        const totalInstallments = parseInt(transaction.total_installments, 10) || 1;
-        const currentInstallment = parseInt(transaction.installment_number, 10) || 1;
-        const isRecurring = transaction.is_recurring !== undefined ? Boolean(transaction.is_recurring) : false;
-
-        const txToUpdate = {
-            description: transaction.description,
-            amount: transaction.amount,
-            type: transaction.type,
-            category: transaction.category || 'General',
-            date: baseDateStr ? new Date(baseDateStr).toISOString() : undefined,
-            credit_card_name: transaction.credit_card_name || null,
-            is_recurring: isRecurring,
-            is_split_by_2: isExpense ? Boolean(transaction.is_split_by_2) : false,
-            is_third_party: isExpense ? Boolean(transaction.is_third_party) : false,
-            total_installments: totalInstallments > 1 ? totalInstallments : null,
-            installment_number: totalInstallments > 1 ? currentInstallment : null,
-        };
-
-        const isGrouped = isGroupedTransaction(originalTx) || isGroupedTransaction(transaction);
-        let activeGroupId = originalTx?.installment_group_id || transaction?.installment_group_id || null;
-
-        if (isGrouped && !activeGroupId) {
-            activeGroupId = crypto.randomUUID();
-            txToUpdate.installment_group_id = activeGroupId;
-        } else if (!isGrouped) {
-            txToUpdate.installment_group_id = null;
-        }
-
-        const { data, error } = await supabase
-            .from('transactions')
-            .update(txToUpdate)
-            .eq('id', id)
-            .select();
-
-        if (error) {
-            console.error("Error updating transaction:", error);
-            throw error;
-        }
-
-        const updatedTx = data && data.length > 0 ? data[0] : null;
-        if (!updatedTx) return null;
-
-        // Se a transação agora possui múltiplas parcelas, garantir que as parcelas futuras existam no banco
-        if (totalInstallments > 1 && activeGroupId) {
-            try {
-                const existingGroupTransactions = await TransactionService.getTransactionsByInstallmentGroup(activeGroupId);
-                const existingInstallmentNumbers = new Set(
-                    existingGroupTransactions
-                        .map(t => Number(t.installment_number))
-                        .filter(n => !Number.isNaN(n) && n > 0)
-                );
-                existingInstallmentNumbers.add(currentInstallment);
-
-                const missingInstallmentsToInsert = [];
-                const baseDate = baseDateStr ? new Date(baseDateStr) : new Date(updatedTx.date);
-
-                for (let installNum = currentInstallment + 1; installNum <= totalInstallments; installNum++) {
-                    if (!existingInstallmentNumbers.has(installNum)) {
-                        const monthOffset = installNum - currentInstallment;
-                        const futureTxDate = new Date(baseDate);
-                        const originalDay = baseDate.getDate();
-                        futureTxDate.setMonth(baseDate.getMonth() + monthOffset);
-
-                        if (futureTxDate.getDate() !== originalDay) {
-                            futureTxDate.setDate(0);
-                        }
-
-                        missingInstallmentsToInsert.push({
-                            user_id: updatedTx.user_id,
-                            description: updatedTx.description,
-                            amount: updatedTx.amount,
-                            type: updatedTx.type,
-                            category: updatedTx.category || 'General',
-                            date: futureTxDate.toISOString(),
-                            is_recurring: false,
-                            credit_card_name: updatedTx.credit_card_name || null,
-                            is_split_by_2: isExpense ? Boolean(updatedTx.is_split_by_2) : false,
-                            is_third_party: isExpense ? Boolean(updatedTx.is_third_party) : false,
-                            total_installments: totalInstallments,
-                            installment_number: installNum,
-                            installment_group_id: activeGroupId
-                        });
-                    }
-                }
-
-                if (missingInstallmentsToInsert.length > 0) {
-                    const { error: insertMissingError } = await supabase
-                        .from('transactions')
-                        .insert(missingInstallmentsToInsert);
-
-                    if (insertMissingError) {
-                        console.error("Error inserting missing installments during update:", insertMissingError);
-                    }
-                }
-            } catch (err) {
-                console.error("Failed to check and generate missing installments on update:", err);
-            }
-        }
-
-        if (isGrouped && originalTx) {
-            const propagationPayload = buildPropagationPayload(updatedTx);
-            if (totalInstallments > 1) {
-                propagationPayload.total_installments = totalInstallments;
-            }
-
-            if (activeGroupId && !originalTx.installment_group_id) {
-                propagationPayload.installment_group_id = activeGroupId;
-            }
-
-            const targetGroupId = originalTx.installment_group_id || activeGroupId;
-            if (targetGroupId) {
-                let futureTransactionsQuery = supabase
-                    .from('transactions')
-                    .update(propagationPayload)
-                    .eq('installment_group_id', targetGroupId);
-
-                const hasInstallmentOrder = Number(currentInstallment) > 0 && totalInstallments > 1;
-                if (hasInstallmentOrder) {
-                    futureTransactionsQuery = futureTransactionsQuery.gt('installment_number', currentInstallment);
-                } else if (originalTx.date) {
-                    futureTransactionsQuery = futureTransactionsQuery.gt('date', originalTx.date);
-                }
-
-                const { error: propagationError } = await futureTransactionsQuery;
-                if (propagationError) {
-                    console.error("Error propagating update to grouped transactions:", propagationError);
-                }
-            } else {
-                // Fallback for legacy series without installment_group_id: match by original description & user_id
-                let legacyTransactionsQuery = supabase
-                    .from('transactions')
-                    .update(propagationPayload)
-                    .eq('user_id', originalTx.user_id)
-                    .eq('description', originalTx.description);
-
-                const hasInstallmentOrder = Number(originalTx.installment_number) > 0 && Number(originalTx.total_installments) > 1;
-                if (hasInstallmentOrder) {
-                    legacyTransactionsQuery = legacyTransactionsQuery.gt('installment_number', originalTx.installment_number);
-                } else if (originalTx.date) {
-                    legacyTransactionsQuery = legacyTransactionsQuery.gt('date', originalTx.date);
-                }
-
-                const { error: legacyPropagationError } = await legacyTransactionsQuery;
-                if (legacyPropagationError) {
-                    console.error("Error propagating update to legacy transactions:", legacyPropagationError);
-                }
-            }
-        }
-
-        return updatedTx;
+        validateTransaction(transaction);
+        const userId = await getCurrentUserId();
+        if (!userId) throw new Error('Usuário não autenticado');
+        const payload = { ...transaction };
+        if (payload.date.length === 10) payload.date += 'T12:00:00Z';
+        const { data, error } = await supabase.rpc('edit_transaction_series', { p_id: id, p_transaction: payload });
+        if (error) throw error;
+        return data;
     }
 
     /**
@@ -482,12 +333,11 @@ export class TransactionService {
         const userId = await getCurrentUserId();
         if (!userId || !installmentGroupId) return [];
 
-        const { data, error } = await supabase
-            .from('transactions')
+        const { data, error } = await fetchAllRows(() => supabase.from('transactions')
             .select('*')
             .eq('user_id', userId)
             .eq('installment_group_id', installmentGroupId)
-            .order('date', { ascending: true });
+            .order('date', { ascending: true }).order('id', { ascending: true }));
 
         if (error) {
             console.error("Error fetching grouped transactions:", error);
@@ -539,11 +389,10 @@ export class TransactionService {
         const userId = await getCurrentUserId();
         if (!userId) return [];
 
-        const { data, error } = await supabase
-            .from("transactions")
+        const { data, error } = await fetchAllRows(() => supabase.from("transactions")
             .select("*")
             .eq("user_id", userId)
-            .order("date", { ascending: false });
+            .order("date", { ascending: false }).order('id', { ascending: true }));
 
         if (error) {
             console.error("Error fetching all transactions for backup:", error);
@@ -577,6 +426,7 @@ export class TransactionService {
         let totalUpserted = 0;
 
         for (let i = 0; i < sanitizedTransactions.length; i += chunkSize) {
+            assertStorageAccount(userId);
             const chunk = sanitizedTransactions.slice(i, i + chunkSize);
             const { data, error } = await supabase
                 .from("transactions")

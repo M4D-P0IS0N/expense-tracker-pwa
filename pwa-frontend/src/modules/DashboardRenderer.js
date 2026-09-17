@@ -1,3 +1,4 @@
+import { escapeHtml } from '../utils/escapeHtml.js';
 import { getEffectiveTransactionAmount } from '../utils/splitTransactionAmount.js';
 import { normalizeCategory } from '../utils/categoryUtils.js';
 
@@ -5,14 +6,7 @@ function formatAbsoluteCurrency(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Math.abs(value));
 }
 
-function escapeHtml(unsafeText) {
-  return String(unsafeText)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
+
 
 function formatTooltipDate(dateString) {
   if (!dateString) return '--/--/----';
@@ -28,7 +22,7 @@ function buildCategoryTooltipMarkup(categoryTransactions, isSplitByTwoEnabled) {
     .map((transaction) => {
       const descriptionLabel = transaction.description?.trim() || 'Sem descrição';
       const installmentLabel = transaction.total_installments > 1
-        ? ` <span class="text-[9px] font-bold text-amber-300">#${transaction.installment_number}/${transaction.total_installments}</span>`
+        ? ` <span class="text-[9px] font-bold text-amber-300">#${escapeHtml(transaction.installment_number)}/${escapeHtml(transaction.total_installments)}</span>`
         : '';
 
       return `
@@ -90,7 +84,7 @@ function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, isSpl
     }
 
     const categoryTooltipMarkup = buildCategoryTooltipMarkup(categoryTransactions, isSplitByTwoEnabled);
-    const accessibilityLabel = escapeHtml(`Ver detalhes da categoria ${normalizedCategoryName}`);
+    const accessibilityLabel = escapeHtml(`Ver detalhes da categoria ${escapeHtml(normalizedCategoryName)}`);
     const shouldRenderTooltipAbove = categoryIndex >= Math.max(sortedCategories.length - 2, 1);
     const tooltipPositionClass = shouldRenderTooltipAbove
       ? 'bottom-full mb-2 origin-bottom'
@@ -99,7 +93,7 @@ function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, isSpl
     dashCategories.innerHTML += `
       <div class="group relative mb-3">
         <div class="flex items-center justify-between mb-1">
-          <span class="text-xs font-bold text-slate-300 flex items-center">${iconLabel} ${normalizedCategoryName} ${budgetWarning}</span>
+          <span class="text-xs font-bold text-slate-300 flex items-center">${escapeHtml(iconLabel)} ${escapeHtml(normalizedCategoryName)} ${budgetWarning}</span>
           <span class="text-xs font-bold text-white">R$ ${amount.toFixed(2)} <span class="text-slate-500 font-normal">(${progressPercent}%)</span></span>
         </div>
         <button type="button" tabindex="0" aria-label="${accessibilityLabel}" class="relative z-10 block w-full cursor-help rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/70">
@@ -113,7 +107,7 @@ function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, isSpl
             <p class="text-[11px] font-bold text-white">${formatAbsoluteCurrency(amount)}</p>
           </div>
           <div class="mb-2 flex items-center justify-between gap-3">
-            <p class="truncate text-xs font-semibold text-slate-200">${iconLabel} ${normalizedCategoryName}</p>
+            <p class="truncate text-xs font-semibold text-slate-200">${escapeHtml(iconLabel)} ${escapeHtml(normalizedCategoryName)}</p>
             <p class="text-[10px] text-slate-400">${categoryTransactions.length} item(ns)</p>
           </div>
           <div class="max-h-52 space-y-2 overflow-y-auto pr-1">
@@ -145,7 +139,7 @@ function renderCreditCardBreakdown({ dashCreditCards, expenses, totalExpense, is
     const progressPercent = totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0;
     dashCreditCards.innerHTML += `
       <div class="flex items-center justify-between mb-1">
-        <span class="text-xs font-bold text-slate-300 flex items-center"><span class="material-symbols-outlined text-[14px] text-slate-400 mr-1">credit_card</span> ${cardName}</span>
+        <span class="text-xs font-bold text-slate-300 flex items-center"><span class="material-symbols-outlined text-[14px] text-slate-400 mr-1">credit_card</span> ${escapeHtml(cardName)}</span>
         <span class="text-xs font-bold text-white">R$ ${amount.toFixed(2)} <span class="text-slate-500 font-normal">(${progressPercent}%)</span></span>
       </div>
       <div class="h-2 w-full bg-slate-800 rounded-full overflow-hidden mb-3">

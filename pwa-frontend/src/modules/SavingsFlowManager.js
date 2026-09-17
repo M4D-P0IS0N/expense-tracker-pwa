@@ -1,3 +1,4 @@
+import { escapeHtml } from '../utils/escapeHtml.js';
 export function initSavingsFlow({
   savingsService,
   gamificationService,
@@ -55,10 +56,10 @@ export function initSavingsFlow({
       goalCardElement.onclick = () => openSavingsModal(goal.id);
       goalCardElement.innerHTML = `
             <div class="flex items-center justify-between mb-2">
-                <span class="text-xl">${goal.icon}</span>
+                <span class="text-xl">${escapeHtml(goal.icon)}</span>
                 <span class="text-[10px] font-bold text-slate-400 group-hover:text-primary transition">${completionPercentage}%</span>
             </div>
-            <h5 class="text-xs font-bold text-slate-300 truncate mb-1">${goal.name}</h5>
+            <h5 class="text-xs font-bold text-slate-300 truncate mb-1">${escapeHtml(goal.name)}</h5>
             <p class="text-[10px] text-slate-500 mb-2">Faltam R$ ${remainingAmount.toFixed(2)}</p>
             <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
                 <div class="h-full bg-primary rounded-full transition-all duration-1000" style="width: ${completionPercentage}%"></div>

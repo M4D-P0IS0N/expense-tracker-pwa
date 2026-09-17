@@ -1,9 +1,15 @@
-﻿import { supabase } from './supabaseClient.js';
+import { accountStorage, assertStorageAccount, getStorageAccount } from './accountStorage.js';
+import { supabase } from './supabaseClient.js';
 import { AuthService } from './AuthService.js';
 
 async function getCurrentUserId() {
+    const accountAtStart = getStorageAccount();
     try {
         const session = await AuthService.getSession();
+        if (session?.user?.id) {
+            assertStorageAccount(accountAtStart);
+            if (session.user.id !== accountAtStart) throw new Error('A conta mudou. Recarregue a página.');
+        }
         return session?.user?.id || null;
     } catch {
         return null;
@@ -25,7 +31,7 @@ export class NotebookService {
         }
 
         const storageKey = this.getStorageKey(year, month);
-        const rawData = (typeof localStorage !== 'undefined') ? localStorage.getItem(storageKey) : null;
+        const rawData = (typeof localStorage !== 'undefined') ? accountStorage.getItem(storageKey) : null;
 
         if (rawData === null) {
             const legacyNotes = this.getLegacyNotes();
@@ -45,7 +51,7 @@ export class NotebookService {
                     history: initialHistory
                 };
                 if (typeof localStorage !== 'undefined') {
-                    localStorage.setItem(storageKey, JSON.stringify(initialData));
+                    accountStorage.setItem(storageKey, JSON.stringify(initialData));
                 }
                 return legacyNotes;
             }
@@ -63,7 +69,7 @@ export class NotebookService {
     static getHistory(year, month) {
         if (!year || !month) return [];
         const storageKey = this.getStorageKey(year, month);
-        const rawData = (typeof localStorage !== 'undefined') ? localStorage.getItem(storageKey) : null;
+        const rawData = (typeof localStorage !== 'undefined') ? accountStorage.getItem(storageKey) : null;
         if (!rawData) return [];
 
         try {
@@ -96,6 +102,7 @@ export class NotebookService {
                 .eq('year', parsedYear)
                 .eq('month', parsedMonth)
                 .maybeSingle();
+            assertStorageAccount(userId);
 
             if (error) {
                 console.warn('Erro ao buscar notas do Supabase:', error);
@@ -112,7 +119,7 @@ export class NotebookService {
 
                 if (typeof localStorage !== 'undefined') {
                     const storageKey = this.getStorageKey(parsedYear, parsedMonth);
-                    localStorage.setItem(storageKey, JSON.stringify(monthlyData));
+                    accountStorage.setItem(storageKey, JSON.stringify(monthlyData));
                 }
 
                 return monthlyData;
@@ -136,6 +143,7 @@ export class NotebookService {
     static async saveNotesToCloud(content, history, year, month, userId = null) {
         const uid = userId || await getCurrentUserId();
         if (!uid || !supabase) return;
+        assertStorageAccount(uid);
 
         try {
             const { error } = await supabase
@@ -190,11 +198,11 @@ export class NotebookService {
 
         const storageKey = this.getStorageKey(year, month);
         if (typeof localStorage !== 'undefined') {
-            localStorage.setItem(storageKey, JSON.stringify(monthlyData));
+            accountStorage.setItem(storageKey, JSON.stringify(monthlyData));
         }
 
         // Salva de forma assíncrona no Supabase
-        this.saveNotesToCloud(newContent, updatedHistory, year, month).catch(err => {
+        this.saveNotesToCloud(newContent, updatedHistory, year, month, getStorageAccount()).catch(err => {
             console.error('Falha ao sincronizar nota com a nuvem:', err);
         });
 
@@ -216,6 +224,7 @@ export class NotebookService {
                 return [];
             }
 
+            assertStorageAccount(userId);
             const cloudMap = new Map();
             if (Array.isArray(data)) {
                 data.forEach(item => {
@@ -223,7 +232,7 @@ export class NotebookService {
                     cloudMap.set(key, item);
                     if (typeof localStorage !== 'undefined') {
                         const storageKey = this.getStorageKey(item.year, item.month);
-                        localStorage.setItem(storageKey, JSON.stringify({
+                        accountStorage.setItem(storageKey, JSON.stringify({
                             content: item.content || '',
                             history: item.history || []
                         }));
@@ -233,8 +242,8 @@ export class NotebookService {
 
             // Sobe notas locais que ainda não estão no Supabase
             if (typeof localStorage !== 'undefined') {
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
+                for (let i = 0; i < accountStorage.length; i++) {
+                    const key = accountStorage.key(i);
                     if (key && key.startsWith('@appdecustos/notebook_') && !key.includes('meta')) {
                         const parts = key.replace('@appdecustos/notebook_', '').split('_');
                         if (parts.length === 2) {
@@ -309,18 +318,18 @@ export class NotebookService {
 
     static getLegacyNotes() {
         if (typeof localStorage === 'undefined') return '';
-        let legacyNotes = localStorage.getItem(this.globalStorageKey);
+        let legacyNotes = accountStorage.getItem(this.globalStorageKey);
         if (legacyNotes === null) {
-            const oldNotes = localStorage.getItem('@appdecustos/larissa_notes');
+            const oldNotes = accountStorage.getItem('@appdecustos/larissa_notes');
             if (oldNotes !== null) {
                 legacyNotes = oldNotes;
-                localStorage.setItem(this.globalStorageKey, legacyNotes);
-                localStorage.removeItem('@appdecustos/larissa_notes');
+                accountStorage.setItem(this.globalStorageKey, legacyNotes);
+                accountStorage.removeItem('@appdecustos/larissa_notes');
 
-                const oldMeta = localStorage.getItem('@appdecustos/larissa_meta');
+                const oldMeta = accountStorage.getItem('@appdecustos/larissa_meta');
                 if (oldMeta) {
-                    localStorage.setItem(this.globalMetaKey, oldMeta);
-                    localStorage.removeItem('@appdecustos/larissa_meta');
+                    accountStorage.setItem(this.globalMetaKey, oldMeta);
+                    accountStorage.removeItem('@appdecustos/larissa_meta');
                 }
             } else {
                 legacyNotes = '';
@@ -332,7 +341,7 @@ export class NotebookService {
     static getLegacyMeta() {
         if (typeof localStorage === 'undefined') return null;
         try {
-            return JSON.parse(localStorage.getItem(this.globalMetaKey)) || null;
+            return JSON.parse(accountStorage.getItem(this.globalMetaKey)) || null;
         } catch {
             return null;
         }

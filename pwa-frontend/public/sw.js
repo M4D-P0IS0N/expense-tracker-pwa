@@ -1,4 +1,4 @@
-const CACHE_NAME = 'app-de-custos-v47';
+const CACHE_NAME = 'app-de-custos-v48';
 
 const urlsToCache = [
     './',
@@ -18,7 +18,7 @@ self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys => {
             return Promise.all(keys.map(key => {
-                if (key !== CACHE_NAME) {
+                if (key.startsWith('app-de-custos-') && key !== CACHE_NAME) {
                     return caches.delete(key);
                 }
             }));
@@ -45,7 +45,7 @@ self.addEventListener('fetch', event => {
         fetch(event.request)
             .then(response => {
                 // Ignore caching for extension/chrome requests
-                if (!requestUrl.startsWith('http')) return response;
+                if (!requestUrl.startsWith('http') || !response.ok) return response;
 
                 // Cache the new version
                 const responseClone = response.clone();

@@ -1,3 +1,4 @@
+import { accountStorage } from '../services/accountStorage.js';
 export function getSplitByTwoStorageKey(year, month, userId = null) {
   const parsedMonth = parseInt(month, 10).toString();
   if (userId) {
@@ -11,23 +12,8 @@ function isSplitByTwoActiveInStorage(dateStr) {
 
   const txYear = dateStr.substring(0, 4);
   const txMonth = parseInt(dateStr.substring(5, 7), 10).toString();
-  const legacyKey = 'split_by_two_' + txYear + '_' + txMonth;
+  return accountStorage.getItem('split_by_two_' + txYear + '_' + txMonth) === 'true';
 
-  if (localStorage.getItem(legacyKey) === 'true') {
-    return true;
-  }
-
-  const suffix = '_' + txYear + '_' + txMonth;
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith('split_by_two_') && key.endsWith(suffix)) {
-      if (localStorage.getItem(key) === 'true') {
-        return true;
-      }
-    }
-  }
-
-  return false;
 }
 
 export function shouldApplySplitByTwo(transaction, isSplitByTwoEnabled) {

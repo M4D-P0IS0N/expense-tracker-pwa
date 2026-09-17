@@ -1,10 +1,3 @@
-# Regras do Projeto (Expense Tracker PWA)
+# Regras do projeto
 
-Sempre que uma nova funcionalidade for adicionada ao aplicativo ou o comportamento de uma funcionalidade existente for alterado:
-1. **Guia de Dúvidas**: Você deve OBRIGATORIAMENTE atualizar o modal "Dúvidas" (`index.html` -> `#help-modal`) com as novas explicações, passo-a-passo e dicas relacionadas à mudança.
-2. **README.md**: Se a funcionalidade for de impacto médio/alto (ex: novo sistema de RPG, nova visualização de métricas, etc), você deve atualizar o arquivo `README.md` listando as novas features na tabela ou visão geral.
-3. **Imagens/Sprites**: Ao substituir imagens, lembre-se de limpar `mix-blend-mode` espúrios ou propriedades de formatação específicas de sprites antigos (como `image-rendering: pixelated`).
-4. **Deploy Automático**: Sempre que algo for modificado no projeto e estiver pronto, você OBRIGATORIAMENTE deve sugerir os comandos de build, commitar as alterações e dar `git push` para realizar o upload no GitHub Pages corretamente, garantindo que a versão online esteja sincronizada com o GitHub.
-5. **Supabase Seguro por Padrão**: Toda nova tabela em schema público deve ter RLS habilitado, policies explícitas e coluna de ownership (`user_id` ou `id` ligado ao `auth.users`). O schema SQL versionado deve refletir exatamente isso.
-6. **Suporte Multi-Tema e Consulta Prévia**: Quando uma nova funcionalidade ou componente for acrescentado, ele deve ser alterado e adaptado para **todos os temas** do projeto. Se houver qualquer dúvida se algo deve ser alterado nos outros temas, pergunte ao usuário **antes de executar**.
-
+Leia e siga `AGENTS.md` na raiz. Ele centraliza preservação/backup, testes, segurança, temas e build/commit/push automáticos.

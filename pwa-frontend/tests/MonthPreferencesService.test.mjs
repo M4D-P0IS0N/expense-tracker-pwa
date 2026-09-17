@@ -1,3 +1,4 @@
+import { accountStorage, setStorageAccount } from '../src/services/accountStorage.js';
 ﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MonthPreferencesService } from '../src/services/MonthPreferencesService.js';
@@ -15,6 +16,7 @@ function createLocalStorageMock() {
 }
 
 globalThis.localStorage = createLocalStorageMock();
+setStorageAccount('user-123');
 
 test('MonthPreferencesService should generate consistent storage keys', () => {
     assert.equal(MonthPreferencesService.getStorageKey(2026, 8), 'split_by_two_2026_8');
@@ -34,7 +36,7 @@ test('MonthPreferencesService should read and write split_by_two preferences in 
 
 test('MonthPreferencesService getSplitByTwo should fallback to local cache seamlessly', async () => {
     localStorage.clear();
-    localStorage.setItem('split_by_two_2026_11', 'true');
+    accountStorage.setItem('split_by_two_2026_11', 'true');
 
     const result = await MonthPreferencesService.getSplitByTwo(2026, 11);
     assert.equal(result, true);
