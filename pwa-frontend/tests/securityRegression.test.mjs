@@ -188,3 +188,16 @@ test('export/import round trip preserves earned achievements and ignores legacy 
   assert.equal(GamificationService.getProfile().UnlockedAchievements[0].Id, 'first_transaction');
   assert.equal(accountStorage.getItem('@appdecustos/deleted_ids'), null);
 });
+
+test('restore validates version and allows cancelling the preview before any write', async () => {
+  setup();
+  assert.throws(() => validateBackup({ version: '999', data: {} }), /versão/);
+  let writes = 0;
+  let preview;
+  await importBackup({ text: async () => JSON.stringify({ version: '1.1', data: { transactions: [tx] } }) }, {
+    confirmRestore: summary => { preview = summary; return false; },
+    TransactionService: { bulkUpsertTransactions: async () => writes++ },
+  });
+  assert.match(preview, /1 transações/);
+  assert.equal(writes, 0);
+});

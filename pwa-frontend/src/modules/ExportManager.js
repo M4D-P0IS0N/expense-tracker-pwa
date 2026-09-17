@@ -277,10 +277,8 @@ export function initExportManager(options) {
         importFileInput.addEventListener("change", async (e) => {
             const file = e.target.files[0];
             if (file) {
-                const confirmed = confirm("Deseja restaurar o backup? Os dados importados serão vinculados à sua conta atual.");
-                if (confirmed) {
-                    await importBackup(file, { TransactionService, supabase, showNotification, reloadData });
-                }
+                await importBackup(file, { TransactionService, supabase, showNotification, reloadData,
+                    confirmRestore: summary => confirm(summary + '\n\nOs registros serão vinculados à conta atual. Exporte seu backup antes de continuar. Restaurar?') });
             }
         });
     }
@@ -336,7 +334,7 @@ export async function exportFullJsonBackup({ TransactionService, supabase, showN
         }
 
         const backupPayload = {
-            version: "1.0",
+            version: "1.1",
             exportedAt: new Date().toISOString(),
             appName: "App de Custos PWA",
             data: {
@@ -421,8 +419,14 @@ export async function exportFullCsv({ TransactionService, showNotification }) {
     }
 }
 
-export async function importBackup(file, { TransactionService, supabase, showNotification, reloadData }) {
+export async function importBackup(file, { TransactionService, supabase, showNotification, reloadData, confirmRestore }) {
     if (!file) return;
+    const completedSections = [];
+    const restoreSection = async (label, query) => {
+        const { error } = await query;
+        if (error) throw error;
+        completedSections.push(label);
+    };
 
     try {
         if (file.size > 25 * 1024 * 1024) throw new Error("Backup excede 25 MB.");
@@ -441,6 +445,10 @@ export async function importBackup(file, { TransactionService, supabase, showNot
 
         validateBackup(backupObj);
         const { transactions, userProfile, savingsGoals, achievements, monthPreferences, notebookNotes, localStorageData } = backupObj.data;
+        if (confirmRestore) {
+            const summary = `Prévia: ${transactions?.length || 0} transações, ${savingsGoals?.length || 0} metas na nuvem, ${achievements?.length || 0} conquistas na nuvem, ${monthPreferences?.length || 0} preferências mensais e ${notebookNotes?.length || 0} notas.\nDados locais: ${Object.keys(localStorageData || {}).filter(isRestorableKey).length} seções. Perfil na nuvem: ${userProfile ? 'sim' : 'não'}.`;
+            if (!await confirmRestore(summary)) return;
+        }
 
         let userId = null;
         if (supabase) {
@@ -454,21 +462,22 @@ export async function importBackup(file, { TransactionService, supabase, showNot
 
         if (Array.isArray(transactions) && transactions.length > 0 && TransactionService) {
             restoredTxCount = await TransactionService.bulkUpsertTransactions(transactions);
+            completedSections.push('transações');
         }
 
         if (userProfile && userId && supabase) {
             const profileToUpsert = { ...userProfile, id: userId, last_sync: new Date().toISOString() };
-            { const { error } = await supabase.from("user_profiles").upsert(profileToUpsert, { onConflict: "id" }); if (error) throw error; }
+            await restoreSection('perfil', supabase.from("user_profiles").upsert(profileToUpsert, { onConflict: "id" }));
         }
 
         if (Array.isArray(savingsGoals) && savingsGoals.length > 0 && userId && supabase) {
             const goalsToUpsert = savingsGoals.map(g => ({ ...g, user_id: userId }));
-            { const { error } = await supabase.from("savings_goals").upsert(goalsToUpsert, { onConflict: "id" }); if (error) throw error; }
+            await restoreSection('metas', supabase.from("savings_goals").upsert(goalsToUpsert, { onConflict: "id" }));
         }
 
         if (Array.isArray(achievements) && achievements.length > 0 && userId && supabase) {
             const achToUpsert = achievements.map(a => ({ ...a, user_id: userId }));
-            { const { error } = await supabase.from("achievements").upsert(achToUpsert, { onConflict: "id" }); if (error) throw error; }
+            await restoreSection('conquistas', supabase.from("achievements").upsert(achToUpsert, { onConflict: "id" }));
         }
 
         if (Array.isArray(monthPreferences) && monthPreferences.length > 0 && userId && supabase) {
@@ -479,7 +488,7 @@ export async function importBackup(file, { TransactionService, supabase, showNot
                 is_split_by_2: Boolean(p.is_split_by_2),
                 updated_at: new Date().toISOString()
             }));
-            { const { error } = await supabase.from("month_preferences").upsert(prefsToUpsert, { onConflict: "user_id,year,month" }); if (error) throw error; }
+            await restoreSection('preferências mensais', supabase.from("month_preferences").upsert(prefsToUpsert, { onConflict: "user_id,year,month" }));
         }
 
         if (Array.isArray(notebookNotes) && notebookNotes.length > 0 && userId && supabase) {
@@ -491,7 +500,7 @@ export async function importBackup(file, { TransactionService, supabase, showNot
                 history: Array.isArray(n.history) ? n.history : [],
                 updated_at: new Date().toISOString()
             }));
-            { const { error } = await supabase.from("notebook_notes").upsert(notesToUpsert, { onConflict: "user_id,year,month" }); if (error) throw error; }
+            await restoreSection('notas', supabase.from("notebook_notes").upsert(notesToUpsert, { onConflict: "user_id,year,month" }));
         }
 
         assertStorageAccount(userId);
@@ -510,6 +519,6 @@ export async function importBackup(file, { TransactionService, supabase, showNot
         }
     } catch (err) {
         console.error("Erro ao importar backup:", err);
-        if (showNotification) showNotification("Restauração interrompida; etapas anteriores podem ter sido gravadas. " + err.message, "error");
+        if (showNotification) showNotification(`Restauração interrompida; etapas anteriores podem ter sido gravadas. Seções concluídas: ${completedSections.join(', ') || 'nenhuma'}. ${err.message}`, "error");
     }
 }

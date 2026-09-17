@@ -63,6 +63,7 @@ export function validateTransaction(tx) {
 
 export function validateBackup(backup) {
   requireValue(object(backup) && object(backup.data), 'formato');
+  requireValue(backup.version === undefined || ['1.0', '1.1'].includes(backup.version), 'versão não suportada');
   const data = backup.data;
   for (const key of ['transactions', 'savingsGoals', 'achievements', 'monthPreferences', 'notebookNotes']) {
     if (data[key] === undefined) continue;
