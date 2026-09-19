@@ -96,7 +96,7 @@ function renderCategoryBreakdown({ dashCategories, expenses, totalExpense, isSpl
           <span class="text-xs font-bold text-slate-300 flex items-center">${escapeHtml(iconLabel)} ${escapeHtml(normalizedCategoryName)} ${budgetWarning}</span>
           <span class="text-xs font-bold text-white">R$ ${amount.toFixed(2)} <span class="text-slate-500 font-normal">(${progressPercent}%)</span></span>
         </div>
-        <button type="button" tabindex="0" aria-label="${accessibilityLabel}" class="relative z-10 block w-full cursor-help rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/70">
+        <button type="button" tabindex="0" aria-label="${accessibilityLabel}" class="dashboard-bar-trigger relative z-10 block w-full cursor-help rounded-full border-0 bg-transparent p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/70">
           <div class="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
             <div class="h-full ${barColor} rounded-full transition-all duration-1000" style="width: ${progressPercent}%"></div>
           </div>
